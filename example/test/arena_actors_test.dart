@@ -42,7 +42,7 @@ void main() {
     expect(monster.alive, isFalse);
     monster.reset();
     expect(monster.alive, isTrue);
-    expect(monster.hp, ArenaMonster.maxHp);
+    expect(monster.hp, monster.maxHp);
     expect(monster.position, Vector2(200, 200));
   });
 
@@ -60,6 +60,87 @@ void main() {
     monster.update(0.001);
     expect(monster.alive, isTrue);
     expect(monster.position, Vector2(200, 200));
+  });
+
+  test('boss telegraphs then charges and stops at wall; reset restores it', () {
+    final player = Vector2(400, 300);
+    final boss = ArenaMonster(
+      position: Vector2(300, 300),
+      chase: () => player,
+      terrain: [TerrainRectangle(Vector2(340, 260), Vector2(12, 80))],
+      isBoss: true,
+      maxHp: ArenaMonster.bossHp,
+      speed: ArenaMonster.bossSpeed,
+      respawnSeconds: 0,
+    );
+    expect(boss.hp, 8);
+    boss.update(0.01);
+    expect(boss.isTelegraphing, isTrue);
+    expect(boss.isCharging, isFalse);
+    boss.update(ArenaMonster.bossTelegraphSeconds - 0.01);
+    expect(boss.isCharging, isFalse);
+    boss.update(0.02);
+    expect(boss.isCharging, isTrue);
+    final before = boss.position.clone();
+    boss.update(0.2);
+    expect(boss.position.x, greaterThan(before.x));
+    expect(boss.position.x, lessThan(340));
+    boss.reset();
+    expect(boss.hp, ArenaMonster.bossHp);
+    expect(boss.isCharging, isFalse);
+    expect(boss.isTelegraphing, isFalse);
+  });
+
+  test(
+    'boss telegraphs then charges and stops at wall; reset restores state',
+    () {
+      final player = Vector2(400, 300);
+      final boss = ArenaMonster(
+        position: Vector2(300, 300),
+        chase: () => player,
+        terrain: [TerrainRectangle(Vector2(340, 260), Vector2(12, 80))],
+        isBoss: true,
+        maxHp: ArenaMonster.bossHp,
+        speed: ArenaMonster.bossSpeed,
+        contactDamage: ArenaMonster.bossChargeDamage,
+        respawnSeconds: 0,
+      );
+      expect(boss.hp, ArenaMonster.bossHp);
+      boss.update(0.01);
+      expect(boss.isTelegraphing, isTrue);
+      expect(boss.isCharging, isFalse);
+      final telegraphPosition = boss.position.clone();
+      boss.update(ArenaMonster.bossTelegraphSeconds - 0.01);
+      expect(boss.position, telegraphPosition);
+      expect(boss.isCharging, isFalse);
+      boss.update(0.02);
+      expect(boss.isCharging, isTrue);
+      final before = boss.position.clone();
+      boss.update(0.2);
+      expect(boss.position.x, greaterThan(before.x));
+      expect(boss.position.x, lessThan(340));
+      boss.reset();
+      expect(boss.hp, ArenaMonster.bossHp);
+      expect(boss.isCharging, isFalse);
+      expect(boss.isTelegraphing, isFalse);
+    },
+  );
+
+  test('boss charge cannot tunnel through player on a large frame', () {
+    var hits = 0;
+    final player = Vector2(400, 300);
+    final boss = ArenaMonster(
+      position: Vector2(300, 300),
+      chase: () => player,
+      terrain: const [],
+      isBoss: true,
+      onTouchPlayer: (_) => hits++,
+    );
+    boss.update(0.01);
+    boss.update(ArenaMonster.bossTelegraphSeconds);
+    boss.update(0.5);
+    expect(hits, 1);
+    expect(boss.position.x, lessThan(player.x));
   });
 
   test(

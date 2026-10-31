@@ -518,6 +518,83 @@ void main() {
     expect(game.lives.value, before - 1);
   });
 
+  testWidgets('wave 5 spawns a single boss while wave 4 is regular', (
+    tester,
+  ) async {
+    final game = await loadArenaInto(
+      tester,
+      SpriteArenaGame(pickupRoll: () => 0.99),
+    );
+    for (var step = 0; step < 200 && game.wave.value < 4; step++) {
+      for (final monster in game.monsters.where((m) => m.alive).toList()) {
+        for (var hit = 0; hit < monster.hp; hit++) {
+          monster.takeHit();
+        }
+      }
+      game.update(SpriteArenaGame.spawnInterval);
+    }
+    expect(game.wave.value, 4);
+    game.update(SpriteArenaGame.spawnInterval);
+    expect(game.isBossWave, isFalse);
+    expect(game.monsters.where((m) => m.alive), hasLength(1));
+    for (var step = 0; step < 200 && game.wave.value < 5; step++) {
+      for (final monster in game.monsters.where((m) => m.alive).toList()) {
+        for (var hit = 0; hit < monster.hp; hit++) {
+          monster.takeHit();
+        }
+      }
+      game.update(SpriteArenaGame.spawnInterval);
+    }
+    expect(game.wave.value, 5);
+    game.update(SpriteArenaGame.spawnInterval);
+    final active = game.monsters.where((m) => m.alive).toList();
+    expect(active, hasLength(1));
+    expect(active.single.isBoss, isTrue);
+    expect(active.single.hp, ArenaMonster.bossHp);
+    expect(game.bossHp.value, ArenaMonster.bossHp);
+    final player = game.player!;
+    player.position.setFrom(active.single.position);
+    active.single.update(0.01);
+    expect(active.single.isTelegraphing, isTrue);
+    active.single.update(ArenaMonster.bossTelegraphSeconds);
+    active.single.update(0.1);
+    expect(game.lives.value, 2);
+    active.single.takeHit();
+    expect(game.bossHp.value, ArenaMonster.bossHp - 1);
+  });
+
+  testWidgets(
+    'boss death guarantees Rapid Fire and blocks early wave advance',
+    (tester) async {
+      final game = await loadArenaInto(
+        tester,
+        SpriteArenaGame(pickupRoll: () => 0.99),
+      );
+      for (var step = 0; step < 250 && game.wave.value < 5; step++) {
+        for (final monster in game.monsters.where((m) => m.alive).toList()) {
+          for (var hit = 0; hit < monster.hp; hit++) {
+            monster.takeHit();
+          }
+        }
+        game.update(SpriteArenaGame.spawnInterval);
+      }
+      expect(game.wave.value, 5);
+      game.update(SpriteArenaGame.spawnInterval);
+      final boss = game.monsters.singleWhere((m) => m.alive);
+      final scoreBeforeBoss = game.score.value;
+      for (var hit = 0; hit < ArenaMonster.bossHp; hit++) {
+        boss.takeHit();
+      }
+      expect(game.pickup?.kind, ArenaPickupKind.rapidFire);
+      expect(game.score.value, scoreBeforeBoss + 100);
+      expect(game.wave.value, 5);
+      game.update(SpriteArenaGame.spawnInterval - 0.01);
+      expect(game.wave.value, 5);
+      game.update(0.02);
+      expect(game.wave.value, 6);
+    },
+  );
+
   testWidgets('wave advances only after full spawn interval', (tester) async {
     final game = await loadArena(tester);
     final initialMonsters = game.monsters.toList();
@@ -558,11 +635,22 @@ void main() {
       );
       expect(active.every((m) => m.speed <= 84), isTrue);
     }
-    expect(game.wave.value, greaterThanOrEqualTo(35));
+    expect(game.wave.value, 35);
+    game.update(SpriteArenaGame.spawnInterval);
+    var active = game.monsters.where((m) => m.alive).toList();
+    expect(active, hasLength(1));
+    expect(active.single.isBoss, isTrue);
+    expect(active.single.speed, ArenaMonster.bossSpeed);
+    active.single.takeHit();
+    for (var hit = 0; hit < ArenaMonster.bossHp - 1; hit++) {
+      active.single.takeHit();
+    }
+    game.update(SpriteArenaGame.spawnInterval);
+    expect(game.wave.value, 36);
     for (var slot = 0; slot < SpriteArenaGame.activeMonsterCap; slot++) {
       game.update(SpriteArenaGame.spawnInterval);
     }
-    final active = game.monsters.where((m) => m.alive).toList();
+    active = game.monsters.where((m) => m.alive).toList();
     expect(active, hasLength(SpriteArenaGame.activeMonsterCap));
     expect(active.every((m) => m.speed == 84), isTrue);
   });

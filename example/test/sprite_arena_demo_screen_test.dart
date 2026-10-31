@@ -259,6 +259,24 @@ void main() {
         ),
         findsOneWidget,
       );
+      game.wave.value = 5;
+      await tester.pump();
+      expect(
+        find.text(locale.$1.languageCode == 'vi' ? 'TRÙM' : 'BOSS'),
+        findsOneWidget,
+      );
+      game.bossHp.value = ArenaMonster.bossHp;
+      await tester.pump();
+      expect(
+        find.text(locale.$1.languageCode == 'vi' ? '8/8 máu' : '8/8 HP'),
+        findsOneWidget,
+      );
+      game.bossHp.value = 4;
+      await tester.pump();
+      expect(
+        find.text(locale.$1.languageCode == 'vi' ? '4/8 máu' : '4/8 HP'),
+        findsOneWidget,
+      );
       expect(tester.takeException(), isNull);
     });
   }

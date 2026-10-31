@@ -36,6 +36,7 @@ class SpriteArenaGame extends RoyGame {
   ArenaPickup? pickup;
   final rapidFireRemaining = ValueNotifier<double>(0);
   final pickupRemaining = ValueNotifier<double>(0);
+  final bossHp = ValueNotifier<int?>(null);
   final _bullets = <ArenaBullet>{};
   bool _ready = false;
   final _mapColliders = <TerrainCollider>[];
@@ -49,6 +50,8 @@ class SpriteArenaGame extends RoyGame {
   int _spawnCursor = 0;
 
   int get waveSize => _waveSize;
+  bool get isBossWave => wave.value % 5 == 0;
+  int get _waveMonsterCount => isBossWave ? 1 : _waveSize;
   static const activeMonsterCap = 3;
   static const spawnInterval = 1.2;
   static const playerMaxLives = 4;
@@ -230,9 +233,11 @@ class SpriteArenaGame extends RoyGame {
     _spawnedThisWave = 0;
     _spawnCursor = 0;
     _spawnCooldown = 0;
-    while (_spawnedThisWave < math.min(_waveSize, activeMonsterCap) &&
+    while (_spawnedThisWave < math.min(_waveMonsterCount, activeMonsterCap) &&
         _spawnNextMonster()) {}
-    if (_spawnedThisWave < _waveSize) _spawnCooldown = spawnInterval;
+    if (_spawnedThisWave < _waveMonsterCount) {
+      _spawnCooldown = spawnInterval;
+    }
   }
 
   bool _spawnNextMonster() {
@@ -247,30 +252,43 @@ class SpriteArenaGame extends RoyGame {
       );
       final occupied = monsters.any((m) => m.alive && m.hitRect.overlaps(box));
       if (blocked || occupied || spot.distanceTo(start) < 200) continue;
+      final boss = isBossWave;
       final monster = ArenaMonster(
         position: spot,
         chase: () => player!.position,
         terrain: terrainColliders,
         respawnSeconds: 0,
-        speed: math.min(84, ArenaMonster.baseSpeed + wave.value - 1),
+        speed: boss
+            ? ArenaMonster.bossSpeed
+            : math.min(84, ArenaMonster.baseSpeed + wave.value - 1),
+        maxHp: boss ? ArenaMonster.bossHp : ArenaMonster.baseHp,
+        isBoss: boss,
+        contactDamage: boss ? ArenaMonster.bossChargeDamage : 1,
         onHit: (m) {
+          if (m.isBoss) bossHp.value = m.hp;
           AudioManager.maybe?.playSfx('audio/tap.ogg', volume: 0.4);
         },
         onDestroyed: (m) {
+          if (m.isBoss) bossHp.value = 0;
           spawnSparkleBurst(m.position.clone(), count: 12);
           fireHaptic(HapticLevel.light);
           AudioManager.maybe?.playSfx('audio/victory.ogg', volume: 0.5);
-          score.value += 25;
-          _tryDropPickup(m.position);
+          score.value += m.isBoss ? 100 : 25;
+          if (m.isBoss) {
+            spawnPickup(ArenaPickupKind.rapidFire, m.position);
+          } else {
+            _tryDropPickup(m.position);
+          }
           _onMonsterDestroyed();
         },
         onTouchPlayer: (m) {
           fireHaptic(HapticLevel.light);
-          _takePlayerHit();
+          _takePlayerHit(damage: m.contactDamage);
         },
       );
       monsters.add(monster);
       world.add(monster);
+      if (boss) bossHp.value = monster.hp;
       _spawnedThisWave++;
       return true;
     }
@@ -282,7 +300,7 @@ class SpriteArenaGame extends RoyGame {
     _spawnCooldown = spawnInterval;
   }
 
-  void _takePlayerHit() {
+  void _takePlayerHit({int damage = 1}) {
     if (!attackEnabled ||
         roundOver.value ||
         _damageCooldown > 0 ||
@@ -291,7 +309,7 @@ class SpriteArenaGame extends RoyGame {
     }
     _damagedThisUpdate = true;
     _damageCooldown = playerInvulnerabilitySeconds;
-    lives.value--;
+    lives.value = math.max(0, lives.value - damage);
     if (lives.value == 0) {
       roundOver.value = true;
       _clearPickup();
@@ -328,10 +346,11 @@ class SpriteArenaGame extends RoyGame {
     }
     if (_spawnCooldown > 0) return;
     final active = monsters.where((m) => m.alive).length;
-    if (_spawnedThisWave < _waveSize && active < activeMonsterCap) {
+    if (_spawnedThisWave < _waveMonsterCount && active < activeMonsterCap) {
       _spawnNextMonster();
       _spawnCooldown = spawnInterval;
-    } else if (_spawnedThisWave == _waveSize && active == 0) {
+    } else if (_spawnedThisWave == _waveMonsterCount && active == 0) {
+      bossHp.value = null;
       wave.value++;
       _waveSize++;
       _spawnedThisWave = 0;
@@ -355,6 +374,7 @@ class SpriteArenaGame extends RoyGame {
     pickup = null;
     pickupRemaining.value = 0;
     rapidFireRemaining.value = 0;
+    bossHp.value = null;
     stopFiring();
     for (final bullet in _bullets.toList()) {
       bullet.removeFromParent();

@@ -3,6 +3,7 @@ import 'dart:ui';
 
 import 'package:flame/components.dart';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart' show Colors;
 import 'package:roy_casual_kit/presentation/game/tiled_terrain_collision.dart';
 
 /// Something a bullet can damage. Bullets ray-march in 4px steps and test
@@ -173,9 +174,9 @@ class ArenaTarget extends PositionComponent implements ArenaHittable {
   }
 }
 
-/// Slow chaser: 2 HP, walks toward [chase] one axis at a time in small steps so
-/// it slides along walls instead of sticking or tunnelling. Contact knocks the
-/// monster back and reports a hit to its owner.
+enum _BossState { approach, telegraph, charge }
+
+/// Chases [chase] in small wall-safe steps; bosses telegraph and charge.
 class ArenaMonster extends PositionComponent implements ArenaHittable {
   ArenaMonster({
     required Vector2 position,
@@ -186,10 +187,32 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
     this.onTouchPlayer,
     this.respawnSeconds = 4.0,
     this.speed = ArenaMonster.baseSpeed,
-  }) : super(position: position, size: Vector2.all(28), anchor: Anchor.center);
+    int? maxHp,
+    this.isBoss = false,
+    this.contactDamage = 1,
+  }) : maxHp = maxHp ?? (isBoss ? bossHp : baseHp),
+       super(
+         position: position,
+         size: Vector2.all(isBoss ? 56 : 28),
+         anchor: Anchor.center,
+       ) {
+    hp = this.maxHp;
+  }
 
-  static const maxHp = 2;
+  static const baseHp = 2;
+  static const bossHp = 8;
   static const baseSpeed = 60.0;
+  static const bossSpeed = 32.0;
+  static const bossTelegraphSeconds = 1.0;
+  static const bossChargeSeconds = 0.45;
+  static const bossChargeSpeed = 160.0;
+  static const bossChargeDamage = 2;
+
+  final int maxHp;
+  final bool isBoss;
+  final int contactDamage;
+  bool get isCharging => _bossState == _BossState.charge;
+  bool get isTelegraphing => _bossState == _BossState.telegraph;
   static const defaultRespawnSeconds = 4.0;
   static const touchCooldownSeconds = 0.1;
   static const knockback = 36.0;
@@ -203,8 +226,11 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
   final double speed;
 
   late final Vector2 home = position.clone();
-  int hp = maxHp;
+  int hp = 0;
   double _respawn = 0;
+  _BossState _bossState = _BossState.approach;
+  double _bossStateTimer = 0;
+  Vector2 _chargeDirection = Vector2.zero();
   double _touchCooldown = 0;
   double _flash = 0;
 
@@ -220,6 +246,22 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
   bool _blockedAt(Vector2 c) {
     final r = _rectAt(c);
     return terrain.any((t) => terrainColliderOverlapsRect(t, r));
+  }
+
+  bool _touchesPlayer(Vector2 player, double padding) =>
+      hitRect.inflate(padding).contains(Offset(player.x, player.y));
+
+  bool _moveCharge(Vector2 delta, Vector2 player) {
+    final steps = (delta.length / 4).ceil().clamp(1, 4096);
+    final step = delta / steps.toDouble();
+    for (var i = 0; i < steps; i++) {
+      final candidateX = Vector2(position.x + step.x, position.y);
+      if (!_blockedAt(candidateX)) position.x = candidateX.x;
+      final candidateY = Vector2(position.x, position.y + step.y);
+      if (!_blockedAt(candidateY)) position.y = candidateY.y;
+      if (_touchesPlayer(player, 14)) return true;
+    }
+    return false;
   }
 
   /// Moves [delta] in <=4px sub-steps, X then Y, stopping each axis at a wall.
@@ -239,6 +281,9 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
     _respawn = 0;
     _touchCooldown = 0;
     _flash = 0;
+    _bossState = _BossState.approach;
+    _bossStateTimer = 0;
+    _chargeDirection = Vector2.zero();
     position.setFrom(home);
   }
 
@@ -271,28 +316,105 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
     final player = chase();
     final to = player - position;
     final dist = to.length;
+    if (isBoss) {
+      _updateBoss(dt, to, dist);
+    } else {
+      _moveTowardPlayer(player, to, dist, speed * dt);
+    }
+  }
+
+  void _updateBoss(double dt, Vector2 toPlayer, double distance) {
+    _bossStateTimer += dt;
+    switch (_bossState) {
+      case _BossState.approach:
+        if (distance > 0) _move(toPlayer / distance * speed * dt);
+        if (distance <= 180) {
+          _chargeDirection = distance > 0 ? toPlayer / distance : Vector2(1, 0);
+          _bossState = _BossState.telegraph;
+          _bossStateTimer = 0;
+        }
+      case _BossState.telegraph:
+        if (_bossStateTimer >= bossTelegraphSeconds) {
+          _bossState = _BossState.charge;
+          _bossStateTimer = 0;
+        }
+      case _BossState.charge:
+        final player = chase();
+        final touched = _moveCharge(
+          _chargeDirection * bossChargeSpeed * dt,
+          player,
+        );
+        if (touched && _touchCooldown <= 0) {
+          _touchCooldown = touchCooldownSeconds;
+          onTouchPlayer?.call(this);
+          _bossState = _BossState.approach;
+          _bossStateTimer = 0;
+        } else if (_bossStateTimer >= bossChargeSeconds) {
+          _bossState = _BossState.approach;
+          _bossStateTimer = 0;
+        }
+    }
+  }
+
+  void _moveTowardPlayer(
+    Vector2 player,
+    Vector2 toPlayer,
+    double distance,
+    double delta,
+  ) {
     final touching = hitRect.inflate(10).contains(Offset(player.x, player.y));
     if (touching && _touchCooldown <= 0) {
       _touchCooldown = touchCooldownSeconds;
-      if (dist > 0) _move(-to / dist * knockback);
+      if (distance > 0) _move(-toPlayer / distance * knockback);
       onTouchPlayer?.call(this);
       return;
     }
-    if (dist > 0) _move(to / dist * speed * dt);
+    if (distance > 0) _move(toPlayer / distance * delta);
   }
 
   @override
   void render(Canvas canvas) {
     if (!alive) return;
     final c = Offset(size.x / 2, size.y / 2);
+    final bossTelegraphing = isBoss && _bossState == _BossState.telegraph;
     canvas.drawCircle(
       c,
       size.x / 2,
       Paint()
         ..color = _flash > 0
             ? const Color(0xffffffff)
+            : isBoss
+            ? const Color(0xff8e24aa)
             : const Color(0xff66bb6a),
     );
+    if (isBoss) {
+      canvas.drawCircle(
+        c,
+        size.x / 2 - 3,
+        Paint()
+          ..color = bossTelegraphing
+              ? const Color(0xffff1744)
+              : const Color(0xffffca28)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = bossTelegraphing
+              ? 3 + 2 * (0.5 + 0.5 * math.sin(_bossStateTimer * 10))
+              : 3,
+      );
+      if (bossTelegraphing || isCharging) {
+        final markerPaint = Paint()
+          ..color = Colors.white
+          ..strokeWidth = 5
+          ..strokeCap = StrokeCap.round;
+        canvas.drawLine(
+          c,
+          c.translate(
+            _chargeDirection.x * size.x * 0.48,
+            _chargeDirection.y * size.y * 0.48,
+          ),
+          markerPaint,
+        );
+      }
+    }
     for (final dx in [-5.0, 5.0]) {
       canvas.drawCircle(
         c.translate(dx, -3),

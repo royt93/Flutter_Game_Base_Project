@@ -228,72 +228,102 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                           right: padding,
                           child: ValueListenableBuilder<int>(
                             valueListenable: _game.lives,
-                            builder: (context, lives, _) =>
-                                ValueListenableBuilder<int>(
-                                  valueListenable: _game.wave,
-                                  builder: (context, wave, _) => Container(
-                                    constraints: BoxConstraints(
-                                      maxWidth: constraints.maxWidth * 0.62,
-                                    ),
-                                    padding: const EdgeInsets.symmetric(
-                                      horizontal: 12,
-                                      vertical: 7,
-                                    ),
-                                    decoration: BoxDecoration(
-                                      color: NeonTheme.card,
-                                      border: Border.all(
-                                        color: NeonTheme.cyan,
-                                        width: 2,
+                            builder: (context, lives, _) => ValueListenableBuilder<int>(
+                              valueListenable: _game.wave,
+                              builder: (context, wave, _) => Container(
+                                constraints: BoxConstraints(
+                                  maxWidth: constraints.maxWidth * 0.62,
+                                ),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 12,
+                                  vertical: 7,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: NeonTheme.card,
+                                  border: Border.all(
+                                    color: NeonTheme.cyan,
+                                    width: 2,
+                                  ),
+                                  borderRadius: BorderRadius.circular(16),
+                                ),
+                                child: Semantics(
+                                  liveRegion: true,
+                                  label: 'sprite_arena_status_semantics'
+                                      .trParams({
+                                        'lives': '$lives',
+                                        'wave': '$wave',
+                                      }),
+                                  child: Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(
+                                        Icons.favorite,
+                                        size: 18,
+                                        color: NeonTheme.pink,
                                       ),
-                                      borderRadius: BorderRadius.circular(16),
-                                    ),
-                                    child: Semantics(
-                                      liveRegion: true,
-                                      label: 'sprite_arena_status_semantics'
-                                          .trParams({
-                                            'lives': '$lives',
-                                            'wave': '$wave',
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        '$lives',
+                                        style: TextStyle(
+                                          color: NeonTheme.ink,
+                                          fontWeight: FontWeight.w800,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 10),
+                                      Icon(
+                                        Icons.waves,
+                                        size: 18,
+                                        color: NeonTheme.cyan,
+                                      ),
+                                      const SizedBox(width: 4),
+                                      Flexible(
+                                        child: Text(
+                                          'sprite_arena_wave'.trParams({
+                                            'n': '$wave',
                                           }),
-                                      child: Row(
-                                        mainAxisSize: MainAxisSize.min,
-                                        children: [
-                                          Icon(
-                                            Icons.favorite,
-                                            size: 18,
-                                            color: NeonTheme.pink,
+                                          overflow: TextOverflow.ellipsis,
+                                          style: TextStyle(
+                                            color: NeonTheme.ink,
+                                            fontWeight: FontWeight.w800,
                                           ),
-                                          const SizedBox(width: 4),
-                                          Text(
-                                            '$lives',
-                                            style: TextStyle(
-                                              color: NeonTheme.ink,
-                                              fontWeight: FontWeight.w800,
-                                            ),
-                                          ),
-                                          const SizedBox(width: 10),
-                                          Icon(
-                                            Icons.waves,
-                                            size: 18,
-                                            color: NeonTheme.cyan,
-                                          ),
-                                          const SizedBox(width: 4),
-                                          Flexible(
+                                        ),
+                                      ),
+                                      if (wave % 5 == 0) ...[
+                                        const SizedBox(width: 8),
+                                        ValueListenableBuilder<int?>(
+                                          valueListenable: _game.bossHp,
+                                          builder: (context, hp, _) => Semantics(
+                                            liveRegion: true,
+                                            label: hp == null
+                                                ? 'sprite_arena_boss'.tr
+                                                : 'sprite_arena_boss_status'
+                                                      .trParams({
+                                                        'hp': '$hp',
+                                                        'max':
+                                                            '${ArenaMonster.bossHp}',
+                                                      }),
                                             child: Text(
-                                              'sprite_arena_wave'.trParams({
-                                                'n': '$wave',
-                                              }),
-                                              overflow: TextOverflow.ellipsis,
+                                              hp == null
+                                                  ? 'sprite_arena_boss'.tr
+                                                  : 'sprite_arena_boss_hp'
+                                                        .trParams({
+                                                          'hp': '$hp',
+                                                          'max':
+                                                              '${ArenaMonster.bossHp}',
+                                                        }),
                                               style: TextStyle(
-                                                color: NeonTheme.ink,
-                                                fontWeight: FontWeight.w800,
+                                                color: NeonTheme.red,
+                                                fontWeight: FontWeight.w900,
                                               ),
                                             ),
                                           ),
-                                        ],
-                                      ),
-                                    ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
+                              ),
+                            ),
                           ),
                         ),
                       if (ready)
