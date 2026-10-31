@@ -16,6 +16,43 @@ enum ArenaPhase { loading, playing, paused, gameOver, failed }
 
 enum ArenaObjectiveId { defeatBossWave5, surviveWith3Lives, reachScore500 }
 
+enum ArenaUpgradeKind { damageBoost, speedBoost, fireRateBoost, extraLife }
+
+class ArenaUpgrade {
+  const ArenaUpgrade({
+    required this.kind,
+    required this.titleKey,
+    required this.descriptionKey,
+  });
+
+  final ArenaUpgradeKind kind;
+  final String titleKey;
+  final String descriptionKey;
+
+  static const catalog = {
+    ArenaUpgradeKind.damageBoost: ArenaUpgrade(
+      kind: ArenaUpgradeKind.damageBoost,
+      titleKey: 'sprite_arena_upg_damage_title',
+      descriptionKey: 'sprite_arena_upg_damage_desc',
+    ),
+    ArenaUpgradeKind.speedBoost: ArenaUpgrade(
+      kind: ArenaUpgradeKind.speedBoost,
+      titleKey: 'sprite_arena_upg_speed_title',
+      descriptionKey: 'sprite_arena_upg_speed_desc',
+    ),
+    ArenaUpgradeKind.fireRateBoost: ArenaUpgrade(
+      kind: ArenaUpgradeKind.fireRateBoost,
+      titleKey: 'sprite_arena_upg_fire_rate_title',
+      descriptionKey: 'sprite_arena_upg_fire_rate_desc',
+    ),
+    ArenaUpgradeKind.extraLife: ArenaUpgrade(
+      kind: ArenaUpgradeKind.extraLife,
+      titleKey: 'sprite_arena_upg_extra_life_title',
+      descriptionKey: 'sprite_arena_upg_extra_life_desc',
+    ),
+  };
+}
+
 class ArenaObjective {
   const ArenaObjective({
     required this.id,
@@ -44,21 +81,30 @@ class ArenaObjective {
 }
 
 class SpriteArenaGame extends RoyGame {
-  SpriteArenaGame({double Function()? pickupRoll})
-    : _pickupRoll = pickupRoll ?? math.Random().nextDouble,
-      super(
-        showClassicDemo: false,
-        enablePlayableCharacter: true,
-        arenaMapFileName: 'character_arena.tmx',
-      );
+  SpriteArenaGame({
+    double Function()? pickupRoll,
+    List<ArenaUpgradeKind> Function(Set<ArenaUpgradeKind> active)? upgradeRoll,
+  }) : _pickupRoll = pickupRoll ?? math.Random().nextDouble,
+       _upgradeRoll = upgradeRoll,
+       super(
+         showClassicDemo: false,
+         enablePlayableCharacter: true,
+         arenaMapFileName: 'character_arena.tmx',
+       );
 
   final double Function() _pickupRoll;
+  final List<ArenaUpgradeKind> Function(Set<ArenaUpgradeKind> active)?
+  _upgradeRoll;
   final phase = ValueNotifier(ArenaPhase.loading);
   bool get attackEnabled => phase.value == ArenaPhase.playing;
   final score = ValueNotifier(0);
+  final maxLives = ValueNotifier(4);
   final lives = ValueNotifier(4);
   final wave = ValueNotifier(1);
   final roundOver = ValueNotifier(false);
+  final activeUpgrades = ValueNotifier<Set<ArenaUpgradeKind>>({});
+  final pendingUpgrades = ValueNotifier<List<ArenaUpgradeKind>?>(null);
+  Vector2 _lastPlayerPos = Vector2.zero();
   final targets = <ArenaTarget>[];
   final monsters = <ArenaMonster>[];
   final crates = <ArenaCrate>[];
@@ -184,8 +230,14 @@ class SpriteArenaGame extends RoyGame {
     player!.attack();
   }
 
-  double get fireInterval =>
-      rapidFireRemaining.value > 0 ? rapidFireInterval : normalFireInterval;
+  double get fireInterval {
+    final base = rapidFireRemaining.value > 0
+        ? rapidFireInterval
+        : normalFireInterval;
+    return activeUpgrades.value.contains(ArenaUpgradeKind.fireRateBoost)
+        ? base * 0.75
+        : base;
+  }
 
   void _tryDropPickup(Vector2 at) {
     if (_pickupRoll() >= pickupDropChance) return;
@@ -227,11 +279,56 @@ class SpriteArenaGame extends RoyGame {
   }
 
   void applyPickup(ArenaPickupKind kind) {
-    if (kind == ArenaPickupKind.heal && lives.value < playerMaxLives) {
+    if (kind == ArenaPickupKind.heal && lives.value < maxLives.value) {
       lives.value++;
     } else {
       rapidFireRemaining.value = rapidFireDuration;
     }
+  }
+
+  List<ArenaUpgradeKind> rollUpgrades({math.Random? random}) {
+    if (_upgradeRoll != null) {
+      return _upgradeRoll(activeUpgrades.value);
+    }
+    final rng = random ?? math.Random();
+    final unpicked = ArenaUpgradeKind.values
+        .where((k) => !activeUpgrades.value.contains(k))
+        .toList();
+    final pool = unpicked.length >= 2
+        ? unpicked
+        : ArenaUpgradeKind.values.toList();
+    pool.shuffle(rng);
+    return pool.take(2).toList();
+  }
+
+  void triggerUpgradeSelection({math.Random? random}) {
+    if (roundOver.value) return;
+    pendingUpgrades.value = rollUpgrades(random: random);
+    pauseEngine();
+  }
+
+  void applyUpgrade(ArenaUpgradeKind kind) {
+    activeUpgrades.value = {...activeUpgrades.value, kind};
+    if (kind == ArenaUpgradeKind.extraLife) {
+      maxLives.value = 5;
+      lives.value = 5;
+    }
+    pendingUpgrades.value = null;
+    fireHaptic(HapticLevel.medium);
+    AudioManager.maybe?.playSfx('audio/victory.ogg', volume: 0.6);
+  }
+
+  bool _playerBlockedAt(Vector2 center) {
+    final p = player;
+    if (p == null) return false;
+    final playerRect = Rect.fromCenter(
+      center: Offset(center.x, center.y),
+      width: p.size.x * 0.5,
+      height: p.size.y * 0.5,
+    );
+    return terrainColliders.any(
+      (collider) => terrainColliderOverlapsRect(collider, playerRect),
+    );
   }
 
   void _completeObjective(ArenaObjectiveId id) {
@@ -450,6 +547,20 @@ class SpriteArenaGame extends RoyGame {
     }
     super.update(dt);
     if (!attackEnabled || roundOver.value) return;
+    if (activeUpgrades.value.contains(ArenaUpgradeKind.speedBoost) &&
+        player != null) {
+      final moved = player!.position - _lastPlayerPos;
+      if (moved.length2 > 0.0001) {
+        final extra = moved * 0.25;
+        final cx = Vector2(player!.position.x + extra.x, player!.position.y);
+        if (!_playerBlockedAt(cx)) player!.position.x = cx.x;
+        final cy = Vector2(player!.position.x, player!.position.y + extra.y);
+        if (!_playerBlockedAt(cy)) player!.position.y = cy.y;
+      }
+    }
+    if (player != null) {
+      _lastPlayerPos.setFrom(player!.position);
+    }
     if (pickup != null &&
         player != null &&
         pickup!.hitRect.overlaps(_playerHitRect)) {
@@ -466,6 +577,7 @@ class SpriteArenaGame extends RoyGame {
           _completeObjective(ArenaObjectiveId.surviveWith3Lives);
         }
         onBossWaveCleared?.call();
+        triggerUpgradeSelection();
       }
       bossHp.value = null;
       wave.value++;
@@ -510,7 +622,11 @@ class SpriteArenaGame extends RoyGame {
     player!.position.setValues(480, 480);
     player!.setMoveInput(GameJoystickDirection.idle, Offset.zero);
     score.value = 0;
-    lives.value = playerMaxLives;
+    maxLives.value = 4;
+    lives.value = 4;
+    activeUpgrades.value = {};
+    pendingUpgrades.value = null;
+    _lastPlayerPos = Vector2.zero();
     wave.value = 1;
     roundOver.value = false;
     objectives.value = _initialObjectives;
@@ -569,9 +685,12 @@ class SpriteArenaGame extends RoyGame {
     final player = this.player!;
     // Sprite barrel tip is (50, 31), relative to its (25.5, 21.5) pivot.
     final muzzle = Vector2(24.5, 9.5)..rotate(player.angle);
+    final bulletDamage =
+        activeUpgrades.value.contains(ArenaUpgradeKind.damageBoost) ? 2 : 1;
     final bullet = ArenaBullet(
       position: player.position + muzzle,
       direction: Vector2(math.cos(player.angle), math.sin(player.angle)),
+      damage: bulletDamage,
       terrain: terrainColliders,
       hittables: () => [...targets, ...monsters, ...crates],
       onImpact: (at) => spawnSparkleBurst(at, count: 5),
@@ -587,6 +706,7 @@ class ArenaBullet extends PositionComponent {
     required Vector2 position,
     required this.direction,
     required this.terrain,
+    this.damage = 1,
     this.hittables,
     this.onImpact,
     this.onRemoved,
@@ -596,6 +716,7 @@ class ArenaBullet extends PositionComponent {
 
   final Vector2 direction;
   final List<TerrainCollider> terrain;
+  final int damage;
   final Iterable<ArenaHittable> Function()? hittables;
   final void Function(Vector2 at)? onImpact;
   final void Function(ArenaBullet bullet)? onRemoved;
@@ -629,7 +750,7 @@ class ArenaBullet extends PositionComponent {
         }
       }
       if (victim != null) {
-        victim.takeHit();
+        victim.takeHit(damage: damage);
         onImpact?.call(position.clone());
         removeFromParent();
         return;

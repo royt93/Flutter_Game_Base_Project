@@ -732,6 +732,22 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(game.paused, isFalse);
 
+      arena.triggerUpgradeSelection();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('sprite_arena_upgrade_modal_title'.tr), findsOneWidget);
+      final upgradeFirstCard = find.text(
+        ArenaUpgrade.catalog[arena.pendingUpgrades.value!.first]!.titleKey.tr,
+      );
+      await tester.tap(upgradeFirstCard);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(arena.pendingUpgrades.value, isNull);
+      expect(arena.activeUpgrades.value, isNotEmpty);
+      expect(
+        find.bySemanticsLabel('sprite_arena_upgrades_active'.tr),
+        findsOneWidget,
+      );
+      arena.resumeEngine();
+
       await tester.pump(const Duration(seconds: 1));
       arena.lives.value = 1;
       final gameOverMonster = arena.monsters.firstWhere((m) => m.alive);

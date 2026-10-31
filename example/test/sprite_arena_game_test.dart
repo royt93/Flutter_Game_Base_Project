@@ -39,6 +39,10 @@ Future<void> advanceToWave(SpriteArenaGame game, int targetWave) async {
       }
     }
     game.update(SpriteArenaGame.spawnInterval);
+    if (game.pendingUpgrades.value != null) {
+      game.applyUpgrade(game.pendingUpgrades.value!.first);
+      game.resumeEngine();
+    }
   }
 }
 
@@ -639,6 +643,10 @@ void main() {
         monster.takeHit();
       }
       game.update(SpriteArenaGame.spawnInterval);
+      if (game.pendingUpgrades.value != null) {
+        game.applyUpgrade(game.pendingUpgrades.value!.first);
+        game.resumeEngine();
+      }
       final active = game.monsters.where((m) => m.alive).toList();
       expect(
         active.length,
@@ -1059,6 +1067,138 @@ void main() {
       expect(obj.progress, 0);
       expect(obj.completed, isFalse);
     }
+  });
+
+  testWidgets('rollUpgrades returns 2 distinct kinds from catalog', (
+    tester,
+  ) async {
+    final game = await loadArena(tester);
+    final rolled = game.rollUpgrades();
+    expect(rolled, hasLength(2));
+    expect(rolled[0], isNot(equals(rolled[1])));
+  });
+
+  testWidgets(
+    'applyUpgrade damageBoost causes bullet to deal 2 damage and one-shot normal monster',
+    (tester) async {
+      final game = await loadArena(tester);
+      final monster = game.monsters.firstWhere((m) => m.alive);
+      expect(monster.hp, 2);
+
+      // Trước khi upgrade: 1 hit trừ 1 HP
+      monster.takeHit();
+      expect(monster.hp, 1);
+      monster.reset();
+      expect(monster.hp, 2);
+
+      // Kích hoạt damageBoost
+      game.applyUpgrade(ArenaUpgradeKind.damageBoost);
+      expect(
+        game.activeUpgrades.value.contains(ArenaUpgradeKind.damageBoost),
+        isTrue,
+      );
+
+      // Đặt player bắn trúng monster
+      final player = game.player!;
+      player.position.setValues(monster.position.x - 60, monster.position.y);
+      player.angle = 0;
+      game.attack();
+      game.update(0.15); // Bullet ray-march trúng monster
+
+      expect(monster.alive, isFalse);
+    },
+  );
+
+  testWidgets(
+    'applyUpgrade fireRateBoost reduces normal and rapid fire intervals by 25%',
+    (tester) async {
+      final game = await loadArena(tester);
+      expect(
+        game.fireInterval,
+        closeTo(SpriteArenaGame.normalFireInterval, 0.001),
+      );
+
+      game.applyUpgrade(ArenaUpgradeKind.fireRateBoost);
+      expect(
+        game.fireInterval,
+        closeTo(SpriteArenaGame.normalFireInterval * 0.75, 0.001),
+      );
+
+      // Khi có rapid fire
+      game.rapidFireRemaining.value = 5.0;
+      expect(
+        game.fireInterval,
+        closeTo(SpriteArenaGame.rapidFireInterval * 0.75, 0.001),
+      );
+    },
+  );
+
+  testWidgets(
+    'applyUpgrade extraLife increases maxLives to 5 and heals to full',
+    (tester) async {
+      final game = await loadArena(tester);
+      game.lives.value = 2;
+
+      game.applyUpgrade(ArenaUpgradeKind.extraLife);
+      expect(game.maxLives.value, 5);
+      expect(game.lives.value, 5);
+
+      // Bị mất máu rồi nhặt heal có thể hồi lên 5
+      game.lives.value = 4;
+      game.applyPickup(ArenaPickupKind.heal);
+      expect(game.lives.value, 5);
+    },
+  );
+
+  testWidgets('clearing wave 5 triggers upgrade selection and pauses game', (
+    tester,
+  ) async {
+    final game = await loadArenaInto(
+      tester,
+      SpriteArenaGame(pickupRoll: () => 0.99),
+    );
+    await advanceToWave(game, 5);
+    game.update(SpriteArenaGame.spawnInterval);
+    final boss = game.monsters.singleWhere((m) => m.alive);
+    for (var hit = 0; hit < ArenaMonster.bossHp; hit++) {
+      boss.takeHit();
+    }
+
+    // Tick để wave 5 clear
+    expect(game.pendingUpgrades.value, isNull);
+    game.update(SpriteArenaGame.spawnInterval);
+
+    expect(game.pendingUpgrades.value, isNotNull);
+    expect(game.pendingUpgrades.value, hasLength(2));
+    expect(game.paused, isTrue);
+
+    // Chọn 1 upgrade -> pendingUpgrades xóa sạch
+    final picked = game.pendingUpgrades.value!.first;
+    game.applyUpgrade(picked);
+    expect(game.pendingUpgrades.value, isNull);
+    expect(game.activeUpgrades.value, contains(picked));
+  });
+
+  testWidgets('restart resets activeUpgrades, pendingUpgrades and maxLives', (
+    tester,
+  ) async {
+    final game = await loadArena(tester);
+    game.applyUpgrade(ArenaUpgradeKind.extraLife);
+    game.applyUpgrade(ArenaUpgradeKind.damageBoost);
+    game.pendingUpgrades.value = [
+      ArenaUpgradeKind.speedBoost,
+      ArenaUpgradeKind.fireRateBoost,
+    ];
+
+    expect(game.activeUpgrades.value, hasLength(2));
+    expect(game.maxLives.value, 5);
+    expect(game.pendingUpgrades.value, isNotNull);
+
+    game.restart();
+    expect(game.activeUpgrades.value, isEmpty);
+    expect(game.maxLives.value, 4);
+    expect(game.lives.value, 4);
+    expect(game.pendingUpgrades.value, isNull);
   });
 
   test('arena includes visible props aligned with collision objects', () {

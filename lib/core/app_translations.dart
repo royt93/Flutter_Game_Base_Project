@@ -90,6 +90,21 @@ class AppTranslations extends Translations {
       'sprite_arena_objectives_summary':
           'Objectives: @completed/@total completed',
       'sprite_arena_obj_bonus': '+@pts pts',
+      'sprite_arena_upgrade_modal_title': 'Choose an Upgrade',
+      'sprite_arena_upgrade_modal_subtitle':
+          'Wave 5 Boss defeated! Pick 1 bonus for this run:',
+      'sprite_arena_upg_damage_title': 'Damage +1',
+      'sprite_arena_upg_damage_desc':
+          'Bullets deal 2 damage, one-shotting normal monsters',
+      'sprite_arena_upg_speed_title': 'Move Speed +25%',
+      'sprite_arena_upg_speed_desc': 'Move 25% faster to evade enemies easily',
+      'sprite_arena_upg_fire_rate_title': 'Fire Rate +25%',
+      'sprite_arena_upg_fire_rate_desc':
+          'Shoot 25% faster in normal and rapid fire',
+      'sprite_arena_upg_extra_life_title': '+1 Max Life & Full Heal',
+      'sprite_arena_upg_extra_life_desc':
+          'Increase max lives to 5 and restore all lives',
+      'sprite_arena_upgrades_active': 'Active Buffs',
       'sprite_arena_pickup_heal': 'Heal',
       'sprite_arena_pickup_rapid': 'Rapid Fire',
       'sprite_arena_rapid_remaining': 'Rapid @seconds s',
@@ -250,6 +265,22 @@ class AppTranslations extends Translations {
       'sprite_arena_objectives_summary':
           'Mục tiêu: hoàn thành @completed/@total',
       'sprite_arena_obj_bonus': '+@pts điểm',
+      'sprite_arena_upgrade_modal_title': 'Chọn nâng cấp',
+      'sprite_arena_upgrade_modal_subtitle':
+          'Đã hạ Trùm Đợt 5! Chọn 1 bùa lợi cho trận này:',
+      'sprite_arena_upg_damage_title': 'Sát thương +1',
+      'sprite_arena_upg_damage_desc':
+          'Đạn gây 2 sát thương, hạ quái thường trong 1 hit',
+      'sprite_arena_upg_speed_title': 'Tốc độ chạy +25%',
+      'sprite_arena_upg_speed_desc':
+          'Di chuyển nhanh hơn 25% để né quái dễ dàng',
+      'sprite_arena_upg_fire_rate_title': 'Tốc độ bắn +25%',
+      'sprite_arena_upg_fire_rate_desc':
+          'Bắn nhanh hơn 25% ở cả chế độ thường và nhanh',
+      'sprite_arena_upg_extra_life_title': '+1 Mạng tối đa & Hồi đầy',
+      'sprite_arena_upg_extra_life_desc':
+          'Tăng số mạng tối đa lên 5 và hồi đầy mạng',
+      'sprite_arena_upgrades_active': 'Bùa lợi đang có',
       'sprite_arena_pickup_heal': 'Hồi mạng',
       'sprite_arena_pickup_rapid': 'Bắn nhanh',
       'sprite_arena_rapid_remaining': 'Nhanh @seconds giây',

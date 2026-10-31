@@ -11,7 +11,7 @@ import 'package:roy_casual_kit/presentation/game/tiled_terrain_collision.dart';
 abstract interface class ArenaHittable {
   Rect get hitRect;
   bool get alive;
-  void takeHit();
+  void takeHit({int damage = 1});
 }
 
 enum ArenaPickupKind { heal, rapidFire }
@@ -125,9 +125,9 @@ class ArenaTarget extends PositionComponent implements ArenaHittable {
   }
 
   @override
-  void takeHit() {
+  void takeHit({int damage = 1}) {
     if (!alive) return;
-    hp--;
+    hp = math.max(0, hp - damage);
     _flash = _flashSeconds;
     onHit?.call(this);
     if (!alive) {
@@ -288,9 +288,9 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
   }
 
   @override
-  void takeHit() {
+  void takeHit({int damage = 1}) {
     if (!alive) return;
-    hp--;
+    hp = math.max(0, hp - damage);
     _flash = 0.08;
     onHit?.call(this);
     if (!alive) {
@@ -458,7 +458,7 @@ class ArenaCrate extends PositionComponent implements ArenaHittable {
   );
 
   @override
-  void takeHit() {
+  void takeHit({int damage = 1}) {
     if (!_alive) return;
     _alive = false;
     onBroken?.call(this);

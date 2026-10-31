@@ -39,7 +39,12 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
   }
 
   void _pointerDown(PointerDownEvent event) {
-    if (!_game.attackEnabled || _showingHelp || _showingObjectives) return;
+    if (!_game.attackEnabled ||
+        _showingHelp ||
+        _showingObjectives ||
+        _game.pendingUpgrades.value != null) {
+      return;
+    }
     if (_attackPointer != null && _game.isFiring) return;
     _attackPointer = event.pointer;
     if (!_game.isFiring) {
@@ -69,7 +74,12 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
   }
 
   void _openObjectives() {
-    if (_showingObjectives || _showingHelp || !_game.isLoaded) return;
+    if (_showingObjectives ||
+        _showingHelp ||
+        !_game.isLoaded ||
+        _game.pendingUpgrades.value != null) {
+      return;
+    }
     _stopHeldFire();
     _resumeAfterObjectives = _game.phase.value == ArenaPhase.playing;
     if (_resumeAfterObjectives) _game.pauseEngine();
@@ -86,7 +96,12 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
   }
 
   void _openHelp() {
-    if (_showingHelp || _showingObjectives || !_game.isLoaded) return;
+    if (_showingHelp ||
+        _showingObjectives ||
+        !_game.isLoaded ||
+        _game.pendingUpgrades.value != null) {
+      return;
+    }
     _stopHeldFire();
     _resumeAfterHelp = _game.phase.value == ArenaPhase.playing;
     if (_resumeAfterHelp) _game.pauseEngine();
@@ -103,6 +118,7 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
   }
 
   void _back() {
+    if (_game.pendingUpgrades.value != null) return;
     if (_showingObjectives) {
       _closeObjectives();
     } else if (_showingHelp) {
@@ -113,7 +129,12 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
   }
 
   void _attack() {
-    if (!_game.attackEnabled || _showingHelp || _showingObjectives) return;
+    if (!_game.attackEnabled ||
+        _showingHelp ||
+        _showingObjectives ||
+        _game.pendingUpgrades.value != null) {
+      return;
+    }
     _attackFeedback();
     _game.fireOnce();
   }
@@ -126,386 +147,558 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
   }
 
   @override
-  Widget build(BuildContext context) => PopScope(
-    canPop: !_showingHelp && !_showingObjectives,
-    onPopInvokedWithResult: (didPop, result) {
-      if (!didPop) {
-        if (_showingObjectives) {
-          _closeObjectives();
-        } else if (_showingHelp) {
-          _closeHelp();
+  Widget build(
+    BuildContext context,
+  ) => ValueListenableBuilder<List<ArenaUpgradeKind>?>(
+    valueListenable: _game.pendingUpgrades,
+    builder: (context, pending, _) => PopScope(
+      canPop: !_showingHelp && !_showingObjectives && pending == null,
+      onPopInvokedWithResult: (didPop, result) {
+        if (!didPop) {
+          if (pending != null) return;
+          if (_showingObjectives) {
+            _closeObjectives();
+          } else if (_showingHelp) {
+            _closeHelp();
+          }
         }
-      }
-    },
-    child: Scaffold(
-      body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            final padding = constraints.maxWidth < 340 ? 8.0 : 16.0;
-            final attackWidth = math.min(110.0, constraints.maxWidth * 0.4);
-            final joystickSize = math.min(
-              130.0,
-              math.min(
-                constraints.maxHeight * 0.4,
-                constraints.maxWidth - padding * 2 - attackWidth - 16,
-              ),
-            );
-            return ValueListenableBuilder<ArenaPhase>(
-              valueListenable: _game.phase,
-              builder: (context, phase, _) {
-                final ready =
-                    phase == ArenaPhase.playing ||
-                    phase == ArenaPhase.paused ||
-                    phase == ArenaPhase.gameOver;
-                final controllable =
-                    phase == ArenaPhase.playing || phase == ArenaPhase.paused;
-                return SizedBox.expand(
-                  child: Stack(
-                    children: [
-                      Positioned.fill(
-                        child: RepaintBoundary(
-                          child: GameWidget<RoyGame>(
-                            game: _game,
-                            loadingBuilder: (_) => _status(loading: true),
-                            errorBuilder: (_, error) => _status(loading: false),
+      },
+      child: Scaffold(
+        body: SafeArea(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final padding = constraints.maxWidth < 340 ? 8.0 : 16.0;
+              final attackWidth = math.min(110.0, constraints.maxWidth * 0.4);
+              final joystickSize = math.min(
+                130.0,
+                math.min(
+                  constraints.maxHeight * 0.4,
+                  constraints.maxWidth - padding * 2 - attackWidth - 16,
+                ),
+              );
+              return ValueListenableBuilder<ArenaPhase>(
+                valueListenable: _game.phase,
+                builder: (context, phase, _) {
+                  final ready =
+                      phase == ArenaPhase.playing ||
+                      phase == ArenaPhase.paused ||
+                      phase == ArenaPhase.gameOver;
+                  final controllable =
+                      phase == ArenaPhase.playing || phase == ArenaPhase.paused;
+                  return SizedBox.expand(
+                    child: Stack(
+                      children: [
+                        Positioned.fill(
+                          child: RepaintBoundary(
+                            child: GameWidget<RoyGame>(
+                              game: _game,
+                              loadingBuilder: (_) => _status(loading: true),
+                              errorBuilder: (_, error) =>
+                                  _status(loading: false),
+                            ),
                           ),
                         ),
-                      ),
-                      Positioned(
-                        top: 0,
-                        left: 0,
-                        right: 0,
-                        child: RepaintBoundary(
-                          child: NeonAppBar(
-                            title: 'sprite_arena_title'.tr,
-                            onBack: _back,
-                            actions: [
-                              if (controllable) ...[
-                                IconButton(
-                                  constraints: const BoxConstraints(
-                                    minWidth: 48,
-                                    minHeight: 48,
-                                  ),
-                                  tooltip: 'sprite_arena_objectives_tooltip'.tr,
-                                  onPressed: _openObjectives,
-                                  icon: Icon(
-                                    Icons.emoji_events_outlined,
-                                    color: NeonTheme.gold,
-                                  ),
-                                ),
-                                IconButton(
-                                  constraints: const BoxConstraints(
-                                    minWidth: 48,
-                                    minHeight: 48,
-                                  ),
-                                  tooltip: 'sprite_arena_controls_tooltip'.tr,
-                                  onPressed: _openHelp,
-                                  icon: Icon(
-                                    Icons.info_outline,
-                                    color: NeonTheme.cyan,
-                                  ),
-                                ),
-                                SizedBox.square(
-                                  dimension: 48,
-                                  child: FloatingActionButton(
-                                    heroTag: 'arena_pause',
-                                    tooltip: phase == ArenaPhase.paused
-                                        ? 'pause_resume'.tr
-                                        : 'game_demo_pause_tooltip'.tr,
-                                    onPressed: _togglePause,
-                                    backgroundColor: NeonTheme.cyan,
-                                    child: Icon(
-                                      phase == ArenaPhase.paused
-                                          ? Icons.play_arrow
-                                          : Icons.pause,
-                                      color: Colors.white,
+                        Positioned(
+                          top: 0,
+                          left: 0,
+                          right: 0,
+                          child: RepaintBoundary(
+                            child: NeonAppBar(
+                              title: 'sprite_arena_title'.tr,
+                              onBack: _back,
+                              actions: [
+                                if (controllable) ...[
+                                  IconButton(
+                                    constraints: const BoxConstraints(
+                                      minWidth: 48,
+                                      minHeight: 48,
+                                    ),
+                                    tooltip:
+                                        'sprite_arena_objectives_tooltip'.tr,
+                                    onPressed: _openObjectives,
+                                    icon: Icon(
+                                      Icons.emoji_events_outlined,
+                                      color: NeonTheme.gold,
                                     ),
                                   ),
-                                ),
+                                  IconButton(
+                                    constraints: const BoxConstraints(
+                                      minWidth: 48,
+                                      minHeight: 48,
+                                    ),
+                                    tooltip: 'sprite_arena_controls_tooltip'.tr,
+                                    onPressed: _openHelp,
+                                    icon: Icon(
+                                      Icons.info_outline,
+                                      color: NeonTheme.cyan,
+                                    ),
+                                  ),
+                                  SizedBox.square(
+                                    dimension: 48,
+                                    child: FloatingActionButton(
+                                      heroTag: 'arena_pause',
+                                      tooltip: phase == ArenaPhase.paused
+                                          ? 'pause_resume'.tr
+                                          : 'game_demo_pause_tooltip'.tr,
+                                      onPressed: _togglePause,
+                                      backgroundColor: NeonTheme.cyan,
+                                      child: Icon(
+                                        phase == ArenaPhase.paused
+                                            ? Icons.play_arrow
+                                            : Icons.pause,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ),
-                      ),
-                      if (ready)
-                        Positioned(
-                          top: 76,
-                          left: padding,
-                          child: ValueListenableBuilder<int>(
-                            valueListenable: _game.score,
-                            builder: (context, score, _) => Semantics(
-                              liveRegion: true,
-                              child: Container(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 6,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: NeonTheme.card,
-                                  borderRadius: BorderRadius.circular(16),
-                                  border: Border.all(
-                                    color: NeonTheme.cyan,
-                                    width: 2,
+                        if (ready)
+                          Positioned(
+                            top: 76,
+                            left: padding,
+                            child: ValueListenableBuilder<int>(
+                              valueListenable: _game.score,
+                              builder: (context, score, _) => Semantics(
+                                liveRegion: true,
+                                child: Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 6,
                                   ),
-                                ),
-                                child: Text(
-                                  'sprite_arena_score'.trParams({
-                                    'n': '$score',
-                                  }),
-                                  style: TextStyle(
-                                    color: NeonTheme.ink,
-                                    fontWeight: FontWeight.w800,
+                                  decoration: BoxDecoration(
+                                    color: NeonTheme.card,
+                                    borderRadius: BorderRadius.circular(16),
+                                    border: Border.all(
+                                      color: NeonTheme.cyan,
+                                      width: 2,
+                                    ),
+                                  ),
+                                  child: Text(
+                                    'sprite_arena_score'.trParams({
+                                      'n': '$score',
+                                    }),
+                                    style: TextStyle(
+                                      color: NeonTheme.ink,
+                                      fontWeight: FontWeight.w800,
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      if (ready)
-                        Positioned(
-                          top: 76,
-                          right: padding,
-                          child: ValueListenableBuilder<int>(
-                            valueListenable: _game.lives,
-                            builder: (context, lives, _) => ValueListenableBuilder<int>(
-                              valueListenable: _game.wave,
-                              builder: (context, wave, _) => Container(
-                                constraints: BoxConstraints(
-                                  maxWidth: constraints.maxWidth * 0.62,
-                                ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 12,
-                                  vertical: 7,
-                                ),
-                                decoration: BoxDecoration(
-                                  color: NeonTheme.card,
-                                  border: Border.all(
-                                    color: NeonTheme.cyan,
-                                    width: 2,
+                        if (ready)
+                          Positioned(
+                            top: 76,
+                            right: padding,
+                            child: ValueListenableBuilder<int>(
+                              valueListenable: _game.lives,
+                              builder: (context, lives, _) => ValueListenableBuilder<int>(
+                                valueListenable: _game.wave,
+                                builder: (context, wave, _) => Container(
+                                  constraints: BoxConstraints(
+                                    maxWidth: constraints.maxWidth * 0.62,
                                   ),
-                                  borderRadius: BorderRadius.circular(16),
-                                ),
-                                child: Semantics(
-                                  liveRegion: true,
-                                  label: 'sprite_arena_status_semantics'
-                                      .trParams({
-                                        'lives': '$lives',
-                                        'wave': '$wave',
-                                      }),
-                                  child: Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(
-                                        Icons.favorite,
-                                        size: 18,
-                                        color: NeonTheme.pink,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        '$lives',
-                                        style: TextStyle(
-                                          color: NeonTheme.ink,
-                                          fontWeight: FontWeight.w800,
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 12,
+                                    vertical: 7,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: NeonTheme.card,
+                                    border: Border.all(
+                                      color: NeonTheme.cyan,
+                                      width: 2,
+                                    ),
+                                    borderRadius: BorderRadius.circular(16),
+                                  ),
+                                  child: Semantics(
+                                    liveRegion: true,
+                                    label: 'sprite_arena_status_semantics'
+                                        .trParams({
+                                          'lives': '$lives',
+                                          'wave': '$wave',
+                                        }),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(
+                                          Icons.favorite,
+                                          size: 18,
+                                          color: NeonTheme.pink,
                                         ),
-                                      ),
-                                      const SizedBox(width: 10),
-                                      Icon(
-                                        Icons.waves,
-                                        size: 18,
-                                        color: NeonTheme.cyan,
-                                      ),
-                                      const SizedBox(width: 4),
-                                      Flexible(
-                                        child: Text(
-                                          'sprite_arena_wave'.trParams({
-                                            'n': '$wave',
-                                          }),
-                                          overflow: TextOverflow.ellipsis,
+                                        const SizedBox(width: 4),
+                                        Text(
+                                          '$lives',
                                           style: TextStyle(
                                             color: NeonTheme.ink,
                                             fontWeight: FontWeight.w800,
                                           ),
                                         ),
-                                      ),
-                                      if (wave % 5 == 0) ...[
-                                        const SizedBox(width: 8),
-                                        ValueListenableBuilder<int?>(
-                                          valueListenable: _game.bossHp,
-                                          builder: (context, hp, _) => Semantics(
-                                            liveRegion: true,
-                                            label: hp == null
-                                                ? 'sprite_arena_boss'.tr
-                                                : 'sprite_arena_boss_status'
-                                                      .trParams({
-                                                        'hp': '$hp',
-                                                        'max':
-                                                            '${ArenaMonster.bossHp}',
-                                                      }),
-                                            child: Text(
-                                              hp == null
+                                        const SizedBox(width: 10),
+                                        Icon(
+                                          Icons.waves,
+                                          size: 18,
+                                          color: NeonTheme.cyan,
+                                        ),
+                                        const SizedBox(width: 4),
+                                        Flexible(
+                                          child: Text(
+                                            'sprite_arena_wave'.trParams({
+                                              'n': '$wave',
+                                            }),
+                                            overflow: TextOverflow.ellipsis,
+                                            style: TextStyle(
+                                              color: NeonTheme.ink,
+                                              fontWeight: FontWeight.w800,
+                                            ),
+                                          ),
+                                        ),
+                                        if (wave % 5 == 0) ...[
+                                          const SizedBox(width: 8),
+                                          ValueListenableBuilder<int?>(
+                                            valueListenable: _game.bossHp,
+                                            builder: (context, hp, _) => Semantics(
+                                              liveRegion: true,
+                                              label: hp == null
                                                   ? 'sprite_arena_boss'.tr
-                                                  : 'sprite_arena_boss_hp'
+                                                  : 'sprite_arena_boss_status'
                                                         .trParams({
                                                           'hp': '$hp',
                                                           'max':
                                                               '${ArenaMonster.bossHp}',
                                                         }),
-                                              style: TextStyle(
-                                                color: NeonTheme.red,
-                                                fontWeight: FontWeight.w900,
+                                              child: Text(
+                                                hp == null
+                                                    ? 'sprite_arena_boss'.tr
+                                                    : 'sprite_arena_boss_hp'
+                                                          .trParams({
+                                                            'hp': '$hp',
+                                                            'max':
+                                                                '${ArenaMonster.bossHp}',
+                                                          }),
+                                                style: TextStyle(
+                                                  color: NeonTheme.red,
+                                                  fontWeight: FontWeight.w900,
+                                                ),
                                               ),
                                             ),
                                           ),
-                                        ),
+                                        ],
                                       ],
-                                    ],
+                                    ),
                                   ),
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                      if (ready)
-                        Positioned(
-                          top: 128,
-                          left: padding,
-                          child: ValueListenableBuilder<double>(
-                            valueListenable: _game.pickupRemaining,
-                            builder: (context, remaining, _) {
-                              final kind = _game.pickup?.kind;
-                              if (kind == null || remaining <= 0) {
-                                return const SizedBox.shrink();
-                              }
-                              final text = kind == ArenaPickupKind.heal
-                                  ? 'sprite_arena_pickup_heal'.tr
-                                  : 'sprite_arena_pickup_rapid'.tr;
-                              return Semantics(
-                                liveRegion: true,
-                                label: text,
-                                child: _statusChip(
-                                  kind == ArenaPickupKind.heal
-                                      ? Icons.favorite
-                                      : Icons.bolt,
-                                  text,
-                                  kind == ArenaPickupKind.heal
-                                      ? NeonTheme.pink
-                                      : NeonTheme.gold,
-                                ),
-                              );
-                            },
+                        if (ready)
+                          Positioned(
+                            top: 128,
+                            left: padding,
+                            child: ValueListenableBuilder<double>(
+                              valueListenable: _game.pickupRemaining,
+                              builder: (context, remaining, _) {
+                                final kind = _game.pickup?.kind;
+                                if (kind == null || remaining <= 0) {
+                                  return const SizedBox.shrink();
+                                }
+                                final text = kind == ArenaPickupKind.heal
+                                    ? 'sprite_arena_pickup_heal'.tr
+                                    : 'sprite_arena_pickup_rapid'.tr;
+                                return Semantics(
+                                  liveRegion: true,
+                                  label: text,
+                                  child: _statusChip(
+                                    kind == ArenaPickupKind.heal
+                                        ? Icons.favorite
+                                        : Icons.bolt,
+                                    text,
+                                    kind == ArenaPickupKind.heal
+                                        ? NeonTheme.pink
+                                        : NeonTheme.gold,
+                                  ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                      if (ready)
-                        Positioned(
-                          top: 128,
-                          right: padding,
-                          child: ValueListenableBuilder<double>(
-                            valueListenable: _game.rapidFireRemaining,
-                            builder: (context, remaining, _) => remaining <= 0
-                                ? const SizedBox.shrink()
-                                : Semantics(
-                                    liveRegion: true,
-                                    label: 'sprite_arena_rapid_remaining'
-                                        .trParams({
-                                          'seconds': remaining
-                                              .ceil()
-                                              .toString(),
-                                        }),
-                                    child: _statusChip(
-                                      Icons.bolt,
-                                      'sprite_arena_rapid_remaining'.trParams({
-                                        'seconds': remaining.ceil().toString(),
-                                      }),
-                                      NeonTheme.gold,
+                        if (ready)
+                          Positioned(
+                            top: 128,
+                            right: padding,
+                            child: ValueListenableBuilder<double>(
+                              valueListenable: _game.rapidFireRemaining,
+                              builder: (context, remaining, _) => remaining <= 0
+                                  ? const SizedBox.shrink()
+                                  : Semantics(
+                                      liveRegion: true,
+                                      label: 'sprite_arena_rapid_remaining'
+                                          .trParams({
+                                            'seconds': remaining
+                                                .ceil()
+                                                .toString(),
+                                          }),
+                                      child: _statusChip(
+                                        Icons.bolt,
+                                        'sprite_arena_rapid_remaining'.trParams(
+                                          {
+                                            'seconds': remaining
+                                                .ceil()
+                                                .toString(),
+                                          },
+                                        ),
+                                        NeonTheme.gold,
+                                      ),
+                                    ),
+                            ),
+                          ),
+                        if (ready)
+                          Positioned(
+                            top: 172,
+                            right: padding,
+                            child: ValueListenableBuilder<Set<ArenaUpgradeKind>>(
+                              valueListenable: _game.activeUpgrades,
+                              builder: (context, upgrades, _) {
+                                if (upgrades.isEmpty) {
+                                  return const SizedBox.shrink();
+                                }
+                                return Semantics(
+                                  label: 'sprite_arena_upgrades_active'.tr,
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 8,
+                                      vertical: 4,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      color: NeonTheme.card.withValues(
+                                        alpha: 0.92,
+                                      ),
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: NeonTheme.gold,
+                                        width: 1.5,
+                                      ),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        for (final kind in upgrades)
+                                          Padding(
+                                            padding: const EdgeInsets.symmetric(
+                                              horizontal: 3,
+                                            ),
+                                            child: Tooltip(
+                                              message: ArenaUpgrade
+                                                  .catalog[kind]!
+                                                  .titleKey
+                                                  .tr,
+                                              child: Icon(
+                                                switch (kind) {
+                                                  ArenaUpgradeKind
+                                                      .damageBoost =>
+                                                    Icons.local_fire_department,
+                                                  ArenaUpgradeKind.speedBoost =>
+                                                    Icons.directions_run,
+                                                  ArenaUpgradeKind
+                                                      .fireRateBoost =>
+                                                    Icons.bolt,
+                                                  ArenaUpgradeKind.extraLife =>
+                                                    Icons.favorite,
+                                                },
+                                                size: 16,
+                                                color: switch (kind) {
+                                                  ArenaUpgradeKind
+                                                      .damageBoost =>
+                                                    NeonTheme.red,
+                                                  ArenaUpgradeKind.speedBoost =>
+                                                    NeonTheme.cyan,
+                                                  ArenaUpgradeKind
+                                                      .fireRateBoost =>
+                                                    NeonTheme.gold,
+                                                  ArenaUpgradeKind.extraLife =>
+                                                    NeonTheme.pink,
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                      ],
                                     ),
                                   ),
+                                );
+                              },
+                            ),
                           ),
-                        ),
-                      if (controllable)
-                        Positioned(
-                          left: padding,
-                          right: padding,
-                          bottom: 16,
-                          child: RepaintBoundary(
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                AbsorbPointer(
-                                  absorbing:
-                                      phase != ArenaPhase.playing ||
-                                      _showingHelp,
-                                  child: GameJoystick(
-                                    semanticLabel:
-                                        'game_demo_joystick_label'.tr,
-                                    size: joystickSize,
-                                    knobSize: math.min(48, joystickSize * 0.42),
-                                    onDirectionChanged: (direction, vector) {
-                                      if (_game.attackEnabled &&
-                                          !_showingHelp) {
-                                        _game.player?.setMoveInput(
-                                          direction,
-                                          vector,
-                                        );
-                                      }
-                                    },
+                        if (controllable)
+                          Positioned(
+                            left: padding,
+                            right: padding,
+                            bottom: 16,
+                            child: RepaintBoundary(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.end,
+                                children: [
+                                  AbsorbPointer(
+                                    absorbing:
+                                        phase != ArenaPhase.playing ||
+                                        _showingHelp ||
+                                        _showingObjectives ||
+                                        pending != null,
+                                    child: GameJoystick(
+                                      semanticLabel:
+                                          'game_demo_joystick_label'.tr,
+                                      size: joystickSize,
+                                      knobSize: math.min(
+                                        48,
+                                        joystickSize * 0.42,
+                                      ),
+                                      onDirectionChanged: (direction, vector) {
+                                        if (_game.attackEnabled &&
+                                            !_showingHelp) {
+                                          _game.player?.setMoveInput(
+                                            direction,
+                                            vector,
+                                          );
+                                        }
+                                      },
+                                    ),
                                   ),
-                                ),
-                                const Spacer(),
-                                SizedBox(
-                                  width: attackWidth,
-                                  child: Semantics(
-                                    button: true,
-                                    enabled:
-                                        _game.attackEnabled && !_showingHelp,
-                                    label: 'sprite_arena_attack_semantics'.tr,
-                                    onTap: _game.attackEnabled && !_showingHelp
-                                        ? _attack
-                                        : null,
-                                    excludeSemantics: true,
-                                    child: Listener(
-                                      behavior: HitTestBehavior.opaque,
-                                      onPointerDown: _pointerDown,
-                                      onPointerUp: _pointerUp,
-                                      onPointerCancel: _pointerUp,
-                                      child: Container(
-                                        constraints: const BoxConstraints(
-                                          minHeight: 48,
-                                        ),
-                                        alignment: Alignment.center,
-                                        decoration: BoxDecoration(
-                                          color: _game.attackEnabled
-                                              ? NeonTheme.orange
-                                              : NeonTheme.muted,
-                                          borderRadius: BorderRadius.circular(
-                                            28,
+                                  const Spacer(),
+                                  SizedBox(
+                                    width: attackWidth,
+                                    child: Semantics(
+                                      button: true,
+                                      enabled:
+                                          _game.attackEnabled && !_showingHelp,
+                                      label: 'sprite_arena_attack_semantics'.tr,
+                                      onTap:
+                                          _game.attackEnabled && !_showingHelp
+                                          ? _attack
+                                          : null,
+                                      excludeSemantics: true,
+                                      child: Listener(
+                                        behavior: HitTestBehavior.opaque,
+                                        onPointerDown: _pointerDown,
+                                        onPointerUp: _pointerUp,
+                                        onPointerCancel: _pointerUp,
+                                        child: Container(
+                                          constraints: const BoxConstraints(
+                                            minHeight: 48,
                                           ),
-                                          boxShadow: NeonTheme.drop(
-                                            y: 5,
-                                            blur: 8,
+                                          alignment: Alignment.center,
+                                          decoration: BoxDecoration(
+                                            color: _game.attackEnabled
+                                                ? NeonTheme.orange
+                                                : NeonTheme.muted,
+                                            borderRadius: BorderRadius.circular(
+                                              28,
+                                            ),
+                                            boxShadow: NeonTheme.drop(
+                                              y: 5,
+                                              blur: 8,
+                                            ),
                                           ),
-                                        ),
-                                        child: StrokeText(
-                                          'game_demo_attack_button'.tr,
-                                          fontSize: 20,
+                                          child: StrokeText(
+                                            'game_demo_attack_button'.tr,
+                                            fontSize: 20,
+                                          ),
                                         ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ],
+                                ],
+                              ),
                             ),
                           ),
-                        ),
-                      if (phase == ArenaPhase.gameOver)
-                        Positioned.fill(
-                          child: Container(
-                            color: Colors.black.withValues(alpha: 0.55),
-                            alignment: Alignment.center,
-                            padding: const EdgeInsets.all(16),
-                            child: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxHeight: constraints.maxHeight - 32,
+                        if (phase == ArenaPhase.gameOver)
+                          Positioned.fill(
+                            child: Container(
+                              color: Colors.black.withValues(alpha: 0.55),
+                              alignment: Alignment.center,
+                              padding: const EdgeInsets.all(16),
+                              child: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxHeight: constraints.maxHeight - 32,
+                                ),
+                                child: SingleChildScrollView(
+                                  child: PanelCard(
+                                    child: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Semantics(
+                                          liveRegion: true,
+                                          child: Text(
+                                            'sprite_arena_game_over'.tr,
+                                            style: TextStyle(
+                                              color: NeonTheme.ink,
+                                              fontSize: 26,
+                                              fontWeight: FontWeight.w900,
+                                            ),
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'sprite_arena_final_score'.trParams({
+                                            'n': '${_game.score.value}',
+                                            'wave': '${_game.wave.value}',
+                                          }),
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: NeonTheme.inkSoft,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'sprite_arena_objectives_summary'.trParams({
+                                            'completed':
+                                                '${_game.completedObjectivesCount}',
+                                            'total':
+                                                '${_game.objectives.value.length}',
+                                          }),
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: NeonTheme.gold,
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.w800,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 16),
+                                        CommonButton(
+                                          label: 'sprite_arena_restart'.tr,
+                                          width: math.min(
+                                            200,
+                                            constraints.maxWidth - 64,
+                                          ),
+                                          onTap: () {
+                                            _game.restart();
+                                            setState(() {});
+                                          },
+                                        ),
+                                        const SizedBox(height: 8),
+                                        CommonButton(
+                                          label: 'back_button_label'.tr,
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          width: math.min(
+                                            200,
+                                            constraints.maxWidth - 64,
+                                          ),
+                                          onTap: Get.back,
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ),
                               ),
+                            ),
+                          ),
+                        if (phase == ArenaPhase.paused && !_showingHelp)
+                          Positioned(
+                            top: 80,
+                            bottom: joystickSize + 32,
+                            left: 16,
+                            right: 16,
+                            child: Center(
                               child: SingleChildScrollView(
                                 child: PanelCard(
                                   child: Column(
@@ -514,61 +707,24 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                                       Semantics(
                                         liveRegion: true,
                                         child: Text(
-                                          'sprite_arena_game_over'.tr,
+                                          'pause_title'.tr,
+                                          textAlign: TextAlign.center,
                                           style: TextStyle(
                                             color: NeonTheme.ink,
-                                            fontSize: 26,
-                                            fontWeight: FontWeight.w900,
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.w800,
                                           ),
                                         ),
                                       ),
                                       const SizedBox(height: 8),
-                                      Text(
-                                        'sprite_arena_final_score'.trParams({
-                                          'n': '${_game.score.value}',
-                                          'wave': '${_game.wave.value}',
-                                        }),
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: NeonTheme.inkSoft,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 8),
-                                      Text(
-                                        'sprite_arena_objectives_summary'.trParams({
-                                          'completed':
-                                              '${_game.completedObjectivesCount}',
-                                          'total':
-                                              '${_game.objectives.value.length}',
-                                        }),
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: NeonTheme.gold,
-                                          fontSize: 14,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
                                       CommonButton(
-                                        label: 'sprite_arena_restart'.tr,
-                                        width: math.min(
-                                          200,
-                                          constraints.maxWidth - 64,
-                                        ),
-                                        onTap: () {
-                                          _game.restart();
-                                          setState(() {});
-                                        },
-                                      ),
-                                      const SizedBox(height: 8),
-                                      CommonButton(
-                                        label: 'back_button_label'.tr,
+                                        label: 'pause_resume'.tr,
                                         variant: CommonButtonVariant.secondary,
                                         width: math.min(
-                                          200,
-                                          constraints.maxWidth - 64,
+                                          160,
+                                          constraints.maxWidth - 80,
                                         ),
-                                        onTap: Get.back,
+                                        onTap: _togglePause,
                                       ),
                                     ],
                                   ),
@@ -576,100 +732,188 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                               ),
                             ),
                           ),
-                        ),
-                      if (phase == ArenaPhase.paused && !_showingHelp)
-                        Positioned(
-                          top: 80,
-                          bottom: joystickSize + 32,
-                          left: 16,
-                          right: 16,
-                          child: Center(
-                            child: SingleChildScrollView(
-                              child: PanelCard(
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    Semantics(
-                                      liveRegion: true,
-                                      child: Text(
-                                        'pause_title'.tr,
-                                        textAlign: TextAlign.center,
-                                        style: TextStyle(
-                                          color: NeonTheme.ink,
-                                          fontSize: 20,
-                                          fontWeight: FontWeight.w800,
-                                        ),
-                                      ),
-                                    ),
-                                    const SizedBox(height: 8),
-                                    CommonButton(
-                                      label: 'pause_resume'.tr,
-                                      variant: CommonButtonVariant.secondary,
-                                      width: math.min(
-                                        160,
-                                        constraints.maxWidth - 80,
-                                      ),
-                                      onTap: _togglePause,
-                                    ),
-                                  ],
-                                ),
+                        if (_showingObjectives)
+                          Positioned.fill(
+                            child: NeonDialog.overlay(
+                              onBarrier: _closeObjectives,
+                              panel: _buildObjectivesPanel(
+                                context,
+                                constraints,
                               ),
                             ),
                           ),
-                        ),
-                      if (_showingObjectives)
-                        Positioned.fill(
-                          child: NeonDialog.overlay(
-                            onBarrier: _closeObjectives,
-                            panel: _buildObjectivesPanel(context, constraints),
-                          ),
-                        ),
-                      if (_showingHelp)
-                        Positioned.fill(
-                          child: NeonDialog.overlay(
-                            onBarrier: _closeHelp,
-                            panel: ConstrainedBox(
-                              constraints: BoxConstraints(
-                                maxHeight: constraints.maxHeight - 16,
-                              ),
-                              child: SingleChildScrollView(
-                                child: NeonDialog.panel(
-                                  title: 'sprite_arena_help_title'.tr,
-                                  color: NeonTheme.cyan,
-                                  content: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Text('sprite_arena_help_move'.tr),
-                                      const SizedBox(height: 8),
-                                      Text('sprite_arena_help_attack'.tr),
-                                      const SizedBox(height: 8),
-                                      Text('sprite_arena_help_hold_attack'.tr),
-                                      const SizedBox(height: 8),
-                                      Text('sprite_arena_help_pause'.tr),
+                        if (_showingHelp)
+                          Positioned.fill(
+                            child: NeonDialog.overlay(
+                              onBarrier: _closeHelp,
+                              panel: ConstrainedBox(
+                                constraints: BoxConstraints(
+                                  maxHeight: constraints.maxHeight - 16,
+                                ),
+                                child: SingleChildScrollView(
+                                  child: NeonDialog.panel(
+                                    title: 'sprite_arena_help_title'.tr,
+                                    color: NeonTheme.cyan,
+                                    content: Column(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Text('sprite_arena_help_move'.tr),
+                                        const SizedBox(height: 8),
+                                        Text('sprite_arena_help_attack'.tr),
+                                        const SizedBox(height: 8),
+                                        Text(
+                                          'sprite_arena_help_hold_attack'.tr,
+                                        ),
+                                        const SizedBox(height: 8),
+                                        Text('sprite_arena_help_pause'.tr),
+                                      ],
+                                    ),
+                                    actions: [
+                                      NeonDialogAction(
+                                        label: 'ok'.tr,
+                                        color: NeonTheme.cyan,
+                                        onTap: _closeHelp,
+                                      ),
                                     ],
                                   ),
-                                  actions: [
-                                    NeonDialogAction(
-                                      label: 'ok'.tr,
-                                      color: NeonTheme.cyan,
-                                      onTap: _closeHelp,
-                                    ),
-                                  ],
                                 ),
                               ),
                             ),
                           ),
-                        ),
-                    ],
-                  ),
-                );
-              },
-            );
-          },
+                        if (pending != null && pending.isNotEmpty)
+                          Positioned.fill(
+                            child: NeonDialog.overlay(
+                              onBarrier: () {},
+                              panel: _buildUpgradeSelectionPanel(
+                                context,
+                                constraints,
+                                pending,
+                              ),
+                            ),
+                          ),
+                      ],
+                    ),
+                  );
+                },
+              );
+            },
+          ),
         ),
       ),
     ),
   );
+
+  Widget _buildUpgradeSelectionPanel(
+    BuildContext context,
+    BoxConstraints constraints,
+    List<ArenaUpgradeKind> options,
+  ) {
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: constraints.maxHeight - 16),
+      child: SingleChildScrollView(
+        child: NeonDialog.panel(
+          title: 'sprite_arena_upgrade_modal_title'.tr,
+          color: NeonTheme.gold,
+          icon: Icons.star_rounded,
+          actions: const [],
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                'sprite_arena_upgrade_modal_subtitle'.tr,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: NeonTheme.inkSoft,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+              const SizedBox(height: NeonTheme.s16),
+              for (final kind in options) ...[
+                _buildUpgradeCard(kind),
+                const SizedBox(height: NeonTheme.s8),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildUpgradeCard(ArenaUpgradeKind kind) {
+    final meta = ArenaUpgrade.catalog[kind]!;
+    final (icon, color) = switch (kind) {
+      ArenaUpgradeKind.damageBoost => (
+        Icons.local_fire_department,
+        NeonTheme.red,
+      ),
+      ArenaUpgradeKind.speedBoost => (Icons.directions_run, NeonTheme.cyan),
+      ArenaUpgradeKind.fireRateBoost => (Icons.bolt, NeonTheme.gold),
+      ArenaUpgradeKind.extraLife => (Icons.favorite, NeonTheme.pink),
+    };
+
+    return InkWell(
+      borderRadius: BorderRadius.circular(16),
+      onTap: () {
+        _game.applyUpgrade(kind);
+        _game.resumeEngine();
+      },
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: NeonTheme.card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: color, width: 2),
+          boxShadow: [
+            BoxShadow(
+              color: color.withValues(alpha: 0.2),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.16),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 28),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    meta.titleKey.tr,
+                    style: TextStyle(
+                      color: NeonTheme.ink,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    meta.descriptionKey.tr,
+                    style: TextStyle(
+                      color: NeonTheme.inkSoft,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Icon(Icons.chevron_right, color: color),
+          ],
+        ),
+      ),
+    );
+  }
 
   Widget _buildObjectivesPanel(
     BuildContext context,

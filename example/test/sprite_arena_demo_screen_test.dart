@@ -632,4 +632,137 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'pendingUpgrades shows upgrade modal overlay with 2 cards and selecting one applies it',
+    (tester) async {
+      final game = SpriteArenaGame();
+      await tester.runAsync(() async {
+        rootBundle.evict('assets/tiles/character_arena.tmx');
+        await tester.pumpWidget(_wrap(game: game));
+        await Future<void>.sync(
+          game.toBeLoaded,
+        ).timeout(const Duration(seconds: 10));
+      });
+      await tester.pump();
+      await tester.pump();
+
+      // Giả lập boss wave 5 clear kích hoạt upgrade
+      game.pendingUpgrades.value = [
+        ArenaUpgradeKind.damageBoost,
+        ArenaUpgradeKind.speedBoost,
+      ];
+      await tester.pump();
+
+      expect(find.text('Choose an Upgrade'), findsOneWidget);
+      expect(
+        find.text('Wave 5 Boss defeated! Pick 1 bonus for this run:'),
+        findsOneWidget,
+      );
+      expect(find.text('Damage +1'), findsOneWidget);
+      expect(find.text('Move Speed +25%'), findsOneWidget);
+
+      // Tap vào thẻ Damage +1
+      await tester.tap(find.text('Damage +1'));
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text('Choose an Upgrade'), findsNothing);
+      expect(
+        game.activeUpgrades.value.contains(ArenaUpgradeKind.damageBoost),
+        isTrue,
+      );
+      expect(game.pendingUpgrades.value, isNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('activeUpgrades shows badge on HUD with semantics', (
+    tester,
+  ) async {
+    final game = SpriteArenaGame();
+    await tester.runAsync(() async {
+      rootBundle.evict('assets/tiles/character_arena.tmx');
+      await tester.pumpWidget(_wrap(game: game));
+      await Future<void>.sync(
+        game.toBeLoaded,
+      ).timeout(const Duration(seconds: 10));
+    });
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.bySemanticsLabel('Active Buffs'), findsNothing);
+
+    game.activeUpgrades.value = {
+      ArenaUpgradeKind.damageBoost,
+      ArenaUpgradeKind.extraLife,
+    };
+    await tester.pump();
+
+    expect(find.bySemanticsLabel('Active Buffs'), findsOneWidget);
+    expect(find.byIcon(Icons.local_fire_department), findsOneWidget);
+    expect(
+      find.byIcon(Icons.favorite),
+      findsWidgets,
+    ); // cả lives chip lẫn badge
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('upgrade modal blocks Back button until a card is selected', (
+    tester,
+  ) async {
+    final game = SpriteArenaGame();
+    await tester.runAsync(() async {
+      rootBundle.evict('assets/tiles/character_arena.tmx');
+      await tester.pumpWidget(_wrap(game: game));
+      await Future<void>.sync(
+        game.toBeLoaded,
+      ).timeout(const Duration(seconds: 10));
+    });
+    await tester.pump();
+    await tester.pump();
+
+    game.pendingUpgrades.value = [
+      ArenaUpgradeKind.fireRateBoost,
+      ArenaUpgradeKind.extraLife,
+    ];
+    await tester.pump();
+
+    expect(find.text('Choose an Upgrade'), findsOneWidget);
+
+    await tester.binding.handlePopRoute();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Choose an Upgrade'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'upgrade modal renders cleanly on narrow 240px width without overflow',
+    (tester) async {
+      tester.view.physicalSize = const Size(240, 480);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final game = SpriteArenaGame();
+      await tester.runAsync(() async {
+        rootBundle.evict('assets/tiles/character_arena.tmx');
+        await tester.pumpWidget(_wrap(game: game));
+        await Future<void>.sync(
+          game.toBeLoaded,
+        ).timeout(const Duration(seconds: 10));
+      });
+      await tester.pump();
+      await tester.pump();
+
+      game.pendingUpgrades.value = [
+        ArenaUpgradeKind.damageBoost,
+        ArenaUpgradeKind.speedBoost,
+      ];
+      await tester.pump();
+
+      expect(find.text('Choose an Upgrade'), findsOneWidget);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
