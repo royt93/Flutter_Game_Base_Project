@@ -533,13 +533,11 @@ void main() {
       expect(find.byType(GameJoystick), findsOneWidget);
       // Dedicated arena: no legacy circle-demo HUD.
       expect(find.byType(ReactiveEnergyBar), findsNothing);
-      final attackBtn = find
-          .byWidgetPredicate(
-            (widget) =>
-                widget is CommonButton &&
-                widget.label == 'game_demo_attack_button'.tr,
-          )
-          .first;
+      final attackBtn = find.byWidgetPredicate(
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.label == 'sprite_arena_attack_semantics'.tr,
+      );
       expect(attackBtn, findsOneWidget);
 
       final player = game.player!;
@@ -619,23 +617,74 @@ void main() {
       expect(player.isAttacking, isFalse);
 
       final arena = game as SpriteArenaGame;
+      var heldShots = 0;
+      final originalOnAttack = player.onAttack;
+      player.onAttack = () {
+        heldShots++;
+        originalOnAttack?.call();
+      };
+      final beforeHold = heldShots;
+      final heldGesture = await tester.startGesture(
+        tester.getCenter(attackBtn),
+      );
+      for (var frame = 0; frame < 10; frame++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await heldGesture.up();
+      expect(heldShots - beforeHold, greaterThanOrEqualTo(3));
+      final releasedAt = heldShots;
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(heldShots, releasedAt);
+      arena.lives.value = 3;
+      arena.spawnPickup(
+        ArenaPickupKind.heal,
+        player.position + Vector2(100, 0),
+      );
+      await tester.pump();
+      expect(find.text('Heal'), findsOneWidget);
+      player.position.setFrom(arena.pickup!.position);
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(arena.lives.value, 4);
+      arena.spawnPickup(
+        ArenaPickupKind.rapidFire,
+        player.position + Vector2(100, 0),
+      );
+      await tester.pump();
+      expect(find.text('Rapid Fire'), findsOneWidget);
+      player.position.setFrom(arena.pickup!.position);
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(arena.rapidFireRemaining.value, greaterThan(4));
+      expect(find.text('Rapid 5 s'), findsOneWidget);
+      final beforeRapid = heldShots;
+      final rapidGesture = await tester.startGesture(
+        tester.getCenter(attackBtn),
+      );
+      for (var frame = 0; frame < 6; frame++) {
+        await tester.pump(const Duration(milliseconds: 50));
+      }
+      await rapidGesture.up();
+      expect(heldShots - beforeRapid, greaterThanOrEqualTo(4));
+      final rapidReleasedAt = heldShots;
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(heldShots, rapidReleasedAt);
+
       expect(arena.targets, isNotEmpty);
-      final target = arena.targets.first;
-      for (var hit = 0; hit < ArenaTarget.maxHp; hit++) {
+      final target = arena.targets.firstWhere((target) => target.alive);
+      final scoreBeforeTarget = arena.score.value;
+      for (var shot = 0; shot < 8 && target.alive; shot++) {
         player.position.setValues(target.position.x - 120, target.position.y);
         player.angle = 0;
         arena.attack();
-        await tester.pump(const Duration(milliseconds: 400));
-        await tester.pump(const Duration(milliseconds: 500));
+        await tester.pump(const Duration(milliseconds: 250));
       }
       expect(target.alive, isFalse);
-      expect(arena.score.value, 10);
+      expect(arena.score.value, scoreBeforeTarget + 10);
 
       final pause = find.byTooltip('game_demo_pause_tooltip'.tr);
       await tester.tap(pause);
       await tester.pump();
       expect(game.paused, isTrue);
-      expect(tester.widget<CommonButton>(attackBtn).onTap, isNull);
+      expect(tester.widget<Semantics>(attackBtn).properties.enabled, isFalse);
       final bulletCountBeforePause = game.world.children
           .whereType<ArenaBullet>()
           .length;
@@ -653,7 +702,7 @@ void main() {
       await tester.tap(find.byTooltip('pause_resume'.tr));
       await tester.pump();
       expect(game.paused, isFalse);
-      expect(tester.widget<CommonButton>(attackBtn).onTap, isNotNull);
+      expect(tester.widget<Semantics>(attackBtn).properties.enabled, isTrue);
       expect(
         game.world.children.whereType<ArenaBullet>().length,
         lessThanOrEqualTo(bulletCountBeforePause),

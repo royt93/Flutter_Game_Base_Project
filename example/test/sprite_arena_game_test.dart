@@ -12,6 +12,25 @@ import 'package:roy_casual_kit/presentation/game/tiled_terrain_collision.dart';
 import 'package:roy_casual_kit_example/game/arena_actors.dart';
 import 'package:roy_casual_kit_example/game/sprite_arena_game.dart';
 
+Future<SpriteArenaGame> loadArenaInto(
+  WidgetTester tester,
+  SpriteArenaGame game,
+) async {
+  await tester.runAsync(() async {
+    rootBundle.evict('assets/tiles/character_arena.tmx');
+    await tester.pumpWidget(MaterialApp(home: GameWidget(game: game)));
+    await Future<void>.sync(
+      game.toBeLoaded,
+    ).timeout(const Duration(seconds: 10));
+  });
+  await tester.pump();
+  await tester.pump();
+  return game;
+}
+
+Future<SpriteArenaGame> loadArena(WidgetTester tester) =>
+    loadArenaInto(tester, SpriteArenaGame());
+
 void main() {
   setUp(() async {
     SharedPreferences.setMockInitialValues({});
@@ -82,20 +101,6 @@ void main() {
     expect(impacts, hasLength(1));
     expect(impacts.single.x, lessThanOrEqualTo(100));
   });
-
-  Future<SpriteArenaGame> loadArena(WidgetTester tester) async {
-    final game = SpriteArenaGame();
-    await tester.runAsync(() async {
-      rootBundle.evict('assets/tiles/character_arena.tmx');
-      await tester.pumpWidget(MaterialApp(home: GameWidget(game: game)));
-      await Future<void>.sync(
-        game.toBeLoaded,
-      ).timeout(const Duration(seconds: 10));
-    });
-    await tester.pump();
-    await tester.pump();
-    return game;
-  }
 
   void shootAt(SpriteArenaGame game, ArenaTarget t) {
     game.player!.position.setValues(t.position.x - 120, t.position.y);
@@ -266,6 +271,200 @@ void main() {
     expect(game.roundOver.value, isFalse);
   });
 
+  testWidgets('drop chance is 50 percent and pickup kind is equally split', (
+    tester,
+  ) async {
+    final rolls = <double>[0.49, 0.49, 0.49, 0.50];
+    final game = SpriteArenaGame(pickupRoll: () => rolls.removeAt(0));
+    await loadArenaInto(tester, game);
+    final monster = game.monsters.first;
+    monster.takeHit();
+    monster.takeHit();
+    expect(game.pickup?.kind, ArenaPickupKind.heal);
+    monster.takeHit();
+    expect(game.pickup?.kind, ArenaPickupKind.heal);
+    final secondMonster = game.monsters.last;
+    secondMonster.takeHit();
+    secondMonster.takeHit();
+    await tester.pump();
+    expect(game.pickup?.kind, ArenaPickupKind.rapidFire);
+    expect(game.pickupRemaining.value, ArenaPickup.expirySeconds);
+  });
+
+  testWidgets('drop chance at 0.5 fails without rolling a pickup kind', (
+    tester,
+  ) async {
+    var calls = 0;
+    final game = SpriteArenaGame(
+      pickupRoll: () {
+        calls++;
+        return 0.5;
+      },
+    );
+    await loadArenaInto(tester, game);
+    final monster = game.monsters.first;
+    monster.takeHit();
+    monster.takeHit();
+    expect(game.pickup, isNull);
+    expect(calls, 1);
+  });
+
+  testWidgets('failed drop preserves existing pickup without extra kind roll', (
+    tester,
+  ) async {
+    final rolls = <double>[0.1, 0.1, 0.5];
+    final game = SpriteArenaGame(pickupRoll: () => rolls.removeAt(0));
+    await loadArenaInto(tester, game);
+    final first = game.monsters.first;
+    first.takeHit();
+    first.takeHit();
+    final active = game.pickup;
+    final second = game.monsters.last;
+    second.takeHit();
+    second.takeHit();
+    expect(game.pickup, same(active));
+    expect(rolls, isEmpty);
+  });
+
+  testWidgets('successful drop replaces the single active pickup', (
+    tester,
+  ) async {
+    final rolls = <double>[0.1, 0.1, 0.1, 0.9];
+    final game = SpriteArenaGame(pickupRoll: () => rolls.removeAt(0));
+    await loadArenaInto(tester, game);
+    final first = game.monsters.first;
+    first.takeHit();
+    first.takeHit();
+    final oldPickup = game.pickup;
+    final second = game.monsters.last;
+    second.takeHit();
+    second.takeHit();
+    await tester.pump();
+    expect(game.pickup, isNot(same(oldPickup)));
+    expect(game.world.children.whereType<ArenaPickup>(), hasLength(1));
+  });
+
+  testWidgets('pickup expires and pause freezes its timer', (tester) async {
+    final rolls = <double>[0, 0];
+    final game = SpriteArenaGame(pickupRoll: () => rolls.removeAt(0));
+    await loadArenaInto(tester, game);
+    final monster = game.monsters.first;
+    monster.takeHit();
+    monster.takeHit();
+    expect(game.pickup, isNotNull);
+    game.update(3);
+    expect(game.pickupRemaining.value, ArenaPickup.expirySeconds - 3);
+    game.pauseEngine();
+    await tester.pump(const Duration(seconds: 20));
+    expect(game.pickupRemaining.value, ArenaPickup.expirySeconds - 3);
+    game.resumeEngine();
+    game.update(5);
+    expect(game.pickup, isNull);
+    expect(game.pickupRemaining.value, 0);
+  });
+
+  testWidgets('rapid-fire countdown expires and freezes during pause', (
+    tester,
+  ) async {
+    final game = await loadArena(tester);
+    game.rapidFireRemaining.value = SpriteArenaGame.rapidFireDuration;
+    game.update(4.99);
+    expect(game.rapidFireRemaining.value, closeTo(0.01, 0.001));
+    game.pauseEngine();
+    game.update(10);
+    expect(game.rapidFireRemaining.value, closeTo(0.01, 0.001));
+    game.resumeEngine();
+    game.update(0.02);
+    expect(game.rapidFireRemaining.value, 0);
+  });
+
+  testWidgets('player overlap collects pickup and removes it from world', (
+    tester,
+  ) async {
+    final rolls = <double>[0, 0];
+    final game = SpriteArenaGame(pickupRoll: () => rolls.removeAt(0));
+    await loadArenaInto(tester, game);
+    game.lives.value = 2;
+    final monster = game.monsters.first;
+    monster.takeHit();
+    monster.takeHit();
+    final dropped = game.pickup!;
+    game.player!.position.setFrom(dropped.position);
+    game.update(0.016);
+    await tester.pump();
+    expect(game.lives.value, 3);
+    expect(game.pickup, isNull);
+    expect(game.world.children.whereType<ArenaPickup>(), isEmpty);
+  });
+
+  testWidgets(
+    'heal pickup caps lives and full-life heal converts to rapid fire',
+    (tester) async {
+      final game = await loadArenaInto(tester, SpriteArenaGame());
+      game.lives.value = 2;
+      game.applyPickup(ArenaPickupKind.heal);
+      expect(game.lives.value, 3);
+      game.lives.value = SpriteArenaGame.playerMaxLives;
+      game.applyPickup(ArenaPickupKind.heal);
+      expect(game.lives.value, SpriteArenaGame.playerMaxLives);
+      expect(game.rapidFireRemaining.value, SpriteArenaGame.rapidFireDuration);
+      game.rapidFireRemaining.value = 1;
+      game.applyPickup(ArenaPickupKind.rapidFire);
+      expect(game.rapidFireRemaining.value, SpriteArenaGame.rapidFireDuration);
+    },
+  );
+
+  testWidgets('tap fires once and held fire uses normal then boosted cadence', (
+    tester,
+  ) async {
+    final game = await loadArena(tester);
+    var shots = 0;
+    game.player!.onAttack = () => shots++;
+    game.fireOnce();
+    expect(shots, 1);
+    game.startFiring();
+    expect(shots, 2);
+    game.update(SpriteArenaGame.normalFireInterval - 0.01);
+    expect(shots, 2);
+    game.update(0.02);
+    expect(shots, 3);
+    game.rapidFireRemaining.value = SpriteArenaGame.rapidFireDuration;
+    game.startFiring();
+    expect(shots, 4);
+    game.update(SpriteArenaGame.rapidFireInterval);
+    expect(shots, 5);
+    game.update(1);
+    expect(shots, 6);
+    game.stopFiring();
+    game.update(1);
+    expect(shots, 6);
+  });
+
+  testWidgets('held fire remains under the 24 bullet cap', (tester) async {
+    final game = await loadArena(tester);
+    game.startFiring();
+    for (var frame = 0; frame < 100; frame++) {
+      game.update(SpriteArenaGame.rapidFireInterval);
+      expect(
+        game.world.children.whereType<ArenaBullet>().length,
+        lessThanOrEqualTo(24),
+      );
+    }
+    game.stopFiring();
+  });
+
+  testWidgets('pause cancels held fire until a new press', (tester) async {
+    final game = await loadArena(tester);
+    var shots = 0;
+    game.player!.onAttack = () => shots++;
+    game.startFiring();
+    game.pauseEngine();
+    await tester.pump(const Duration(seconds: 2));
+    game.resumeEngine();
+    game.update(2);
+    expect(shots, 1);
+  });
+
   testWidgets('monster contact removes one life with global invulnerability', (
     tester,
   ) async {
@@ -279,7 +478,6 @@ void main() {
     second.update(0.016);
     expect(game.lives.value, 3);
     first.position.setValues(1000, 1000);
-    first.position.setValues(1000, 1000);
     game.update(1.26);
     second.position.setFrom(game.player!.position);
     second.update(0.016);
@@ -291,6 +489,8 @@ void main() {
   ) async {
     final game = await loadArena(tester);
     game.lives.value = 1;
+    game.rapidFireRemaining.value = SpriteArenaGame.rapidFireDuration;
+    game.startFiring();
     game.monsters.first.position.setFrom(game.player!.position);
     game.monsters.first.update(0.016);
     expect(game.lives.value, 0);
@@ -299,6 +499,8 @@ void main() {
     game.lifecycleStateChange(AppLifecycleState.resumed);
     expect(game.phase.value, ArenaPhase.gameOver);
     expect(game.attackEnabled, isFalse);
+    expect(game.isFiring, isFalse);
+    expect(game.rapidFireRemaining.value, 0);
     game.attack();
     expect(game.world.children.whereType<ArenaBullet>(), isEmpty);
   });
@@ -419,6 +621,14 @@ void main() {
     game.update(0);
     expect(game.world.children.whereType<ArenaBullet>(), hasLength(1));
     game.score.value = 90;
+    game.pickup = ArenaPickup(
+      position: target.position.clone(),
+      kind: ArenaPickupKind.rapidFire,
+      onExpired: () {},
+      onCollected: (_) {},
+    );
+    game.rapidFireRemaining.value = 3;
+    game.startFiring();
     game.lives.value = 0;
     game.wave.value = 5;
     game.roundOver.value = true;
@@ -430,6 +640,9 @@ void main() {
     expect(game.lives.value, 4);
     expect(game.wave.value, 1);
     expect(game.score.value, 0);
+    expect(game.rapidFireRemaining.value, 0);
+    expect(game.pickup, isNull);
+    expect(game.isFiring, isFalse);
     expect(game.terrainColliders.length, baselineColliders);
     expect(target.alive, isTrue);
     expect(target.hp, ArenaTarget.maxHp);

@@ -2,6 +2,7 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flame/components.dart';
+import 'package:flutter/foundation.dart';
 import 'package:roy_casual_kit/presentation/game/tiled_terrain_collision.dart';
 
 /// Something a bullet can damage. Bullets ray-march in 4px steps and test
@@ -10,6 +11,84 @@ abstract interface class ArenaHittable {
   Rect get hitRect;
   bool get alive;
   void takeHit();
+}
+
+enum ArenaPickupKind { heal, rapidFire }
+
+class ArenaPickup extends PositionComponent {
+  static const expirySeconds = 8.0;
+
+  ArenaPickup({
+    required Vector2 position,
+    required this.kind,
+    required this.onExpired,
+    required this.onCollected,
+    this.lifetime = expirySeconds,
+  }) : super(position: position, size: Vector2.all(48), anchor: Anchor.center);
+
+  final ArenaPickupKind kind;
+  final VoidCallback onExpired;
+  final ValueChanged<ArenaPickupKind> onCollected;
+  double lifetime;
+  bool _finished = false;
+
+  Rect get hitRect => Rect.fromCenter(
+    center: Offset(position.x, position.y),
+    width: size.x,
+    height: size.y,
+  );
+
+  void collect() {
+    if (_finished) return;
+    _finished = true;
+    onCollected(kind);
+    removeFromParent();
+  }
+
+  @override
+  void update(double dt) {
+    super.update(dt);
+    if (_finished) return;
+    lifetime -= dt;
+    if (lifetime <= 0) {
+      _finished = true;
+      onExpired();
+      removeFromParent();
+    }
+  }
+
+  @override
+  void render(Canvas canvas) {
+    final heal = kind == ArenaPickupKind.heal;
+    final color = heal ? const Color(0xffe85d75) : const Color(0xffffca28);
+    final center = Offset(size.x / 2, size.y / 2);
+    canvas.drawCircle(center, size.x / 2, Paint()..color = color);
+    canvas.drawCircle(
+      center,
+      size.x / 2 - 3,
+      Paint()
+        ..color = const Color(0xffffffff)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = 2,
+    );
+    final paint = Paint()
+      ..color = const Color(0xffffffff)
+      ..strokeWidth = 4
+      ..strokeCap = StrokeCap.round;
+    if (heal) {
+      canvas.drawLine(center.translate(-9, 0), center.translate(9, 0), paint);
+      canvas.drawLine(center.translate(0, -9), center.translate(0, 9), paint);
+    } else {
+      canvas.drawCircle(center, 5, paint..style = PaintingStyle.fill);
+      canvas.drawLine(
+        center.translate(0, -14),
+        center.translate(0, -7),
+        paint..style = PaintingStyle.stroke,
+      );
+      canvas.drawLine(center.translate(-3, 14), center.translate(-3, 7), paint);
+      canvas.drawLine(center.translate(3, 14), center.translate(3, 7), paint);
+    }
+  }
 }
 
 /// Static training target: 3 HP, flashes on hit, respawns 3s after it dies.

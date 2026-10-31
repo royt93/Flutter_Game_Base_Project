@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:roy_casual_kit_example/game/arena_actors.dart';
 import 'package:roy_casual_kit_example/game/sprite_arena_game.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -111,7 +112,13 @@ void main() {
       await tester.pump();
       await tester.pump();
       final joystick = tester.getRect(find.byType(GameJoystick));
-      final attack = tester.getRect(find.byType(CommonButton));
+      final attack = tester.getRect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Semantics &&
+              w.properties.label == 'sprite_arena_attack_semantics'.tr,
+        ),
+      );
       expect(joystick.overlaps(attack), isFalse);
       expect(attack.height, greaterThanOrEqualTo(48));
       await tester.tap(find.byTooltip('Pause game'));
@@ -166,7 +173,9 @@ void main() {
           .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
           .game!;
       final attack = find.byWidgetPredicate(
-        (w) => w is CommonButton && w.label == 'Đánh',
+        (w) =>
+            w is Semantics &&
+            w.properties.label == 'Tấn công. Chạm để bắn, giữ để bắn liên tục.',
       );
       expect(
         tester
@@ -291,6 +300,33 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('pickup and Rapid Fire badges localize and countdown', (
+    tester,
+  ) async {
+    final game = SpriteArenaGame();
+    await tester.runAsync(() async {
+      rootBundle.evict('assets/tiles/character_arena.tmx');
+      await tester.pumpWidget(_wrap(game: game, locale: const Locale('vi')));
+      await Future<void>.sync(
+        game.toBeLoaded,
+      ).timeout(const Duration(seconds: 10));
+    });
+    await tester.pump();
+    await tester.pump();
+    game.pickup = ArenaPickup(
+      position: game.player!.position + Vector2(180, 0),
+      kind: ArenaPickupKind.heal,
+      onExpired: () {},
+      onCollected: (_) {},
+    );
+    game.pickupRemaining.value = ArenaPickup.expirySeconds;
+    game.rapidFireRemaining.value = 3.2;
+    await tester.pump();
+    expect(find.text('Hồi mạng'), findsOneWidget);
+    expect(find.text('Nhanh 4 giây'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('shows lives and wave HUD, game over, and restarts', (
     tester,
   ) async {
@@ -350,7 +386,9 @@ void main() {
     expect(find.byType(GameJoystick), findsOneWidget);
     expect(
       find.byWidgetPredicate(
-        (widget) => widget is CommonButton && widget.label == 'Attack',
+        (widget) =>
+            widget is Semantics &&
+            widget.properties.label == 'sprite_arena_attack_semantics'.tr,
       ),
       findsOneWidget,
     );
@@ -358,68 +396,103 @@ void main() {
     expect(find.byType(EnergyBar), findsNothing);
     expect(
       tester
-          .widget<CommonButton>(
+          .widget<Semantics>(
             find.byWidgetPredicate(
-              (widget) => widget is CommonButton && widget.label == 'Attack',
+              (widget) =>
+                  widget is Semantics &&
+                  widget.properties.label == 'sprite_arena_attack_semantics'.tr,
             ),
           )
+          .properties
           .onTap,
       isNotNull,
     );
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('joystick moves sprite and Attack triggers action', (
-    tester,
-  ) async {
+  testWidgets('tap fires once, hold repeats and release stops', (tester) async {
+    final game = SpriteArenaGame();
     await tester.runAsync(() async {
       rootBundle.evict('assets/tiles/character_arena.tmx');
-      await tester.pumpWidget(_wrap());
-      final game = tester
-          .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
-          .game!;
+      await tester.pumpWidget(_wrap(game: game));
       await Future<void>.sync(
         game.toBeLoaded,
       ).timeout(const Duration(seconds: 10));
     });
     await tester.pump();
     await tester.pump();
-    final game =
-        tester
-                .widget<GameWidget<RoyGame>>(find.byType(GameWidget<RoyGame>))
-                .game!
-            as SpriteArenaGame;
-    final player = game.player!;
-    final startX = player.position.x;
-    final joystick = tester.widget<GameJoystick>(find.byType(GameJoystick));
-    joystick.onDirectionChanged(
-      GameJoystickDirection.right,
-      const Offset(1, 0),
-    );
-    player.update(0.1);
-    expect(player.position.x, greaterThan(startX));
-
-    Finder attackBtn() => find.byWidgetPredicate(
-      (widget) => widget is CommonButton && widget.label == 'Attack',
+    var shots = 0;
+    game.player!.onAttack = () => shots++;
+    final attack = find.byWidgetPredicate(
+      (widget) =>
+          widget is Semantics &&
+          widget.properties.label == 'Attack. Tap to fire, hold to autofire.',
     );
 
-    expect(player.isAttacking, isFalse);
-    final attack = tester.widget<CommonButton>(attackBtn()).onTap!;
-    attack();
-    expect(player.isAttacking, isTrue);
+    await tester.tap(attack);
+    expect(shots, 1);
+    final gesture = await tester.startGesture(tester.getCenter(attack));
+    expect(shots, 2);
+    await tester.pump(const Duration(milliseconds: 190));
+    expect(shots, 2);
+    await tester.pump(const Duration(milliseconds: 20));
+    expect(shots, 3);
+    await gesture.up();
+    await tester.pump(const Duration(seconds: 1));
+    expect(shots, 3);
+
+    await tester.tap(find.byTooltip('Pause game'));
+    await tester.pump();
+    expect(game.isFiring, isFalse);
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pump();
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('rapid-fire hold uses faster cadence; pointer cancel stops', (
+    tester,
+  ) async {
+    final game = SpriteArenaGame();
+    await tester.runAsync(() async {
+      rootBundle.evict('assets/tiles/character_arena.tmx');
+      await tester.pumpWidget(_wrap(game: game));
+      await Future<void>.sync(
+        game.toBeLoaded,
+      ).timeout(const Duration(seconds: 10));
+    });
+    await tester.pump();
+    await tester.pump();
+    var shots = 0;
+    game.player!.onAttack = () => shots++;
+    game.rapidFireRemaining.value = 5;
+    final attack = find.byWidgetPredicate(
+      (widget) =>
+          widget is Semantics &&
+          widget.properties.label == 'Attack. Tap to fire, hold to autofire.',
+    );
+    final gesture = await tester.startGesture(tester.getCenter(attack));
+    expect(shots, 1);
+    await tester.pump(const Duration(milliseconds: 80));
+    expect(shots, 2);
+    await gesture.cancel();
+    await tester.pump(const Duration(seconds: 1));
+    expect(shots, 2);
+    expect(game.isFiring, isFalse);
+
+    final held = await tester.startGesture(tester.getCenter(attack));
+    expect(game.isFiring, isTrue);
+    await tester.tap(find.byTooltip('Controls'));
     await tester.pump(const Duration(milliseconds: 300));
-    expect(player.isAttacking, isFalse);
-    final pause = find.byTooltip('Pause game');
-    await tester.tap(pause);
-    await tester.pump();
-    expect(game.attackEnabled, isFalse);
-    expect(tester.widget<CommonButton>(attackBtn()).onTap, isNull);
-    attack();
-    expect(player.isAttacking, isFalse);
-    final resumeFab = find.byType(FloatingActionButton);
-    await tester.tap(resumeFab);
-    await tester.pump();
-    expect(tester.widget<CommonButton>(attackBtn()).onTap, isNotNull);
+    expect(game.isFiring, isFalse);
+    expect(game.paused, isTrue);
+    await held.cancel();
+    final close = find.byWidgetPredicate(
+      (w) => w is NeonDialogButton && w.action.label == 'OK',
+    );
+    await tester.ensureVisible(close);
+    await tester.tap(close);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(game.paused, isFalse);
     expect(tester.takeException(), isNull);
   });
 }

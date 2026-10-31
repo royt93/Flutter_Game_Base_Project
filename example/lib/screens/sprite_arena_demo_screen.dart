@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/roy_casual_kit.dart';
 
+import '../game/arena_actors.dart';
 import '../game/sprite_arena_game.dart';
 
 class SpriteArenaDemoScreen extends StatefulWidget {
@@ -22,6 +23,7 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
   late final SpriteArenaGame _game;
   bool _showingHelp = false;
   bool _resumeAfterHelp = false;
+  int? _attackPointer;
 
   @override
   void initState() {
@@ -29,8 +31,35 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
     _game = widget.game ?? SpriteArenaGame();
   }
 
+  void _stopHeldFire() {
+    _attackPointer = null;
+    _game.stopFiring();
+  }
+
+  void _pointerDown(PointerDownEvent event) {
+    if (!_game.attackEnabled || _showingHelp) return;
+    if (_attackPointer != null && _game.isFiring) return;
+    _attackPointer = event.pointer;
+    if (!_game.isFiring) {
+      _game.startFiring();
+      _attackFeedback();
+    }
+  }
+
+  void _pointerUp(PointerEvent event) {
+    if (_attackPointer != event.pointer) return;
+    _attackPointer = null;
+    _game.stopFiring();
+  }
+
+  void _attackFeedback() {
+    _haptics.play(HapticPattern([const HapticPulse(level: HapticLevel.light)]));
+    unawaited(AudioManager.maybe?.playSfx('audio/tap.ogg', volume: 0.5));
+  }
+
   void _togglePause() {
     if (_game.phase.value == ArenaPhase.playing) {
+      _stopHeldFire();
       _game.pauseEngine();
     } else if (_game.phase.value == ArenaPhase.paused) {
       _game.resumeEngine();
@@ -39,6 +68,7 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
 
   void _openHelp() {
     if (_showingHelp || !_game.isLoaded) return;
+    _stopHeldFire();
     _resumeAfterHelp = _game.phase.value == ArenaPhase.playing;
     if (_resumeAfterHelp) _game.pauseEngine();
     setState(() => _showingHelp = true);
@@ -63,13 +93,13 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
 
   void _attack() {
     if (!_game.attackEnabled || _showingHelp) return;
-    _haptics.play(HapticPattern([const HapticPulse(level: HapticLevel.light)]));
-    unawaited(AudioManager.maybe?.playSfx('audio/tap.ogg', volume: 0.5));
-    _game.attack();
+    _attackFeedback();
+    _game.fireOnce();
   }
 
   @override
   void dispose() {
+    _stopHeldFire();
     _haptics.cancel();
     super.dispose();
   }
@@ -266,6 +296,62 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                                 ),
                           ),
                         ),
+                      if (ready)
+                        Positioned(
+                          top: 128,
+                          left: padding,
+                          child: ValueListenableBuilder<double>(
+                            valueListenable: _game.pickupRemaining,
+                            builder: (context, remaining, _) {
+                              final kind = _game.pickup?.kind;
+                              if (kind == null || remaining <= 0) {
+                                return const SizedBox.shrink();
+                              }
+                              final text = kind == ArenaPickupKind.heal
+                                  ? 'sprite_arena_pickup_heal'.tr
+                                  : 'sprite_arena_pickup_rapid'.tr;
+                              return Semantics(
+                                liveRegion: true,
+                                label: text,
+                                child: _statusChip(
+                                  kind == ArenaPickupKind.heal
+                                      ? Icons.favorite
+                                      : Icons.bolt,
+                                  text,
+                                  kind == ArenaPickupKind.heal
+                                      ? NeonTheme.pink
+                                      : NeonTheme.gold,
+                                ),
+                              );
+                            },
+                          ),
+                        ),
+                      if (ready)
+                        Positioned(
+                          top: 128,
+                          right: padding,
+                          child: ValueListenableBuilder<double>(
+                            valueListenable: _game.rapidFireRemaining,
+                            builder: (context, remaining, _) => remaining <= 0
+                                ? const SizedBox.shrink()
+                                : Semantics(
+                                    liveRegion: true,
+                                    label: 'sprite_arena_rapid_remaining'
+                                        .trParams({
+                                          'seconds': remaining
+                                              .ceil()
+                                              .toString(),
+                                        }),
+                                    child: _statusChip(
+                                      Icons.bolt,
+                                      'sprite_arena_rapid_remaining'.trParams({
+                                        'seconds': remaining.ceil().toString(),
+                                      }),
+                                      NeonTheme.gold,
+                                    ),
+                                  ),
+                          ),
+                        ),
                       if (controllable)
                         Positioned(
                           left: padding,
@@ -296,13 +382,46 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                                   ),
                                 ),
                                 const Spacer(),
-                                CommonButton(
-                                  label: 'game_demo_attack_button'.tr,
+                                SizedBox(
                                   width: attackWidth,
-                                  color: NeonTheme.orange,
-                                  onTap: _game.attackEnabled && !_showingHelp
-                                      ? _attack
-                                      : null,
+                                  child: Semantics(
+                                    button: true,
+                                    enabled:
+                                        _game.attackEnabled && !_showingHelp,
+                                    label: 'sprite_arena_attack_semantics'.tr,
+                                    onTap: _game.attackEnabled && !_showingHelp
+                                        ? _attack
+                                        : null,
+                                    excludeSemantics: true,
+                                    child: Listener(
+                                      behavior: HitTestBehavior.opaque,
+                                      onPointerDown: _pointerDown,
+                                      onPointerUp: _pointerUp,
+                                      onPointerCancel: _pointerUp,
+                                      child: Container(
+                                        constraints: const BoxConstraints(
+                                          minHeight: 48,
+                                        ),
+                                        alignment: Alignment.center,
+                                        decoration: BoxDecoration(
+                                          color: _game.attackEnabled
+                                              ? NeonTheme.orange
+                                              : NeonTheme.muted,
+                                          borderRadius: BorderRadius.circular(
+                                            28,
+                                          ),
+                                          boxShadow: NeonTheme.drop(
+                                            y: 5,
+                                            blur: 8,
+                                          ),
+                                        ),
+                                        child: StrokeText(
+                                          'game_demo_attack_button'.tr,
+                                          fontSize: 20,
+                                        ),
+                                      ),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),
@@ -433,6 +552,8 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                                       const SizedBox(height: 8),
                                       Text('sprite_arena_help_attack'.tr),
                                       const SizedBox(height: 8),
+                                      Text('sprite_arena_help_hold_attack'.tr),
+                                      const SizedBox(height: 8),
                                       Text('sprite_arena_help_pause'.tr),
                                     ],
                                   ),
@@ -456,6 +577,31 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
           },
         ),
       ),
+    ),
+  );
+
+  Widget _statusChip(IconData icon, String label, Color color) => Container(
+    constraints: const BoxConstraints(maxWidth: 150, minHeight: 40),
+    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+    decoration: BoxDecoration(
+      color: NeonTheme.card,
+      borderRadius: BorderRadius.circular(14),
+      border: Border.all(color: color, width: 2),
+    ),
+    child: Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Icon(icon, size: 18, color: color),
+        const SizedBox(width: 6),
+        Flexible(
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(color: NeonTheme.ink, fontWeight: FontWeight.w800),
+          ),
+        ),
+      ],
     ),
   );
 

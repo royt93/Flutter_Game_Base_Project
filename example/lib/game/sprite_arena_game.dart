@@ -15,13 +15,15 @@ import 'arena_actors.dart';
 enum ArenaPhase { loading, playing, paused, gameOver, failed }
 
 class SpriteArenaGame extends RoyGame {
-  SpriteArenaGame()
-    : super(
+  SpriteArenaGame({double Function()? pickupRoll})
+    : _pickupRoll = pickupRoll ?? math.Random().nextDouble,
+      super(
         showClassicDemo: false,
         enablePlayableCharacter: true,
         arenaMapFileName: 'character_arena.tmx',
       );
 
+  final double Function() _pickupRoll;
   final phase = ValueNotifier(ArenaPhase.loading);
   bool get attackEnabled => phase.value == ArenaPhase.playing;
   final score = ValueNotifier(0);
@@ -31,12 +33,17 @@ class SpriteArenaGame extends RoyGame {
   final targets = <ArenaTarget>[];
   final monsters = <ArenaMonster>[];
   final crates = <ArenaCrate>[];
+  ArenaPickup? pickup;
+  final rapidFireRemaining = ValueNotifier<double>(0);
+  final pickupRemaining = ValueNotifier<double>(0);
   final _bullets = <ArenaBullet>{};
   bool _ready = false;
   final _mapColliders = <TerrainCollider>[];
   double _damageCooldown = 0;
   bool _damagedThisUpdate = false;
   double _spawnCooldown = 0;
+  bool _fireHeld = false;
+  double _fireCooldown = 0;
   int _waveSize = 2;
   int _spawnedThisWave = 0;
   int _spawnCursor = 0;
@@ -46,6 +53,10 @@ class SpriteArenaGame extends RoyGame {
   static const spawnInterval = 1.2;
   static const playerMaxLives = 4;
   static const playerInvulnerabilitySeconds = 1.25;
+  static const rapidFireDuration = 5.0;
+  static const normalFireInterval = 0.2;
+  static const rapidFireInterval = 0.08;
+  static const pickupDropChance = 0.5;
 
   static const _targetSpots = [
     (220.0, 400.0),
@@ -58,6 +69,7 @@ class SpriteArenaGame extends RoyGame {
 
   @override
   void pauseEngine() {
+    stopFiring();
     super.pauseEngine();
     player?.setMoveInput(GameJoystickDirection.idle, Offset.zero);
     if (_ready && phase.value == ArenaPhase.playing) {
@@ -75,7 +87,82 @@ class SpriteArenaGame extends RoyGame {
   }
 
   void attack() {
-    if (attackEnabled) player!.attack();
+    fireOnce();
+  }
+
+  void startFiring() {
+    if (!attackEnabled) return;
+    _fireHeld = true;
+    _fireOnce();
+    _fireCooldown = fireInterval;
+  }
+
+  bool get isFiring => _fireHeld;
+
+  void stopFiring() {
+    _fireHeld = false;
+    _fireCooldown = 0;
+  }
+
+  void cancelHeldFire() => stopFiring();
+
+  void fireOnce() {
+    if (attackEnabled) _fireOnce();
+  }
+
+  void _fireOnce() {
+    if (!attackEnabled) return;
+    player!.attack();
+  }
+
+  double get fireInterval =>
+      rapidFireRemaining.value > 0 ? rapidFireInterval : normalFireInterval;
+
+  void _tryDropPickup(Vector2 at) {
+    if (_pickupRoll() >= pickupDropChance) return;
+    final kind = _pickupRoll() < 0.5
+        ? ArenaPickupKind.heal
+        : ArenaPickupKind.rapidFire;
+    spawnPickup(kind, at);
+  }
+
+  void spawnPickup(ArenaPickupKind kind, Vector2 at) {
+    pickup?.removeFromParent();
+    late final ArenaPickup created;
+    created = ArenaPickup(
+      position: at.clone(),
+      kind: kind,
+      onExpired: () {
+        if (identical(pickup, created)) {
+          pickup = null;
+          pickupRemaining.value = 0;
+        }
+      },
+      onCollected: (collectedKind) {
+        if (identical(pickup, created)) {
+          pickup = null;
+          pickupRemaining.value = 0;
+        }
+        applyPickup(collectedKind);
+      },
+    );
+    pickup = created;
+    pickupRemaining.value = created.lifetime;
+    world.add(created);
+  }
+
+  void _clearPickup() {
+    pickup?.removeFromParent();
+    pickup = null;
+    pickupRemaining.value = 0;
+  }
+
+  void applyPickup(ArenaPickupKind kind) {
+    if (kind == ArenaPickupKind.heal && lives.value < playerMaxLives) {
+      lives.value++;
+    } else {
+      rapidFireRemaining.value = rapidFireDuration;
+    }
   }
 
   @override
@@ -174,6 +261,7 @@ class SpriteArenaGame extends RoyGame {
           fireHaptic(HapticLevel.light);
           AudioManager.maybe?.playSfx('audio/victory.ogg', volume: 0.5);
           score.value += 25;
+          _tryDropPickup(m.position);
           _onMonsterDestroyed();
         },
         onTouchPlayer: (m) {
@@ -206,6 +294,9 @@ class SpriteArenaGame extends RoyGame {
     lives.value--;
     if (lives.value == 0) {
       roundOver.value = true;
+      _clearPickup();
+      rapidFireRemaining.value = 0;
+      stopFiring();
       phase.value = ArenaPhase.gameOver;
       player?.setMoveInput(GameJoystickDirection.idle, Offset.zero);
       pauseEngine();
@@ -218,9 +309,24 @@ class SpriteArenaGame extends RoyGame {
     if (attackEnabled && !roundOver.value) {
       _damageCooldown = math.max(0, _damageCooldown - dt);
       _spawnCooldown = math.max(0, _spawnCooldown - dt);
+      if (pickup != null) {
+        pickupRemaining.value = math.max(0, pickupRemaining.value - dt);
+      }
+      rapidFireRemaining.value = math.max(0, rapidFireRemaining.value - dt);
+      _fireCooldown = math.max(0, _fireCooldown - dt);
+      if (_fireHeld && _fireCooldown <= 0) {
+        _fireOnce();
+        _fireCooldown = fireInterval;
+      }
     }
     super.update(dt);
-    if (!attackEnabled || roundOver.value || _spawnCooldown > 0) return;
+    if (!attackEnabled || roundOver.value) return;
+    if (pickup != null &&
+        player != null &&
+        pickup!.hitRect.overlaps(_playerHitRect)) {
+      pickup!.collect();
+    }
+    if (_spawnCooldown > 0) return;
     final active = monsters.where((m) => m.alive).length;
     if (_spawnedThisWave < _waveSize && active < activeMonsterCap) {
       _spawnNextMonster();
@@ -233,9 +339,23 @@ class SpriteArenaGame extends RoyGame {
     }
   }
 
+  Rect get _playerHitRect {
+    final p = player!;
+    return Rect.fromCenter(
+      center: Offset(p.position.x, p.position.y),
+      width: p.size.x * 0.5,
+      height: p.size.y * 0.5,
+    );
+  }
+
   void restart() {
     if (!_ready) return;
     pauseEngine();
+    pickup?.removeFromParent();
+    pickup = null;
+    pickupRemaining.value = 0;
+    rapidFireRemaining.value = 0;
+    stopFiring();
     for (final bullet in _bullets.toList()) {
       bullet.removeFromParent();
     }
