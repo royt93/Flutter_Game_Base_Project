@@ -82,6 +82,17 @@ void main() {
     expect(game.status, Match3Status.won);
   });
 
+  test('reset applies each level move limit and goal', () {
+    final game = Match3Engine(random: math.Random(3));
+    for (final level in Match3Level.levels) {
+      game.reset(level: level.number);
+      expect(game.level, level.number);
+      expect(game.moves, level.moves);
+      expect(game.scoreGoal, level.scoreGoal);
+      expect(game.status, Match3Status.ready);
+    }
+  });
+
   test('shuffle repairs a board with no legal swaps', () {
     final game = Match3Engine(random: math.Random(1), initialBoard: _board());
     expect(game.hasLegalMove, isFalse);

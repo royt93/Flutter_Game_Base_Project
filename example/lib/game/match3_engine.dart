@@ -403,7 +403,7 @@ class Match3Engine {
     _fillBoardWithoutMatches();
     _ensurePlayableBoard();
     score = 0;
-    moves = maxMoves;
+    moves = moveLimit;
     status = Match3Status.ready;
     lastSwap = null;
   }
