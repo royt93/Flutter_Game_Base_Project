@@ -1,0 +1,298 @@
+import 'package:flutter/material.dart';
+import 'dart:convert';
+import 'dart:math' as math;
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:get/get.dart';
+import 'package:roy_casual_kit/roy_casual_kit.dart';
+import 'package:roy_casual_kit_example/game/match3_engine.dart';
+import 'package:roy_casual_kit_example/screens/match3_lite_screen.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
+class _TestCloud implements CloudSaveProvider {
+  Map<String, Object?>? data;
+  int uploads = 0;
+
+  @override
+  Future<void> signIn() async {}
+
+  @override
+  Future<void> upload(Map<String, Object?> data) async {
+    uploads++;
+    this.data = Map.of(data);
+  }
+
+  @override
+  Future<Map<String, Object?>?> download() async =>
+      data == null ? null : Map.of(data!);
+}
+
+Widget _wrap({CloudSaveProvider? cloud}) => GetMaterialApp(
+  translations: AppTranslations(),
+  locale: const Locale('en'),
+  fallbackLocale: AppTranslations.fallback,
+  home: Match3LiteScreen(cloudProvider: cloud),
+);
+
+void main() {
+  tearDown(Get.reset);
+
+  setUp(() async {
+    SharedPreferences.setMockInitialValues({});
+    Get.put(
+      StorageService(await SharedPreferences.getInstance()),
+      permanent: true,
+    );
+    Get.put(EnergyService(maxEnergy: 3), permanent: true);
+    Get.put(EconomyWallet(storage: StorageService.to), permanent: true);
+    Get.put(DailyQuestService(), permanent: true);
+    Get.put(AchievementService(), permanent: true);
+    Get.put(LocalScoreboardService(capacity: 20), permanent: true);
+  });
+
+  testWidgets(
+    'screen displays game HUD, start consumes energy once, blocked when empty',
+    (tester) async {
+      await tester.pumpWidget(_wrap());
+      await tester.pump();
+      expect(find.byType(Match3LiteScreen), findsOneWidget);
+      expect(find.text('Energy 3'), findsOneWidget);
+
+      final startButton = find.byType(CommonButton).first;
+      await tester.ensureVisible(startButton);
+      await tester.pump();
+      await tester.tap(startButton);
+      await tester.pump();
+      expect(find.text('Energy 2'), findsOneWidget);
+    },
+  );
+
+  testWidgets('insufficient energy prevents starting a run', (tester) async {
+    Get.find<EnergyService>().consumeEnergy(3);
+    await tester.pumpWidget(_wrap());
+    await tester.pump();
+    final startButton = find.byType(CommonButton).first;
+    await tester.ensureVisible(startButton);
+    await tester.pump();
+    await tester.tap(startButton);
+    await tester.pump();
+    expect(find.text('Not enough energy. Wait for refill.'), findsOneWidget);
+  });
+
+  testWidgets(
+    'sync keeps higher cloud best score without dropping active run data',
+    (tester) async {
+      final board = List.generate(
+        Match3Engine.cellCount,
+        (index) =>
+            (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+      );
+      final cloud = _TestCloud()
+        ..data = {
+          'schemaVersion': 1,
+          'syncedAtMs': 0,
+          'bestScore': 900,
+          'board': board,
+          'score': 0,
+          'moves': 20,
+          'status': 'ready',
+          'runActive': false,
+          'rewarded': false,
+          'runId': 1,
+        };
+      await tester.pumpWidget(_wrap(cloud: cloud));
+      await tester.pump();
+      final syncButton = find
+          .ancestor(
+            of: find.text('Sync Save').first,
+            matching: find.byType(CommonButton),
+          )
+          .first;
+      await tester.ensureVisible(syncButton);
+      await tester.pump();
+      await tester.tap(syncButton);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      expect(find.text('Best 900'), findsOneWidget);
+      expect(find.text('Save synced. Best score kept.'), findsOneWidget);
+      expect(cloud.data?['bestScore'], 900);
+    },
+  );
+
+  testWidgets('win grants wallet, quest, achievement, and scoreboard once', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final board = List.generate(
+      Match3Engine.cellCount,
+      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+    );
+    board[6] = 0;
+    board[7] = 0;
+    board[8] = 1;
+    board[9] = 0;
+    final game = Match3Engine(
+      initialBoard: board,
+      score: 480,
+      random: math.Random(2),
+    );
+    await tester.pumpWidget(
+      GetMaterialApp(
+        translations: AppTranslations(),
+        locale: const Locale('en'),
+        fallbackLocale: AppTranslations.fallback,
+        home: Match3LiteScreen(engine: game),
+      ),
+    );
+    await tester.pump();
+    Get.find<DailyQuestService>().incrementProgress('match3_win_daily', 2);
+    final startButton = find
+        .ancestor(
+          of: find.text('Start Run (-1 Energy)').first,
+          matching: find.byType(CommonButton),
+        )
+        .first;
+    await tester.ensureVisible(startButton);
+    await tester.tap(startButton);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.ensureVisible(find.byKey(const ValueKey('match3_tile_8')));
+    await tester.tap(find.byKey(const ValueKey('match3_tile_8')));
+    await tester.ensureVisible(find.byKey(const ValueKey('match3_tile_9')));
+    await tester.tap(find.byKey(const ValueKey('match3_tile_9')));
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.pump();
+
+    expect(game.status, Match3Status.won);
+    expect(Get.find<EconomyWallet>().balanceOf('coins'), 25);
+    expect(Get.find<EconomyWallet>().balanceOf('gems'), 20);
+    expect(Get.find<DailyQuestService>().progressOf('match3_win_daily'), 3);
+    expect(
+      Get.find<AchievementService>().isCompleted('match3_first_win'),
+      isTrue,
+    );
+    expect(Get.find<LocalScoreboardService>().topN(1), hasLength(1));
+    expect(Get.find<DailyQuestService>().isClaimed('match3_win_daily'), isTrue);
+  });
+
+  testWidgets('claimed daily quest reward is not granted on later wins', (
+    tester,
+  ) async {
+    Get.find<DailyQuestService>().register('match3_win_daily', 1);
+    final board = List.generate(
+      Match3Engine.cellCount,
+      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+    );
+    board[6] = 0;
+    board[7] = 0;
+    board[8] = 1;
+    board[9] = 0;
+    final game = Match3Engine(
+      initialBoard: board,
+      score: 480,
+      random: math.Random(2),
+    );
+    await tester.pumpWidget(
+      GetMaterialApp(
+        translations: AppTranslations(),
+        locale: const Locale('en'),
+        fallbackLocale: AppTranslations.fallback,
+        home: Match3LiteScreen(engine: game),
+      ),
+    );
+    await tester.pump();
+    Get.find<DailyQuestService>().incrementProgress('match3_win_daily', 3);
+    Get.find<DailyQuestService>().claim('match3_win_daily');
+    final start = find
+        .ancestor(
+          of: find.text('Start Run (-1 Energy)').first,
+          matching: find.byType(CommonButton),
+        )
+        .first;
+    await tester.ensureVisible(start);
+    await tester.pump();
+    await tester.tap(start);
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.ensureVisible(find.byKey(const ValueKey('match3_tile_8')));
+    await tester.tap(find.byKey(const ValueKey('match3_tile_8')));
+    await tester.tap(find.byKey(const ValueKey('match3_tile_9')));
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(Get.find<EconomyWallet>().balanceOf('gems'), 0);
+    expect(Get.find<DailyQuestService>().isClaimed('match3_win_daily'), isTrue);
+  });
+
+  testWidgets('screen restores persisted active board without charging again', (
+    tester,
+  ) async {
+    final board = List.generate(
+      Match3Engine.cellCount,
+      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+    );
+    await StorageService.to.setString(
+      'match3_lite_save_v1',
+      jsonEncode({
+        'schemaVersion': 1,
+        'bestScore': 120,
+        'board': board,
+        'score': 80,
+        'moves': 17,
+        'status': 'playing',
+        'runActive': true,
+        'rewarded': false,
+        'runId': 99,
+      }),
+    );
+    Get.find<EnergyService>().consumeEnergy(1);
+
+    await tester.pumpWidget(_wrap());
+    await tester.pump();
+    expect(find.text('Energy 2'), findsOneWidget);
+    expect(find.text('Score 80'), findsOneWidget);
+    expect(find.text('Moves 17'), findsOneWidget);
+    expect(find.text('Start Run (-1 Energy)'), findsNWidgets(2));
+  });
+
+  testWidgets(
+    'malformed persisted board does not resume without charging energy',
+    (tester) async {
+      await StorageService.to.setString(
+        'match3_lite_save_v1',
+        jsonEncode({
+          'schemaVersion': 1,
+          'bestScore': 120,
+          'board': List<int>.filled(36, 0),
+          'score': 80,
+          'moves': 17,
+          'status': 'playing',
+          'runActive': true,
+          'rewarded': false,
+          'runId': 77,
+        }),
+      );
+      await tester.pumpWidget(_wrap());
+      await tester.pump();
+      expect(find.text('Energy 3'), findsOneWidget);
+      expect(find.text('Start Run (-1 Energy)'), findsNWidgets(2));
+    },
+  );
+
+  testWidgets('screen fits compact viewport and has accessible tile labels', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(240, 480);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(_wrap());
+    await tester.pump();
+    expect(
+      find.bySemanticsLabel(RegExp(r'Tile row 1 column 1')),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+  });
+}

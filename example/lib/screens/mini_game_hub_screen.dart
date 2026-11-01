@@ -4,6 +4,7 @@ import 'package:roy_casual_kit/roy_casual_kit.dart';
 
 import 'game_demo_screen.dart';
 import 'sprite_arena_demo_screen.dart';
+import 'match3_lite_screen.dart';
 
 /// Selects between the classic Flame starter and the full-screen sprite arena.
 class MiniGameHubScreen extends StatelessWidget {
@@ -27,7 +28,10 @@ class MiniGameHubScreen extends StatelessWidget {
                       Text(
                         'mini_games_subtitle'.tr,
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: NeonTheme.inkSoft, fontSize: 16),
+                        style: TextStyle(
+                          color: NeonTheme.inkSoft,
+                          fontSize: 16,
+                        ),
                       ),
                       const SizedBox(height: NeonTheme.s24),
                       CommonButton(
@@ -41,7 +45,15 @@ class MiniGameHubScreen extends StatelessWidget {
                         label: 'mini_game_sprite_arena'.tr,
                         semanticLabel: 'mini_game_sprite_arena'.tr,
                         color: NeonTheme.cyan,
-                        onTap: () => Get.to(() => const SpriteArenaDemoScreen()),
+                        onTap: () =>
+                            Get.to(() => const SpriteArenaDemoScreen()),
+                      ),
+                      const SizedBox(height: NeonTheme.s16),
+                      CommonButton(
+                        label: 'mini_game_match3'.tr,
+                        semanticLabel: 'mini_game_match3'.tr,
+                        color: NeonTheme.magenta,
+                        onTap: () => Get.to(() => const Match3LiteScreen()),
                       ),
                     ],
                   ),

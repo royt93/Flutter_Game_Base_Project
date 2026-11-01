@@ -9,10 +9,12 @@ import 'package:integration_test/integration_test.dart';
 import 'package:roy_casual_kit/roy_casual_kit.dart';
 import 'package:roy_casual_kit_example/main.dart' as app;
 import 'package:roy_casual_kit_example/game/arena_actors.dart';
+import 'package:roy_casual_kit_example/game/match3_engine.dart';
 import 'package:roy_casual_kit_example/game/sprite_arena_game.dart';
 import 'package:roy_casual_kit_example/screens/cookbook_screen.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
+import 'package:roy_casual_kit_example/screens/match3_lite_screen.dart';
 import 'package:roy_casual_kit_example/screens/mini_game_hub_screen.dart';
 import 'package:roy_casual_kit_example/screens/monetization_screen.dart';
 import 'package:roy_casual_kit_example/screens/settings_screen.dart';
@@ -73,6 +75,7 @@ Future<void> _popToHome(WidgetTester tester) async {
     find.byType(MiniGameHubScreen),
     find.byType(GameDemoScreen),
     find.byType(SpriteArenaDemoScreen),
+    find.byType(Match3LiteScreen),
   ].any((f) => f.evaluate().isNotEmpty);
   while (gameRoutesLive()) {
     Get.back();
@@ -120,6 +123,19 @@ Future<void> _goToGameDemo(WidgetTester tester) =>
 
 Future<void> _goToSpriteArena(WidgetTester tester) =>
     _openMiniGame(tester, 'mini_game_sprite_arena', SpriteArenaDemoScreen);
+
+Future<void> _goToMatch3(WidgetTester tester) =>
+    _openMiniGame(tester, 'mini_game_match3', Match3LiteScreen);
+
+Future<void> _goToMiniGameHub(WidgetTester tester) async {
+  while (find.byType(MiniGameHubScreen).evaluate().isNotEmpty) {
+    Get.back();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+  await tester.tap(find.byType(NeonButton).at(2));
+  await tester.pump(const Duration(seconds: 1));
+  expect(find.byType(MiniGameHubScreen), findsOneWidget);
+}
 
 Future<void> _goToMonetization(WidgetTester tester) async {
   while (find.byType(MonetizationScreen).evaluate().isNotEmpty) {
@@ -791,6 +807,64 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('Match-3 Lite opens and runs one valid swap on device', (
+    tester,
+  ) async {
+    await app.app();
+    await tester.pump(const Duration(seconds: 2));
+    await _goToMiniGameHub(tester);
+    await _goToMatch3(tester);
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('match3_score'.trParams({'score': '0'})), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(
+        'match3_tile_semantics'.trParams({'row': '1', 'column': '1'}),
+      ),
+      findsOneWidget,
+    );
+    final energyBefore = Get.find<EnergyService>().currentEnergy;
+    final startButton = find.byWidgetPredicate(
+      (widget) => widget is CommonButton && widget.label == 'match3_start'.tr,
+    );
+    await tester.ensureVisible(startButton);
+    await tester.tap(startButton);
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(Get.find<EnergyService>().currentEnergy, energyBefore - 1);
+
+    var matched = false;
+    for (var row = 0; row < Match3Engine.width && !matched; row++) {
+      for (
+        var column = 0;
+        column < Match3Engine.width - 1 && !matched;
+        column++
+      ) {
+        final first = find.byKey(ValueKey('match3_tile_${row * 6 + column}'));
+        final second = find.byKey(
+          ValueKey('match3_tile_${row * 6 + column + 1}'),
+        );
+        await tester.ensureVisible(first);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(first);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.ensureVisible(second);
+        await tester.pump(const Duration(milliseconds: 50));
+        await tester.tap(second);
+        await tester.pump(const Duration(milliseconds: 300));
+        matched = find
+            .text('match3_moves'.trParams({'moves': '19'}))
+            .evaluate()
+            .isNotEmpty;
+      }
+    }
+    expect(
+      matched,
+      isTrue,
+      reason: 'board should provide at least one valid swap',
+    );
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets(
     'FEAT-49: game time freezes on background, resumes without catch-up',

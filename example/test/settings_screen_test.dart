@@ -17,6 +17,7 @@ import 'package:roy_casual_kit/presentation/widgets/neon_button.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
 import 'package:roy_casual_kit_example/screens/mini_game_hub_screen.dart';
 import 'package:roy_casual_kit_example/screens/sprite_arena_demo_screen.dart';
+import 'package:roy_casual_kit_example/screens/match3_lite_screen.dart';
 import 'package:roy_casual_kit_example/screens/daily_reward_screen.dart';
 import 'package:roy_casual_kit_example/screens/home_screen.dart';
 import 'package:roy_casual_kit_example/screens/save_cloud_screen.dart';
@@ -104,7 +105,7 @@ void main() {
       );
 
       testWidgets(
-        'tap "Flame Demo" → điều hướng sang MiniGameHubScreen rồi mở cả 2 demo',
+        'tap Flame Demo → hub opens Classic, Sprite Arena, and Match-3',
         (tester) async {
           await _boot();
 
@@ -135,6 +136,24 @@ void main() {
             await tester.pump(const Duration(milliseconds: 100));
           }
           expect(find.byType(SpriteArenaDemoScreen), findsNothing);
+          expect(find.byType(MiniGameHubScreen), findsOneWidget);
+
+          await tester.tap(
+            find.byWidgetPredicate(
+              (widget) =>
+                  widget is CommonButton && widget.label == 'Match-3 Lite',
+            ),
+          );
+          for (var i = 0; i < 3; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
+          expect(find.byType(Match3LiteScreen), findsOneWidget);
+          expect(tester.takeException(), isNull);
+
+          Get.back();
+          for (var i = 0; i < 8; i++) {
+            await tester.pump(const Duration(milliseconds: 100));
+          }
           expect(find.byType(MiniGameHubScreen), findsOneWidget);
 
           // Can navigate to Classic Flame demo
