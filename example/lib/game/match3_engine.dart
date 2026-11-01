@@ -21,11 +21,11 @@ class Match3Level {
   final int moves;
 
   static const levels = [
-    Match3Level(number: 1, scoreGoal: 500, moves: 20),
-    Match3Level(number: 2, scoreGoal: 600, moves: 20),
-    Match3Level(number: 3, scoreGoal: 700, moves: 19),
-    Match3Level(number: 4, scoreGoal: 800, moves: 19),
-    Match3Level(number: 5, scoreGoal: 900, moves: 18),
+    Match3Level(number: 1, scoreGoal: 1200, moves: 20),
+    Match3Level(number: 2, scoreGoal: 1370, moves: 20),
+    Match3Level(number: 3, scoreGoal: 1380, moves: 19),
+    Match3Level(number: 4, scoreGoal: 1390, moves: 19),
+    Match3Level(number: 5, scoreGoal: 1420, moves: 18),
   ];
 
   static Match3Level forNumber(int number) {

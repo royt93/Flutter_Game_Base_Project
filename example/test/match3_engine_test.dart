@@ -46,11 +46,11 @@ void main() {
 
   test('five levels use selected score goals and move limits', () {
     expect(Match3Level.levels.map((level) => level.scoreGoal), [
-      500,
-      600,
-      700,
-      800,
-      900,
+      1200,
+      1370,
+      1380,
+      1390,
+      1420,
     ]);
     expect(Match3Level.levels.map((level) => level.moves), [
       20,
@@ -71,12 +71,12 @@ void main() {
     board[9] = 0;
     final game = Match3Engine(
       initialBoard: board,
-      score: 580,
+      score: 1350,
       moves: 20,
       status: Match3Status.playing,
       level: 2,
     );
-    expect(game.scoreGoal, 600);
+    expect(game.scoreGoal, 1370);
     expect(game.moveLimit, 20);
     game.swap(8, 9);
     expect(game.status, Match3Status.won);
@@ -176,12 +176,12 @@ void main() {
     final game = Match3Engine(
       random: math.Random(1),
       initialBoard: board,
-      score: 480,
+      score: 1170,
       status: Match3Status.playing,
     );
     expect(game.swap(8, 9), isNotNull);
     expect(game.status, Match3Status.won);
-    expect(game.score, greaterThanOrEqualTo(500));
+    expect(game.score, greaterThanOrEqualTo(1200));
   });
 
   test('rejects initial boards that already contain a match', () {

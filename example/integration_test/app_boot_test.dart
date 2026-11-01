@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:math' as math;
 
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
@@ -96,7 +97,9 @@ Future<void> _openMiniGame(
     await tester.drag(scrollable.first, const Offset(0, 1000));
     await tester.pump(const Duration(milliseconds: 200));
   }
-  final btn = find.widgetWithText(NeonButton, 'game_demo'.tr).first;
+  final homeButtons = find.byType(NeonButton);
+  expect(homeButtons, findsAtLeastNWidgets(3));
+  final btn = homeButtons.at(2);
   await tester.ensureVisible(btn);
   await tester.pump(const Duration(milliseconds: 200));
   await tester.tap(btn);
@@ -176,13 +179,34 @@ Future<void> _scrollUntilVisible(
   WidgetTester tester,
   Finder target, {
   double delta = 450,
-  int maxTries = 60,
+  int maxTries = 200,
 }) async {
+  final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
+  final outer = showcaseList.evaluate().isEmpty
+      ? null
+      : find
+            .descendant(of: showcaseList, matching: find.byType(Scrollable))
+            .first;
   for (var i = 0; i < maxTries; i++) {
     if (target.evaluate().isNotEmpty) return;
-    await tester.drag(find.byType(ListView).first, Offset(0, -delta));
-    await tester.pump(const Duration(milliseconds: 300));
+    if (outer != null) {
+      // The showcase is far longer than maxTries * delta, so jump the outer
+      // list instead of dragging whichever ListView happens to be first.
+      final position = tester.state<ScrollableState>(outer).position;
+      final step = math.max(delta, position.viewportDimension * 0.8);
+      final next = (position.pixels + step).clamp(
+        0.0,
+        position.maxScrollExtent,
+      );
+      if (next == position.pixels) break;
+      position.jumpTo(next);
+      await tester.pump(const Duration(milliseconds: 100));
+    } else {
+      await tester.drag(find.byType(ListView).first, Offset(0, -delta));
+      await tester.pump(const Duration(milliseconds: 300));
+    }
   }
+  if (target.evaluate().isNotEmpty) return;
   throw StateError(
     '_scrollUntilVisible: target not found after $maxTries scrolls',
   );
@@ -2499,17 +2523,7 @@ void main() {
     await _goToWidgetShowcase(tester);
 
     final buy = find.byKey(const ValueKey('flashSaleBuyBtn'));
-    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-    final scrollable = find
-        .descendant(of: showcaseList, matching: find.byType(Scrollable))
-        .first;
-    final position = tester.state<ScrollableState>(scrollable).position;
-    for (var i = 0; i < 100 && buy.evaluate().isEmpty; i++) {
-      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
-      if (next == position.pixels) break;
-      position.jumpTo(next);
-      await tester.pump(const Duration(milliseconds: 100));
-    }
+    await _scrollUntilVisible(tester, buy);
     expect(buy, findsWidgets);
     await tester.ensureVisible(buy.first);
     await tester.pump(const Duration(milliseconds: 300));
@@ -2529,20 +2543,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final upgrade = find.byKey(const Key('tieredChestUpgradeBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && upgrade.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, upgrade);
       expect(upgrade, findsWidgets);
       await tester.ensureVisible(upgrade.first);
       await tester.pump(const Duration(milliseconds: 300));
@@ -2570,20 +2571,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final progressBtn = find.byKey(const Key('seasonEventProgressBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && progressBtn.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, progressBtn);
       expect(progressBtn, findsWidgets);
       await tester.ensureVisible(progressBtn.first);
       await tester.pump(const Duration(milliseconds: 300));
@@ -2612,20 +2600,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final hammerSlot = find.byKey(const ValueKey('boosterSlotTap_hammer'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && hammerSlot.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, hammerSlot);
       expect(hammerSlot, findsWidgets);
       await tester.ensureVisible(hammerSlot.first);
       await tester.pump(const Duration(milliseconds: 300));
@@ -2651,17 +2626,7 @@ void main() {
     await _goToWidgetShowcase(tester);
 
     final toggle = find.byKey(const Key('tapHintToggleBtn'));
-    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-    final scrollable = find
-        .descendant(of: showcaseList, matching: find.byType(Scrollable))
-        .first;
-    final position = tester.state<ScrollableState>(scrollable).position;
-    for (var i = 0; i < 100 && toggle.evaluate().isEmpty; i++) {
-      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
-      if (next == position.pixels) break;
-      position.jumpTo(next);
-      await tester.pump(const Duration(milliseconds: 100));
-    }
+    await _scrollUntilVisible(tester, toggle);
     expect(toggle, findsWidgets);
     await tester.ensureVisible(toggle.first);
     await tester.pump(const Duration(milliseconds: 400));
@@ -2690,17 +2655,7 @@ void main() {
     await _goToWidgetShowcase(tester);
 
     final add = find.byKey(const Key('comboMeterAddBtn'));
-    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-    final scrollable = find
-        .descendant(of: showcaseList, matching: find.byType(Scrollable))
-        .first;
-    final position = tester.state<ScrollableState>(scrollable).position;
-    for (var i = 0; i < 100 && add.evaluate().isEmpty; i++) {
-      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
-      if (next == position.pixels) break;
-      position.jumpTo(next);
-      await tester.pump(const Duration(milliseconds: 100));
-    }
+    await _scrollUntilVisible(tester, add);
     expect(add, findsWidgets);
     await tester.ensureVisible(add.first);
     await tester.pump(const Duration(milliseconds: 300));
@@ -2722,17 +2677,7 @@ void main() {
     await _goToWidgetShowcase(tester);
 
     final stopWheelAnchor = find.byKey(const Key('multiplierWheelStopBtn'));
-    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-    final scrollable = find
-        .descendant(of: showcaseList, matching: find.byType(Scrollable))
-        .first;
-    final position = tester.state<ScrollableState>(scrollable).position;
-    for (var i = 0; i < 100 && stopWheelAnchor.evaluate().isEmpty; i++) {
-      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
-      if (next == position.pixels) break;
-      position.jumpTo(next);
-      await tester.pump(const Duration(milliseconds: 80));
-    }
+    await _scrollUntilVisible(tester, stopWheelAnchor);
     expect(stopWheelAnchor, findsWidgets);
     await tester.ensureVisible(stopWheelAnchor.first);
     await tester.pump(const Duration(seconds: 1));
@@ -2839,20 +2784,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final stopBtn = find.byKey(const Key('multiplierWheelStopBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && stopBtn.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, stopBtn);
       expect(stopBtn, findsWidgets);
       await tester.ensureVisible(stopBtn.first);
       await tester.pump(const Duration(milliseconds: 300));
@@ -2872,17 +2804,7 @@ void main() {
     await _goToWidgetShowcase(tester);
 
     final addBtn = find.byKey(const Key('starChestAddStarsBtn'));
-    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-    final scrollable = find
-        .descendant(of: showcaseList, matching: find.byType(Scrollable))
-        .first;
-    final position = tester.state<ScrollableState>(scrollable).position;
-    for (var i = 0; i < 100 && addBtn.evaluate().isEmpty; i++) {
-      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
-      if (next == position.pixels) break;
-      position.jumpTo(next);
-      await tester.pump(const Duration(milliseconds: 100));
-    }
+    await _scrollUntilVisible(tester, addBtn);
     expect(addBtn, findsWidgets);
     await tester.ensureVisible(addBtn.first);
     await tester.pump(const Duration(milliseconds: 300));
@@ -2911,20 +2833,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final status = find.byKey(const Key('levelPathMapStatus'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && status.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, status);
       expect(status, findsWidgets);
       await tester.ensureVisible(status.first);
       await tester.pump(const Duration(milliseconds: 300));
@@ -2949,20 +2858,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final addProgress = find.byKey(const Key('weeklyChallengeAddBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && addProgress.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, addProgress);
       expect(addProgress, findsWidgets);
       await tester.ensureVisible(addProgress.first);
       await tester.pump(const Duration(milliseconds: 300));
@@ -2988,20 +2884,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final openBtn = find.byKey(const Key('openMilestoneBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && openBtn.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, openBtn);
       expect(openBtn, findsWidgets);
       await tester.ensureVisible(openBtn.first);
       await tester.pump(const Duration(milliseconds: 300));
@@ -3027,20 +2910,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final win = find.byKey(const Key('winRoundBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && win.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, win);
       expect(win, findsWidgets);
       await tester.ensureVisible(win.first);
       await tester.pump(const Duration(milliseconds: 300));
@@ -3069,24 +2939,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final create = find.byKey(const ValueKey('saveSlotCreateBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && create.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
-      position.jumpTo(
-        (position.pixels + 350).clamp(0.0, position.maxScrollExtent),
-      );
-      await tester.pump(const Duration(milliseconds: 200));
+      await _scrollUntilVisible(tester, create);
       await tester.ensureVisible(create);
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -3138,20 +2991,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final open = find.byKey(const Key('openStreakShieldCardBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && open.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, open);
       await tester.ensureVisible(open);
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -3203,20 +3043,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final addPoints = find.byKey(const Key('vipPerkAddPointsBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && addPoints.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, addPoints);
       await tester.ensureVisible(addPoints);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -3247,20 +3074,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final grid = find.byKey(const Key('characterCollectionShowcaseGrid'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && grid.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, grid);
       await tester.ensureVisible(grid);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -4662,7 +4476,10 @@ void main() {
     }
     await tester.ensureVisible(strip);
     await tester.pump(const Duration(milliseconds: 300));
-    await tester.tap(find.byKey(const ValueKey('badgeShowcaseSlot_4')));
+    final slot = find.byKey(const ValueKey('badgeShowcaseSlot_4'));
+    await tester.ensureVisible(slot);
+    await tester.pump(const Duration(milliseconds: 300));
+    await tester.tap(slot);
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Badge slot taps: 1'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -4909,20 +4726,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final card = find.byKey(const Key('giftLivesShowcaseCard'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, card);
       await tester.ensureVisible(card);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -4943,20 +4747,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final list = find.byKey(const Key('teamRosterShowcaseList'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && list.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, list);
       await tester.ensureVisible(list);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -4982,20 +4773,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final card = find.byKey(const Key('achievementRoadmapShowcaseCard'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, card);
       await tester.ensureVisible(card);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -5019,20 +4797,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final panel = find.byKey(const Key('upgradePreviewShowcasePanel'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && panel.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, panel);
       await tester.ensureVisible(panel);
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.widget<UpgradePreviewPanel>(panel).currentLevel, 3);
@@ -5053,20 +4818,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final card = find.byKey(const Key('craftingRecipeShowcaseCard'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, card);
       await tester.ensureVisible(card);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -5090,20 +4842,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final card = find.byKey(const Key('friendInviteShowcaseCard'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, card);
       await tester.ensureVisible(card);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -5123,20 +4862,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final card = find.byKey(const Key('communityLeaderboardShowcaseCard'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, card);
       await tester.ensureVisible(card);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -5166,20 +4892,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final card = find.byKey(const Key('guildContributionShowcaseCard'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, card);
       await tester.ensureVisible(card);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -5192,11 +4905,25 @@ void main() {
       expect(find.text('350 / 1,000'), findsOneWidget);
 
       final claim = find.byKey(const ValueKey('guildMilestone_demo_m100'));
+      await _scrollUntilVisible(tester, claim);
       await tester.ensureVisible(claim);
-      position.jumpTo(
-        (position.pixels - 250).clamp(0.0, position.maxScrollExtent),
+      final showcaseScrollable = find
+          .descendant(
+            of: find.byKey(const ValueKey('widgetShowcaseList')),
+            matching: find.byType(Scrollable),
+          )
+          .first;
+      final showcasePosition = tester
+          .state<ScrollableState>(showcaseScrollable)
+          .position;
+      showcasePosition.jumpTo(
+        (showcasePosition.pixels - 100).clamp(
+          0.0,
+          showcasePosition.maxScrollExtent,
+        ),
       );
       await tester.pump(const Duration(milliseconds: 200));
+      expect(claim.hitTestable(), findsOneWidget);
       await tester.tap(claim);
       await tester.pump(const Duration(milliseconds: 300));
       expect(find.text('Guild claims: 1'), findsOneWidget);
@@ -5212,20 +4939,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final panel = find.byKey(const Key('collectionAlbumShowcasePanel'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && panel.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, panel);
       await tester.ensureVisible(panel);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -5263,20 +4977,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final card = find.byKey(const Key('comebackBundleShowcaseCard'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, card);
       await tester.ensureVisible(card);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -5320,20 +5021,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final road = find.byKey(const Key('rewardTrackShowcaseRoad'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && road.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, road);
       await tester.ensureVisible(road);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -5352,7 +5040,7 @@ void main() {
       final claim = find.byKey(
         const ValueKey('rewardTrackClaim_showcase_tier_1_free_Coins'),
       );
-      await tester.scrollUntilVisible(claim, 200, scrollable: scrollable);
+      await _scrollUntilVisible(tester, claim);
       await tester.ensureVisible(claim);
       await tester.pump(const Duration(milliseconds: 200));
       await tester.tap(claim);
@@ -5370,20 +5058,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final card = find.byKey(const Key('eventCalendarShowcaseCard'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, card);
       await tester.ensureVisible(card);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -5413,20 +5088,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final stack = find.byKey(const Key('dailyOfferShowcaseStack'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && stack.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, stack);
       await tester.ensureVisible(stack);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -5456,20 +5118,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final open = find.byKey(const Key('openRankPromotionBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && open.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, open);
       await tester.ensureVisible(open);
       await tester.pump(const Duration(milliseconds: 200));
 
@@ -5514,20 +5163,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final card = find.byKey(const Key('inboxShowcaseCard'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && card.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, card);
       await tester.ensureVisible(card);
       await tester.pump(const Duration(milliseconds: 300));
 
@@ -5566,20 +5202,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final open = find.byKey(const Key('openPrestigeCardBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && open.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, open);
       expect(open, findsWidgets);
       await tester.ensureVisible(open.first);
       await tester.pump(const Duration(milliseconds: 300));
@@ -5615,20 +5238,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final open = find.byKey(const Key('simulateOfflineReturnBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && open.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, open);
       expect(open, findsWidgets);
       await tester.ensureVisible(open.first);
       await tester.pump(const Duration(milliseconds: 300));
@@ -5657,20 +5267,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final open = find.byKey(const Key('simulateOfflineReturnBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && open.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, open);
       expect(open, findsWidgets);
       await tester.ensureVisible(open.first);
       await tester.pump(const Duration(milliseconds: 300));
@@ -5697,17 +5294,7 @@ void main() {
     await _goToWidgetShowcase(tester);
 
     final bump = find.byKey(const Key('tieredRankBumpBtn'));
-    final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-    final scrollable = find
-        .descendant(of: showcaseList, matching: find.byType(Scrollable))
-        .first;
-    final position = tester.state<ScrollableState>(scrollable).position;
-    for (var i = 0; i < 100 && bump.evaluate().isEmpty; i++) {
-      final next = (position.pixels + 450).clamp(0.0, position.maxScrollExtent);
-      if (next == position.pixels) break;
-      position.jumpTo(next);
-      await tester.pump(const Duration(milliseconds: 100));
-    }
+    await _scrollUntilVisible(tester, bump);
     expect(bump, findsWidgets);
     await tester.ensureVisible(bump.first);
     await tester.pump(const Duration(milliseconds: 300));
@@ -5727,20 +5314,7 @@ void main() {
       await _goToWidgetShowcase(tester);
 
       final openBtn = find.byKey(const Key('openMoveHintBtn'));
-      final showcaseList = find.byKey(const ValueKey('widgetShowcaseList'));
-      final scrollable = find
-          .descendant(of: showcaseList, matching: find.byType(Scrollable))
-          .first;
-      final position = tester.state<ScrollableState>(scrollable).position;
-      for (var i = 0; i < 100 && openBtn.evaluate().isEmpty; i++) {
-        final next = (position.pixels + 450).clamp(
-          0.0,
-          position.maxScrollExtent,
-        );
-        if (next == position.pixels) break;
-        position.jumpTo(next);
-        await tester.pump(const Duration(milliseconds: 100));
-      }
+      await _scrollUntilVisible(tester, openBtn);
       expect(openBtn, findsWidgets);
       await tester.ensureVisible(openBtn.first);
       await tester.pump(const Duration(milliseconds: 300));
@@ -6413,16 +5987,28 @@ void main() {
 
     final rewardTrigger = find.widgetWithText(CommonButton, 'Show reward');
     await _scrollUntilVisible(tester, rewardTrigger);
+    await tester.ensureVisible(rewardTrigger.first);
+    await tester.pump(const Duration(milliseconds: 200));
     await tester.tap(rewardTrigger.first);
-    await tester.pump();
     final popup = find.byType(RewardPopup);
+    for (var i = 0; i < 10 && popup.evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(popup, findsOneWidget);
     final spring = find.descendant(
       of: popup,
       matching: find.byType(SpringScaleTransition),
     );
     expect(spring, findsOneWidget);
-    await tester.pump(const Duration(seconds: 1));
+    for (var i = 0; i < 30; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+      if (!tester
+          .widget<SpringScaleTransition>(spring)
+          .controller
+          .isAnimating) {
+        break;
+      }
+    }
     expect(
       tester.widget<SpringScaleTransition>(spring).controller.value,
       closeTo(1, 0.001),

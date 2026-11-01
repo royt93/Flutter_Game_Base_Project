@@ -140,7 +140,7 @@ void main() {
     board[9] = 0;
     final game = Match3Engine(
       initialBoard: board,
-      score: 480,
+      score: 1170,
       random: math.Random(2),
     );
     await tester.pumpWidget(
@@ -195,7 +195,7 @@ void main() {
     board[9] = 0;
     final game = Match3Engine(
       initialBoard: board,
-      score: 480,
+      score: 1170,
       random: math.Random(2),
     );
     await tester.pumpWidget(
@@ -391,7 +391,7 @@ void main() {
     board[9] = 0;
     final game = Match3Engine(
       initialBoard: board,
-      score: 480,
+      score: 1170,
       random: math.Random(22),
     );
     await tester.pumpWidget(
@@ -435,7 +435,7 @@ void main() {
     await tester.tap(next);
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Level 2/5'), findsOneWidget);
-    expect(find.text('Goal 600'), findsOneWidget);
+    expect(find.text('Goal 1370'), findsOneWidget);
     expect(find.text('Moves 20'), findsOneWidget);
     expect(Get.find<EnergyService>().currentEnergy, energyAfterWin - 1);
     expect(tester.takeException(), isNull);
@@ -544,7 +544,7 @@ void main() {
     board[9] = 0;
     final game = Match3Engine(
       initialBoard: board,
-      score: 480,
+      score: 1170,
       random: math.Random(22),
     );
     await tester.pumpWidget(
