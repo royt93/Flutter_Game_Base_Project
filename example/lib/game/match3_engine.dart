@@ -316,17 +316,17 @@ class Match3Engine {
   void _resolveCascades() {
     var cascade = 0;
     final steps = <Match3CascadeStep>[];
+    var visibleBoard = List<int>.of(_board);
     while (true) {
       final matches = _matches();
       if (matches.isEmpty) {
         final shuffled = !_hasLegalSwap();
-        final boardBeforeShuffle = List<int>.of(_board);
         if (shuffled) _ensurePlayableBoard();
         if (shuffled) {
           steps.add(
             Match3CascadeStep(
               matched: const {},
-              boardBefore: boardBeforeShuffle,
+              boardBefore: visibleBoard,
               boardAfterRefill: _board,
               scoreGained: 0,
               cascadeIndex: cascade,
@@ -334,6 +334,7 @@ class Match3Engine {
             ),
           );
         }
+        visibleBoard = List<int>.of(_board);
         lastCascade = List.unmodifiable(steps);
         lastResolvedBoard = List.unmodifiable(_board);
         lastCascadeCount = cascade;
@@ -342,11 +343,12 @@ class Match3Engine {
       cascade++;
       final gained = matches.length * pointsPerTile * cascade;
       score += gained;
-      final boardBefore = List<int>.of(_board);
+      final boardBefore = List<int>.of(visibleBoard);
       for (final index in matches) {
         _board[index] = -1;
       }
       _applyGravityAndRefill();
+      visibleBoard = List<int>.of(_board);
       steps.add(
         Match3CascadeStep(
           matched: matches,

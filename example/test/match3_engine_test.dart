@@ -134,6 +134,10 @@ void main() {
     expect(steps.first.boardBefore[8], 0);
     expect(steps.first.boardBefore[9], 1);
     expect(steps.first.boardBefore[6], 0);
+    game.revealCascadeStep(steps.first);
+    expect(game.board[6], -1);
+    game.showResolvedBoard();
+    expect(game.board.every((tile) => tile >= 0), isTrue);
     expect(steps.first.boardAfterRefill, hasLength(Match3Engine.cellCount));
     expect(
       steps.every((step) => step.boardAfterRefill.every((v) => v >= 0)),

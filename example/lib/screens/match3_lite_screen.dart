@@ -1,4 +1,8 @@
+import 'dart:async';
+import 'dart:convert';
 import 'dart:math' as math;
+
+import 'package:flutter/services.dart';
 
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -11,6 +15,7 @@ const _questRewardGems = 20;
 const _achievementId = 'match3_first_win';
 const _saveKey = 'match3_lite_save_v2';
 const _legacySaveKey = 'match3_lite_save_v1';
+const _telemetryKey = 'match3_playtest_telemetry_v1';
 
 class _Match3CloudProvider implements CloudSaveProvider {
   Map<String, Object?>? data;
@@ -105,6 +110,9 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
       },
     );
     final saved = _save.load();
+    if (storageKey == _legacySaveKey && saved != null) {
+      unawaited(_save.save(saved));
+    }
     final savedLevel = saved?['level'];
     _level = savedLevel is int && savedLevel >= 1 && savedLevel <= 5
         ? savedLevel
@@ -305,10 +313,65 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     }
   }
 
+  Future<void> _recordPlaytestRun() async {
+    final storage = StorageService.to;
+    final raw = storage.getString(_telemetryKey);
+    final report = raw == null
+        ? <String, Object?>{'schemaVersion': 1, 'levels': <String, Object?>{}}
+        : (jsonDecode(raw) as Map).cast<String, Object?>();
+    final levels = (report['levels'] as Map).cast<String, Object?>();
+    final key = '$_level';
+    final previous =
+        (levels[key] as Map?)?.cast<String, Object?>() ??
+        <String, Object?>{
+          'plays': 0,
+          'wins': 0,
+          'losses': 0,
+          'totalScore': 0,
+          'totalMovesUsed': 0,
+        };
+    final won = _game.status == Match3Status.won;
+    levels[key] = {
+      'plays': (previous['plays'] as int) + 1,
+      'wins': (previous['wins'] as int) + (won ? 1 : 0),
+      'losses': (previous['losses'] as int) + (won ? 0 : 1),
+      'totalScore': (previous['totalScore'] as int) + _game.score,
+      'totalMovesUsed':
+          (previous['totalMovesUsed'] as int) +
+          (Match3Level.forNumber(_level).moves - _game.moves),
+    };
+    await storage.setString(_telemetryKey, jsonEncode(report));
+  }
+
+  Future<void> _copyPlaytestReport() async {
+    final raw = StorageService.to.getString(_telemetryKey);
+    final report = raw == null
+        ? <String, Object?>{'schemaVersion': 1, 'levels': <String, Object?>{}}
+        : (jsonDecode(raw) as Map).cast<String, Object?>();
+    final levels = (report['levels'] as Map).cast<String, Object?>();
+    for (final entry in levels.entries.toList()) {
+      final totals = (entry.value as Map).cast<String, Object?>();
+      final plays = totals['plays'] as int;
+      levels[entry.key] = {
+        ...totals,
+        'winRate': plays == 0 ? 0 : (totals['wins'] as int) / plays,
+        'averageScore': plays == 0 ? 0 : (totals['totalScore'] as int) / plays,
+        'averageMovesUsed': plays == 0
+            ? 0
+            : (totals['totalMovesUsed'] as int) / plays,
+      };
+    }
+    await Clipboard.setData(
+      ClipboardData(text: const JsonEncoder.withIndent('  ').convert(report)),
+    );
+    if (mounted) setState(() => _status = 'match3_report_copied'.tr);
+  }
+
   Future<void> _finishRun() async {
     if (_rewarded) return;
     _running = false;
     _rewarded = true;
+    await _recordPlaytestRun();
     _scoreboard.submitScore('Player', _game.score);
     if (_game.status == Match3Status.won) {
       final questWasClaimed = _quests.isClaimed(_questId);
@@ -602,6 +665,11 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
           onTap: _restart,
           color: NeonTheme.orange,
         ),
+      CommonButton(
+        label: 'match3_copy_report'.tr,
+        onTap: _copyPlaytestReport,
+        color: NeonTheme.cyan,
+      ),
       CommonButton(
         label: 'match3_sync'.tr,
         onTap: _sync,
