@@ -9,6 +9,57 @@ class Match3Swap {
   final int to;
 }
 
+class Match3Level {
+  const Match3Level({
+    required this.number,
+    required this.scoreGoal,
+    required this.moves,
+  });
+
+  final int number;
+  final int scoreGoal;
+  final int moves;
+
+  static const levels = [
+    Match3Level(number: 1, scoreGoal: 500, moves: 20),
+    Match3Level(number: 2, scoreGoal: 600, moves: 20),
+    Match3Level(number: 3, scoreGoal: 700, moves: 19),
+    Match3Level(number: 4, scoreGoal: 800, moves: 19),
+    Match3Level(number: 5, scoreGoal: 900, moves: 18),
+  ];
+
+  static Match3Level forNumber(int number) {
+    if (number < 1 || number > levels.length) {
+      throw ArgumentError.value(
+        number,
+        'number',
+        'must be between 1 and ${levels.length}',
+      );
+    }
+    return levels[number - 1];
+  }
+}
+
+class Match3CascadeStep {
+  Match3CascadeStep({
+    required Set<int> matched,
+    required List<int> boardBefore,
+    required List<int> boardAfterRefill,
+    required this.scoreGained,
+    required this.cascadeIndex,
+    required this.shuffled,
+  }) : matched = Set.unmodifiable(matched),
+       boardBefore = List.unmodifiable(boardBefore),
+       boardAfterRefill = List.unmodifiable(boardAfterRefill);
+
+  final Set<int> matched;
+  final List<int> boardBefore;
+  final List<int> boardAfterRefill;
+  final int scoreGained;
+  final int cascadeIndex;
+  final bool shuffled;
+}
+
 class Match3Engine {
   Match3Engine({
     math.Random? random,
@@ -16,14 +67,16 @@ class Match3Engine {
     this.score = 0,
     int? moves,
     this.status = Match3Status.ready,
+    this.level = 1,
   }) : _random = random ?? math.Random(),
-       moves = moves ?? maxMoves {
+       moves = moves ?? Match3Level.forNumber(level).moves {
+    final levelConfig = Match3Level.forNumber(level);
     if (score < 0) throw ArgumentError.value(score, 'score', 'must be >= 0');
-    if (this.moves < 0 || this.moves > maxMoves) {
+    if (this.moves < 0 || this.moves > levelConfig.moves) {
       throw ArgumentError.value(
         this.moves,
         'moves',
-        'must be between 0 and $maxMoves',
+        'must be between 0 and ${levelConfig.moves}',
       );
     }
     if (initialBoard != null &&
@@ -48,7 +101,7 @@ class Match3Engine {
         'must not contain pre-existing matches',
       );
     }
-    if (status == Match3Status.ready && this.moves < maxMoves) {
+    if (status == Match3Status.ready && this.moves < levelConfig.moves) {
       throw ArgumentError.value(
         status,
         'status',
@@ -60,9 +113,12 @@ class Match3Engine {
   static const width = 6;
   static const cellCount = width * width;
   static const maxMoves = 20;
-  static const scoreGoal = 500;
   static const tileKinds = 5;
   static const pointsPerTile = 10;
+
+  int level;
+  int get scoreGoal => Match3Level.forNumber(level).scoreGoal;
+  int get moveLimit => Match3Level.forNumber(level).moves;
 
   final math.Random _random;
   late final List<int> _board;
@@ -70,6 +126,9 @@ class Match3Engine {
   int moves = maxMoves;
   Match3Status status = Match3Status.ready;
   Match3Swap? lastSwap;
+  List<Match3CascadeStep> lastCascade = const [];
+  List<int> lastResolvedBoard = const [];
+  int lastCascadeCount = 0;
 
   List<int> get board => List.unmodifiable(_board);
   bool get isTerminal =>
@@ -217,33 +276,35 @@ class Match3Engine {
     return result;
   }
 
-  bool swap(int from, int to) {
+  List<Match3CascadeStep>? swap(int from, int to) {
     if (status == Match3Status.won || status == Match3Status.lost) {
-      return false;
+      return null;
     }
     if (from < 0 || from >= cellCount || to < 0 || to >= cellCount) {
-      return false;
+      return null;
     }
     if ((from % width - to % width).abs() +
             (from ~/ width - to ~/ width).abs() !=
         1) {
-      return false;
+      return null;
     }
 
     _swapTiles(from, to);
     if (_matches().isEmpty) {
       _swapTiles(from, to);
-      return false;
+      return null;
     }
 
     status = Match3Status.playing;
     lastSwap = Match3Swap(from, to);
+    lastCascade = [];
+    lastCascadeCount = 0;
     moves--;
     _resolveCascades();
     status = score >= scoreGoal
         ? Match3Status.won
         : (moves == 0 ? Match3Status.lost : Match3Status.playing);
-    return true;
+    return lastCascade;
   }
 
   void _swapTiles(int a, int b) {
@@ -254,35 +315,90 @@ class Match3Engine {
 
   void _resolveCascades() {
     var cascade = 0;
+    final steps = <Match3CascadeStep>[];
     while (true) {
       final matches = _matches();
       if (matches.isEmpty) {
-        _ensurePlayableBoard();
+        final shuffled = !_hasLegalSwap();
+        final boardBeforeShuffle = List<int>.of(_board);
+        if (shuffled) _ensurePlayableBoard();
+        if (shuffled) {
+          steps.add(
+            Match3CascadeStep(
+              matched: const {},
+              boardBefore: boardBeforeShuffle,
+              boardAfterRefill: _board,
+              scoreGained: 0,
+              cascadeIndex: cascade,
+              shuffled: true,
+            ),
+          );
+        }
+        lastCascade = List.unmodifiable(steps);
+        lastResolvedBoard = List.unmodifiable(_board);
+        lastCascadeCount = cascade;
         return;
       }
       cascade++;
-      score += matches.length * pointsPerTile * cascade;
+      final gained = matches.length * pointsPerTile * cascade;
+      score += gained;
+      final boardBefore = List<int>.of(_board);
       for (final index in matches) {
         _board[index] = -1;
       }
-      for (var x = 0; x < width; x++) {
-        var writeY = width - 1;
-        for (var y = width - 1; y >= 0; y--) {
-          final index = y * width + x;
-          if (_board[index] != -1) {
-            _board[writeY * width + x] = _board[index];
-            writeY--;
-          }
-        }
-        while (writeY >= 0) {
-          _board[writeY * width + x] = _random.nextInt(tileKinds);
+      _applyGravityAndRefill();
+      steps.add(
+        Match3CascadeStep(
+          matched: matches,
+          boardBefore: boardBefore,
+          boardAfterRefill: _board,
+          scoreGained: gained,
+          cascadeIndex: cascade,
+          shuffled: false,
+        ),
+      );
+    }
+  }
+
+  void revealCascadeStep(Match3CascadeStep step) {
+    if (step.shuffled) {
+      _board.setAll(0, step.boardAfterRefill);
+      return;
+    }
+    _board.setAll(0, step.boardBefore);
+    for (final index in step.matched) {
+      _board[index] = -1;
+    }
+  }
+
+  void showResolvedBoard() {
+    if (lastResolvedBoard.length == cellCount) {
+      _board.setAll(0, lastResolvedBoard);
+    }
+  }
+
+  void _applyGravityAndRefill() {
+    for (var x = 0; x < width; x++) {
+      var writeY = width - 1;
+      for (var y = width - 1; y >= 0; y--) {
+        final index = y * width + x;
+        if (_board[index] != -1) {
+          _board[writeY * width + x] = _board[index];
           writeY--;
         }
+      }
+      while (writeY >= 0) {
+        _board[writeY * width + x] = _random.nextInt(tileKinds);
+        writeY--;
       }
     }
   }
 
-  void reset() {
+  void reset({int? level}) {
+    if (level != null) {
+      Match3Level.forNumber(level);
+      this.level = level;
+    }
     _board.fillRange(0, cellCount, -1);
     _fillBoardWithoutMatches();
     _ensurePlayableBoard();

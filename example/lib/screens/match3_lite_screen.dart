@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
@@ -10,7 +9,8 @@ import '../game/match3_engine.dart';
 const _questId = 'match3_win_daily';
 const _questRewardGems = 20;
 const _achievementId = 'match3_first_win';
-const _saveKey = 'match3_lite_save_v1';
+const _saveKey = 'match3_lite_save_v2';
+const _legacySaveKey = 'match3_lite_save_v1';
 
 class _Match3CloudProvider implements CloudSaveProvider {
   Map<String, Object?>? data;
@@ -51,9 +51,16 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
   final _runRandom = math.Random();
   int? _selected;
   int _runId = 0;
+  int _level = 1;
+  int _highestUnlockedLevel = 1;
   int _bestScore = 0;
   bool _rewarded = false;
   bool _running = false;
+  bool _animating = false;
+  bool _disposed = false;
+  int _animationGeneration = 0;
+  Match3CascadeStep? _visibleCascadeStep;
+  List<int>? _cascadeBoard;
   String? _status;
 
   @override
@@ -76,15 +83,39 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     _scoreboard =
         LocalScoreboardService.maybe ??
         Get.put(LocalScoreboardService(capacity: 20), permanent: true);
+    final currentStorage = StorageService.to;
+    final currentRaw = currentStorage.getString(_saveKey);
+    final legacyRaw = currentStorage.getString(_legacySaveKey);
+    final storageKey = currentRaw == null && legacyRaw != null
+        ? _legacySaveKey
+        : _saveKey;
     _save = VersionedJsonStore<Map<String, Object?>>(
-      storage: StorageService.to,
-      key: _saveKey,
-      schemaVersion: 1,
+      storage: currentStorage,
+      key: storageKey,
+      schemaVersion: 2,
       toJson: (value) => value,
       fromJson: (json) => json,
-      migrate: (version, json) => json,
+      migrate: (version, json) => {
+        ...json,
+        'schemaVersion': 2,
+        'level': json['level'] is int ? json['level'] : 1,
+        'highestUnlockedLevel': json['highestUnlockedLevel'] is int
+            ? json['highestUnlockedLevel']
+            : 1,
+      },
     );
     final saved = _save.load();
+    final savedLevel = saved?['level'];
+    _level = savedLevel is int && savedLevel >= 1 && savedLevel <= 5
+        ? savedLevel
+        : 1;
+    final savedUnlocked = saved?['highestUnlockedLevel'];
+    _highestUnlockedLevel =
+        savedUnlocked is int &&
+            savedUnlocked >= _level &&
+            savedUnlocked <= Match3Level.levels.length
+        ? savedUnlocked
+        : 1;
     final rawBest = saved?['bestScore'];
     _bestScore = rawBest is int && rawBest >= 0 ? rawBest : 0;
     final savedBoard = saved?['board'];
@@ -100,11 +131,16 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     final savedStatus = Match3Status.values.where(
       (status) => status.name == saved?['status'],
     );
+    final levelConfig = Match3Level.forNumber(_level);
     final rawMoves = saved?['moves'];
+    final hasSavedBoard = savedBoard is List;
     final moves =
-        rawMoves is int && rawMoves >= 0 && rawMoves <= Match3Engine.maxMoves
+        rawMoves is int &&
+            rawMoves >= 0 &&
+            rawMoves <= levelConfig.moves &&
+            hasSavedBoard
         ? rawMoves
-        : Match3Engine.maxMoves;
+        : levelConfig.moves;
     final storedStatus = savedStatus.isEmpty
         ? Match3Status.ready
         : savedStatus.first;
@@ -113,12 +149,12 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
             storedStatus != Match3Status.won &&
             storedStatus != Match3Status.lost
         ? Match3Status.lost
-        : (storedStatus == Match3Status.ready && moves < Match3Engine.maxMoves
+        : (storedStatus == Match3Status.ready && moves < levelConfig.moves
               ? Match3Status.playing
               : storedStatus);
     final rawScore = saved?['score'];
     final score = rawScore is int && rawScore >= 0
-        ? rawScore.clamp(0, Match3Engine.scoreGoal)
+        ? rawScore.clamp(0, levelConfig.scoreGoal)
         : 0;
     if (board != null) {
       try {
@@ -128,14 +164,15 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
       }
     }
     var hasValidSavedBoard = board != null;
-    if (board != null &&
-        rawStatus == Match3Status.playing &&
-        moves > 0 &&
-        score < Match3Engine.scoreGoal &&
-        !Match3Engine(initialBoard: board).hasLegalMove) {
+    if (board != null && !Match3Engine(initialBoard: board).hasLegalMove) {
       final shuffled = Match3Engine(random: math.Random(_runId));
       board = shuffled.board;
-      hasValidSavedBoard = false;
+      if (rawStatus == Match3Status.playing &&
+          moves > 0 &&
+          score < levelConfig.scoreGoal) {
+        rawStatus = Match3Status.ready;
+        hasValidSavedBoard = false;
+      }
     }
     _game =
         widget.engine ??
@@ -144,7 +181,10 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
           initialBoard: board,
           score: score,
           moves: moves,
-          status: rawStatus,
+          level: _level,
+          status: rawStatus == Match3Status.ready && moves < levelConfig.moves
+              ? Match3Status.playing
+              : rawStatus,
         );
     final runId = saved?['runId'];
     _runId = runId is int && runId >= 0
@@ -160,6 +200,9 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
 
   Map<String, Object?> _saveData() => {
     'bestScore': _bestScore,
+    'schemaVersion': 2,
+    'level': _level,
+    'highestUnlockedLevel': _highestUnlockedLevel,
     'board': _game.board,
     'score': _game.score,
     'moves': _game.moves,
@@ -187,18 +230,79 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
   }
 
   Future<void> _swap(int index) async {
-    if (!_running || _game.isTerminal) return;
+    if (!_running || _game.isTerminal || _animating) return;
     final selected = _selected;
     if (selected == null) {
       setState(() => _selected = index);
       return;
     }
     setState(() => _selected = null);
-    if (!_game.swap(selected, index)) return;
+    final steps = _game.swap(selected, index);
+    if (steps == null) {
+      setState(() => _status = 'match3_invalid_swap'.tr);
+      return;
+    }
+    _animating = true;
+    final generation = ++_animationGeneration;
     if (_game.score > _bestScore) _bestScore = _game.score;
+    if (_game.isTerminal && _game.status == Match3Status.won) {
+      _highestUnlockedLevel = math.max(
+        _highestUnlockedLevel,
+        math.min(_level + 1, Match3Level.levels.length),
+      );
+    }
+    setState(() {});
+    await _animateCascade(steps, generation);
+    if (!mounted || generation != _animationGeneration) return;
+    _game.showResolvedBoard();
+    _animating = false;
     if (_game.isTerminal) await _finishRun();
     if (mounted) setState(() {});
     await _persist();
+  }
+
+  bool get _animationValid => mounted && !_disposed;
+
+  Future<void> _animateCascade(
+    List<Match3CascadeStep> steps,
+    int generation,
+  ) async {
+    for (final step in steps) {
+      if (!_animationValid || generation != _animationGeneration) return;
+      if (step.shuffled) {
+        setState(() => _status = 'match3_shuffled'.tr);
+        await Future<void>.delayed(const Duration(milliseconds: 180));
+        continue;
+      }
+      setState(() => _visibleCascadeStep = step);
+      await Future<void>.delayed(const Duration(milliseconds: 120));
+      if (!_animationValid || generation != _animationGeneration) return;
+      _game.revealCascadeStep(step);
+      if (_animationValid) {
+        setState(() {
+          _visibleCascadeStep = null;
+          _cascadeBoard = step.boardAfterRefill;
+        });
+      }
+      await Future<void>.delayed(const Duration(milliseconds: 170));
+      if (!_animationValid || generation != _animationGeneration) return;
+      if (step.cascadeIndex > 1) {
+        setState(() {
+          _status = 'match3_combo'.trParams({
+            'cascade': '${step.cascadeIndex}',
+            'points': '${step.scoreGained}',
+          });
+        });
+        await Future<void>.delayed(const Duration(milliseconds: 220));
+      }
+    }
+    if (_animationValid && generation == _animationGeneration) {
+      setState(() {
+        _status = null;
+        _visibleCascadeStep = null;
+        _cascadeBoard = _game.board;
+      });
+    }
   }
 
   Future<void> _finishRun() async {
@@ -247,13 +351,28 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     if (mounted) setState(() {});
   }
 
-  Future<void> _restart() async {
-    if (_running || !_game.isTerminal) return;
+  Future<void> _restart() async => _startLevel(_level);
+
+  Future<void> _startNextLevel() async {
+    if (_game.status != Match3Status.won ||
+        _level >= _highestUnlockedLevel ||
+        _level >= Match3Level.levels.length) {
+      return;
+    }
+    await _startLevel(_level + 1);
+  }
+
+  Future<void> _startLevel(int level) async {
+    if (_running || _animating) return;
     if (!_energy.consumeEnergy()) {
       setState(() => _status = 'match3_no_energy'.tr);
       return;
     }
-    _game.reset();
+    _animationGeneration++;
+    _animating = false;
+    _visibleCascadeStep = null;
+    _level = level;
+    _game.reset(level: level);
     _selected = null;
     _rewarded = false;
     _running = true;
@@ -273,9 +392,14 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
         onConflict: (conflict) {
           final localBest = conflict.local.value['bestScore'] as int? ?? 0;
           final cloudBest = conflict.cloud.value['bestScore'] as int? ?? 0;
+          final localUnlocked =
+              conflict.local.value['highestUnlockedLevel'] as int? ?? 1;
+          final cloudUnlocked =
+              conflict.cloud.value['highestUnlockedLevel'] as int? ?? 1;
           return VersionedSyncConflictResolution.merge({
             ...conflict.local.value,
             'bestScore': math.max(localBest, cloudBest),
+            'highestUnlockedLevel': math.max(localUnlocked, cloudUnlocked),
           });
         },
       );
@@ -321,16 +445,19 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
                             const SizedBox(height: 12),
                             SizedBox.square(
                               dimension: side,
-                              child: GridView.builder(
-                                physics: const NeverScrollableScrollPhysics(),
-                                itemCount: Match3Engine.cellCount,
-                                gridDelegate:
-                                    const SliverGridDelegateWithFixedCrossAxisCount(
-                                      crossAxisCount: Match3Engine.width,
-                                      crossAxisSpacing: 3,
-                                      mainAxisSpacing: 3,
-                                    ),
-                                itemBuilder: (context, index) => _tile(index),
+                              child: AbsorbPointer(
+                                absorbing: _animating,
+                                child: GridView.builder(
+                                  physics: const NeverScrollableScrollPhysics(),
+                                  itemCount: Match3Engine.cellCount,
+                                  gridDelegate:
+                                      const SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: Match3Engine.width,
+                                        crossAxisSpacing: 3,
+                                        mainAxisSpacing: 3,
+                                      ),
+                                  itemBuilder: (context, index) => _tile(index),
+                                ),
                               ),
                             ),
                             const SizedBox(height: 12),
@@ -378,9 +505,11 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     spacing: 8,
     runSpacing: 8,
     children: [
+      _chip('match3_level'.trParams({'level': '$_level'})),
+      _chip('match3_unlocked'.trParams({'level': '$_highestUnlockedLevel'})),
       _chip('match3_score'.trParams({'score': '${_game.score}'})),
       _chip('match3_moves'.trParams({'moves': '${_game.moves}'})),
-      _chip('match3_goal'.trParams({'goal': '${Match3Engine.scoreGoal}'})),
+      _chip('match3_goal'.trParams({'goal': '${_game.scoreGoal}'})),
       _chip('match3_best'.trParams({'score': '$_bestScore'})),
       _chip('match3_energy'.trParams({'energy': '${_energy.currentEnergy}'})),
       _chip(
@@ -398,7 +527,10 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
   );
 
   Widget _tile(int index) {
-    final value = _game.board[index];
+    final step = _visibleCascadeStep;
+    final board = step?.boardBefore ?? _cascadeBoard ?? _game.board;
+    final value = board[index] < 0 ? 0 : board[index];
+    final matched = step?.matched.contains(index) ?? false;
     const colors = [
       Color(0xffef5350),
       Color(0xffffca28),
@@ -416,22 +548,28 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
       child: SquashStretch(
         key: ValueKey('match3_tile_$index'),
         onTap: () => _swap(index),
-        child: AnimatedContainer(
-          duration: const Duration(milliseconds: 100),
-          decoration: BoxDecoration(
-            color: colors[value],
-            borderRadius: BorderRadius.circular(10),
-            border: Border.all(
-              color: selected ? NeonTheme.ink : Colors.white70,
-              width: selected ? 3 : 1,
+        child: AnimatedScale(
+          scale: matched ? 0.35 : 1,
+          duration: const Duration(milliseconds: 120),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            decoration: BoxDecoration(
+              color: colors[value],
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(
+                color: matched
+                    ? NeonTheme.gold
+                    : (selected ? NeonTheme.ink : Colors.white70),
+                width: matched || selected ? 3 : 1,
+              ),
+              boxShadow: NeonTheme.drop(y: 2, blur: 3),
             ),
-            boxShadow: NeonTheme.drop(y: 2, blur: 3),
-          ),
-          child: Center(
-            child: Icon(
-              Icons.diamond,
-              color: Colors.white,
-              size: selected ? 28 : 22,
+            child: Center(
+              child: Icon(
+                Icons.diamond,
+                color: Colors.white,
+                size: matched ? 15 : (selected ? 28 : 22),
+              ),
             ),
           ),
         ),
@@ -450,6 +588,14 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
           onTap: _startRun,
           color: NeonTheme.cyan,
         ),
+      if (_game.status == Match3Status.won &&
+          _level < _highestUnlockedLevel &&
+          _level < Match3Level.levels.length)
+        CommonButton(
+          label: 'match3_next_level'.tr,
+          onTap: _startNextLevel,
+          color: NeonTheme.gold,
+        ),
       if (_game.isTerminal)
         CommonButton(
           label: 'match3_restart'.tr,
@@ -461,11 +607,23 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
         onTap: _sync,
         color: NeonTheme.magenta,
       ),
+      if (_game.hasLegalMove == false && !_game.isTerminal)
+        CommonButton(
+          label: 'match3_shuffle'.tr,
+          onTap: () {
+            _game.shuffle();
+            setState(() => _status = 'match3_shuffled'.tr);
+            _persist();
+          },
+          color: NeonTheme.purple,
+        ),
     ],
   );
 
   @override
   void dispose() {
+    _disposed = true;
+    _animationGeneration++;
     super.dispose();
   }
 }

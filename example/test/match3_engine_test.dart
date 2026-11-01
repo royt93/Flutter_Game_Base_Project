@@ -32,7 +32,7 @@ void main() {
               random: math.Random(seed),
               initialBoard: game.board,
             );
-            playable |= copy.swap(index, neighbor);
+            playable |= copy.swap(index, neighbor) != null;
           }
         }
         expect(playable, isTrue, reason: 'seed $seed should be playable');
@@ -43,6 +43,44 @@ void main() {
       expect(a.board, b.board);
     },
   );
+
+  test('five levels use selected score goals and move limits', () {
+    expect(Match3Level.levels.map((level) => level.scoreGoal), [
+      500,
+      600,
+      700,
+      800,
+      900,
+    ]);
+    expect(Match3Level.levels.map((level) => level.moves), [
+      20,
+      20,
+      19,
+      19,
+      18,
+    ]);
+    expect(() => Match3Level.forNumber(0), throwsArgumentError);
+    expect(() => Match3Level.forNumber(6), throwsArgumentError);
+  });
+
+  test('level goal and move limit decide run outcome', () {
+    final board = _board();
+    board[6] = 0;
+    board[7] = 0;
+    board[8] = 1;
+    board[9] = 0;
+    final game = Match3Engine(
+      initialBoard: board,
+      score: 580,
+      moves: 20,
+      status: Match3Status.playing,
+      level: 2,
+    );
+    expect(game.scoreGoal, 600);
+    expect(game.moveLimit, 20);
+    game.swap(8, 9);
+    expect(game.status, Match3Status.won);
+  });
 
   test('shuffle repairs a board with no legal swaps', () {
     final game = Match3Engine(random: math.Random(1), initialBoard: _board());
@@ -55,7 +93,7 @@ void main() {
   test('non-adjacent swaps are rejected without mutating board', () {
     final game = Match3Engine(initialBoard: _board());
     final before = game.board;
-    expect(game.swap(0, 2), isFalse);
+    expect(game.swap(0, 2), isNull);
     expect(game.board, before);
     expect(game.moves, 20);
   });
@@ -63,7 +101,7 @@ void main() {
   test('invalid adjacent swap reverts board and preserves move', () {
     final game = Match3Engine(initialBoard: _board());
     final before = game.board;
-    expect(game.swap(0, 1), isFalse);
+    expect(game.swap(0, 1), isNull);
     expect(game.board, before);
     expect(game.moves, 20);
   });
@@ -76,7 +114,20 @@ void main() {
     board[8] = 1;
     board[9] = 0;
     final game = Match3Engine(random: math.Random(31), initialBoard: board);
-    expect(game.swap(8, 9), isTrue);
+    final steps = game.swap(8, 9);
+    expect(steps, isNotNull);
+    expect(steps, isNotEmpty);
+    expect(steps!.first.matched, containsAll([6, 7, 8]));
+    expect(steps.first.cascadeIndex, 1);
+    expect(steps.first.scoreGained, greaterThanOrEqualTo(30));
+    expect(steps.first.boardBefore[8], 0);
+    expect(steps.first.boardBefore[9], 1);
+    expect(steps.first.boardBefore[6], 0);
+    expect(steps.first.boardAfterRefill, hasLength(Match3Engine.cellCount));
+    expect(
+      steps.every((step) => step.boardAfterRefill.every((v) => v >= 0)),
+      isTrue,
+    );
     expect(game.moves, 19);
     expect(game.score, greaterThanOrEqualTo(30));
     expect(game.board, hasLength(36));
@@ -96,9 +147,9 @@ void main() {
       moves: 1,
       status: Match3Status.playing,
     );
-    expect(game.swap(8, 9), isTrue);
+    expect(game.swap(8, 9), isNotNull);
     expect(game.status, Match3Status.lost);
-    expect(game.swap(8, 9), isFalse);
+    expect(game.swap(8, 9), isNull);
   });
 
   test('score goal ends run immediately', () {
@@ -113,7 +164,7 @@ void main() {
       score: 480,
       status: Match3Status.playing,
     );
-    expect(game.swap(8, 9), isTrue);
+    expect(game.swap(8, 9), isNotNull);
     expect(game.status, Match3Status.won);
     expect(game.score, greaterThanOrEqualTo(500));
   });

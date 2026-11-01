@@ -89,8 +89,10 @@ void main() {
       );
       final cloud = _TestCloud()
         ..data = {
-          'schemaVersion': 1,
+          'schemaVersion': 2,
           'syncedAtMs': 0,
+          'level': 1,
+          'highestUnlockedLevel': 3,
           'bestScore': 900,
           'board': board,
           'score': 0,
@@ -116,6 +118,7 @@ void main() {
       expect(find.text('Best 900'), findsOneWidget);
       expect(find.text('Save synced. Best score kept.'), findsOneWidget);
       expect(cloud.data?['bestScore'], 900);
+      expect(cloud.data?['highestUnlockedLevel'], 3);
     },
   );
 
@@ -224,7 +227,7 @@ void main() {
     expect(Get.find<DailyQuestService>().isClaimed('match3_win_daily'), isTrue);
   });
 
-  testWidgets('screen restores persisted active board without charging again', (
+  testWidgets('legacy v1 save migrates active run to level one without loss', (
     tester,
   ) async {
     final board = List.generate(
@@ -242,6 +245,95 @@ void main() {
         'status': 'playing',
         'runActive': true,
         'rewarded': false,
+        'runId': 101,
+      }),
+    );
+    Get.find<EnergyService>().consumeEnergy(1);
+
+    await tester.pumpWidget(_wrap());
+    await tester.pump();
+    expect(find.text('Level 1/5'), findsOneWidget);
+    expect(find.text('Open 1/5'), findsOneWidget);
+    expect(find.text('Score 80'), findsOneWidget);
+    expect(find.text('Moves 17'), findsOneWidget);
+    expect(find.text('Energy 2'), findsOneWidget);
+    final stored =
+        jsonDecode(StorageService.to.getString('match3_lite_save_v1')!)
+            as Map<String, dynamic>;
+    expect(stored['board'], board);
+    expect(stored['score'], 80);
+    expect(stored['moves'], 17);
+  });
+
+  testWidgets('cascade animation blocks another swap until sequence settles', (
+    tester,
+  ) async {
+    final board = List.generate(
+      Match3Engine.cellCount,
+      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+    );
+    board[6] = 0;
+    board[7] = 0;
+    board[8] = 1;
+    board[9] = 0;
+    final game = Match3Engine(initialBoard: board, random: math.Random(9));
+    await tester.pumpWidget(
+      GetMaterialApp(
+        translations: AppTranslations(),
+        locale: const Locale('en'),
+        fallbackLocale: AppTranslations.fallback,
+        home: Match3LiteScreen(engine: game),
+      ),
+    );
+    await tester.pump();
+    final start = find
+        .ancestor(
+          of: find.text('Start Run (-1 Energy)').first,
+          matching: find.byType(CommonButton),
+        )
+        .first;
+    await tester.ensureVisible(start);
+    await tester.pump();
+    await tester.tap(start);
+    await tester.pump(const Duration(milliseconds: 200));
+    final initialMoves = game.moves;
+    await tester.tap(find.byKey(const ValueKey('match3_tile_8')));
+    await tester.tap(find.byKey(const ValueKey('match3_tile_9')));
+    await tester.pump();
+    expect(game.moves, initialMoves - 1);
+    await tester.tap(
+      find.byKey(const ValueKey('match3_tile_10')),
+      warnIfMissed: false,
+    );
+    await tester.pump(const Duration(milliseconds: 30));
+    expect(game.moves, initialMoves - 1);
+    for (var i = 0; i < 12; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(game.moves, initialMoves - 1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('screen restores persisted active board without charging again', (
+    tester,
+  ) async {
+    final board = List.generate(
+      Match3Engine.cellCount,
+      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+    );
+    await StorageService.to.setString(
+      'match3_lite_save_v2',
+      jsonEncode({
+        'schemaVersion': 2,
+        'level': 1,
+        'highestUnlockedLevel': 1,
+        'bestScore': 120,
+        'board': board,
+        'score': 80,
+        'moves': 17,
+        'status': 'playing',
+        'runActive': true,
+        'rewarded': false,
         'runId': 99,
       }),
     );
@@ -252,6 +344,8 @@ void main() {
     expect(find.text('Energy 2'), findsOneWidget);
     expect(find.text('Score 80'), findsOneWidget);
     expect(find.text('Moves 17'), findsOneWidget);
+    expect(find.text('Level 1/5'), findsOneWidget);
+    expect(find.text('Open 1/5'), findsOneWidget);
     expect(find.text('Start Run (-1 Energy)'), findsNWidgets(2));
   });
 
@@ -278,6 +372,73 @@ void main() {
       expect(find.text('Start Run (-1 Energy)'), findsNWidgets(2));
     },
   );
+
+  testWidgets('level 1 win unlocks level 2 and next level spends energy once', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(400, 900);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final board = List.generate(
+      Match3Engine.cellCount,
+      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+    );
+    board[6] = 0;
+    board[7] = 0;
+    board[8] = 1;
+    board[9] = 0;
+    final game = Match3Engine(
+      initialBoard: board,
+      score: 480,
+      random: math.Random(22),
+    );
+    await tester.pumpWidget(
+      GetMaterialApp(
+        translations: AppTranslations(),
+        locale: const Locale('en'),
+        fallbackLocale: AppTranslations.fallback,
+        home: Match3LiteScreen(engine: game),
+      ),
+    );
+    await tester.pump();
+    final start = find
+        .ancestor(
+          of: find.text('Start Run (-1 Energy)').first,
+          matching: find.byType(CommonButton),
+        )
+        .first;
+    await tester.ensureVisible(start);
+    await tester.pump();
+    await tester.tap(start);
+    await tester.pump(const Duration(milliseconds: 200));
+    await tester.ensureVisible(find.byKey(const ValueKey('match3_tile_8')));
+    await tester.tap(find.byKey(const ValueKey('match3_tile_8')));
+    await tester.tap(find.byKey(const ValueKey('match3_tile_9')));
+    for (var frame = 0; frame < 12; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    expect(game.status, Match3Status.won);
+    expect(find.text('Level 1/5'), findsOneWidget);
+    expect(find.text('Open 2/5'), findsOneWidget);
+    expect(find.text('Next Level (-1 Energy)'), findsNWidgets(2));
+    final energyAfterWin = Get.find<EnergyService>().currentEnergy;
+    final next = find
+        .ancestor(
+          of: find.text('Next Level (-1 Energy)').first,
+          matching: find.byType(CommonButton),
+        )
+        .first;
+    await tester.ensureVisible(next);
+    await tester.pump();
+    await tester.tap(next);
+    await tester.pump(const Duration(milliseconds: 200));
+    expect(find.text('Level 2/5'), findsOneWidget);
+    expect(find.text('Goal 600'), findsOneWidget);
+    expect(find.text('Moves 20'), findsOneWidget);
+    expect(Get.find<EnergyService>().currentEnergy, energyAfterWin - 1);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('screen fits compact viewport and has accessible tile labels', (
     tester,
