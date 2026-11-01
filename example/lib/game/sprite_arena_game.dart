@@ -18,6 +18,18 @@ enum ArenaObjectiveId { defeatBossWave5, surviveWith3Lives, reachScore500 }
 
 enum ArenaUpgradeKind { damageBoost, speedBoost, fireRateBoost, extraLife }
 
+class ArenaDashEffect {
+  const ArenaDashEffect({
+    required this.sequence,
+    required this.position,
+    required this.direction,
+  });
+
+  final int sequence;
+  final Vector2 position;
+  final Vector2 direction;
+}
+
 class ArenaUpgrade {
   const ArenaUpgrade({
     required this.kind,
@@ -107,6 +119,8 @@ class SpriteArenaGame extends RoyGame {
   final roundOver = ValueNotifier(false);
   final activeUpgrades = ValueNotifier<Set<ArenaUpgradeKind>>({});
   final pendingUpgrades = ValueNotifier<List<ArenaUpgradeKind>?>(null);
+  final dashEffect = ValueNotifier<ArenaDashEffect?>(null);
+  int _dashEffectSequence = 0;
   final monsterBullets = <ArenaMonsterBullet>{};
   static const maxMonsterBullets = 8;
   Vector2 _lastPlayerPos = Vector2.zero();
@@ -313,6 +327,7 @@ class SpriteArenaGame extends RoyGame {
   }
 
   void applyUpgrade(ArenaUpgradeKind kind) {
+    if (activeUpgrades.value.contains(kind)) return;
     activeUpgrades.value = {...activeUpgrades.value, kind};
     if (kind == ArenaUpgradeKind.extraLife) {
       maxLives.value = 5;
@@ -468,6 +483,8 @@ class SpriteArenaGame extends RoyGame {
         monsterBullets.length >= maxMonsterBullets) {
       return;
     }
+    spawnSparkleBurst(at.clone(), count: 4);
+    AudioManager.maybe?.playSfx('audio/tap.ogg', volume: 0.35);
     late final ArenaMonsterBullet bullet;
     bullet = ArenaMonsterBullet(
       position: at,
@@ -476,6 +493,7 @@ class SpriteArenaGame extends RoyGame {
       playerHitRect: () => _playerHitRect,
       onHitPlayer: () {
         fireHaptic(HapticLevel.medium);
+        AudioManager.maybe?.playSfx('audio/error.ogg', volume: 0.45);
         _takePlayerHit(damage: 1);
       },
       onImpact: (hit) => spawnSparkleBurst(hit, count: 6),
@@ -499,7 +517,8 @@ class SpriteArenaGame extends RoyGame {
       if (blocked || occupied || spot.distanceTo(start) < 200) continue;
       final type = _rollMonsterType();
       final boss = type == ArenaMonsterType.boss;
-      final monster = ArenaMonster(
+      late final ArenaMonster monster;
+      monster = ArenaMonster(
         position: spot,
         chase: () => player!.position,
         terrain: terrainColliders,
@@ -512,6 +531,22 @@ class SpriteArenaGame extends RoyGame {
         isBoss: boss,
         contactDamage: boss ? ArenaMonster.bossChargeDamage : 1,
         onShoot: (at, dir) => _spawnMonsterBullet(at, dir),
+        onDashStart: () {
+          final dashDirection = monster.isBoss
+              ? monster.chargeDirection
+              : monster.dashDirection;
+          dashEffect.value = ArenaDashEffect(
+            sequence: ++_dashEffectSequence,
+            position: monster.position.clone(),
+            direction: dashDirection.clone(),
+          );
+          spawnSparkleBurst(monster.position.clone(), count: boss ? 8 : 4);
+          fireHaptic(boss ? HapticLevel.medium : HapticLevel.light);
+          AudioManager.maybe?.playSfx(
+            'audio/tap.ogg',
+            volume: boss ? 0.6 : 0.4,
+          );
+        },
         onHit: (m) {
           if (m.isBoss) bossHp.value = m.hp;
           AudioManager.maybe?.playSfx('audio/tap.ogg', volume: 0.4);

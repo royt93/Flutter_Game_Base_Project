@@ -213,6 +213,33 @@ void main() {
     },
   );
 
+  test('dasher and boss announce dash start once per telegraph', () {
+    final player = Vector2(400, 300);
+    var dashStarts = 0;
+    final dasher = ArenaMonster(
+      position: Vector2(250, 300),
+      chase: () => player,
+      terrain: const [],
+      monsterType: ArenaMonsterType.dasher,
+      onDashStart: () => dashStarts++,
+    );
+    dasher.update(0.01);
+    dasher.update(ArenaMonster.dasherTelegraphSeconds);
+    expect(dashStarts, 1);
+
+    var bossStarts = 0;
+    final boss = ArenaMonster(
+      position: Vector2(250, 300),
+      chase: () => player,
+      terrain: const [],
+      isBoss: true,
+      onDashStart: () => bossStarts++,
+    );
+    boss.update(0.01);
+    boss.update(ArenaMonster.bossTelegraphSeconds);
+    expect(bossStarts, 1);
+  });
+
   test('shooter fires projectile toward player at cooldown cadence', () {
     final shots = <(Vector2, Vector2)>[];
     final player = Vector2(400, 300);

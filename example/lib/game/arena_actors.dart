@@ -191,6 +191,7 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
     this.onDestroyed,
     this.onTouchPlayer,
     this.onShoot,
+    this.onDashStart,
     this.respawnSeconds = 4.0,
     double? speed,
     int? maxHp,
@@ -247,6 +248,8 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
       ? _bossState == _BossState.telegraph
       : (monsterType == ArenaMonsterType.dasher &&
             _dasherState == _DasherState.telegraph);
+  Vector2 get chargeDirection => _chargeDirection;
+  Vector2 get dashDirection => _dashDirection;
   static const defaultRespawnSeconds = 4.0;
   static const touchCooldownSeconds = 0.1;
   static const knockback = 36.0;
@@ -257,6 +260,7 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
   final void Function(ArenaMonster m)? onDestroyed;
   final void Function(ArenaMonster m)? onTouchPlayer;
   final void Function(Vector2 at, Vector2 direction)? onShoot;
+  final VoidCallback? onDashStart;
   final double respawnSeconds;
   final double speed;
 
@@ -394,6 +398,7 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
         if (_dasherTimer >= dasherTelegraphSeconds) {
           _dasherState = _DasherState.dash;
           _dasherTimer = 0;
+          onDashStart?.call();
         }
       case _DasherState.dash:
         _dasherTimer += dt;
@@ -456,6 +461,7 @@ class ArenaMonster extends PositionComponent implements ArenaHittable {
         if (_bossStateTimer >= bossTelegraphSeconds) {
           _bossState = _BossState.charge;
           _bossStateTimer = 0;
+          onDashStart?.call();
         }
       case _BossState.charge:
         final player = chase();
@@ -617,6 +623,8 @@ class ArenaMonsterBullet extends PositionComponent {
   final VoidCallback? onHitPlayer;
   final void Function(Vector2 at)? onImpact;
   final void Function(ArenaMonsterBullet bullet)? onRemoved;
+  final _paint = Paint()..color = const Color(0xffe040fb);
+  double _glowPhase = 0;
 
   @override
   void onRemove() {
@@ -627,6 +635,7 @@ class ArenaMonsterBullet extends PositionComponent {
   @override
   void update(double dt) {
     super.update(dt);
+    _glowPhase += dt * 8;
     final travel = speed * math.min(dt, lifetime);
     lifetime -= dt;
     final steps = (travel / 4).ceil().clamp(1, 4096);
@@ -657,7 +666,15 @@ class ArenaMonsterBullet extends PositionComponent {
   @override
   void render(Canvas canvas) {
     final c = Offset(size.x / 2, size.y / 2);
-    canvas.drawCircle(c, size.x / 2, Paint()..color = const Color(0xffe040fb));
+    final pulse = 0.5 + 0.5 * math.sin(_glowPhase);
+    canvas.drawCircle(
+      c,
+      size.x / 2 + 3 * pulse,
+      Paint()
+        ..color = const Color(0xffe040fb).withValues(alpha: 0.16 + 0.12 * pulse)
+        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5),
+    );
+    canvas.drawCircle(c, size.x / 2, _paint);
     canvas.drawCircle(
       c,
       size.x / 2 - 2,

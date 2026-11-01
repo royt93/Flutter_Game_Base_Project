@@ -9,6 +9,42 @@ import 'package:roy_casual_kit/roy_casual_kit.dart';
 import '../game/arena_actors.dart';
 import '../game/sprite_arena_game.dart';
 
+class _ArenaDashPainter extends CustomPainter {
+  const _ArenaDashPainter(this.effect, this.center, this.progress);
+
+  final ArenaDashEffect effect;
+  final Offset center;
+  final double progress;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final direction = effect.direction;
+    final length = size.shortestSide * 0.32 * progress;
+    final end = center + Offset(direction.x, direction.y) * length;
+    final rect = Rect.fromPoints(center, end).inflate(18);
+    final alpha = (1 - progress) * 0.34;
+    final gradient = Paint()
+      ..shader = RadialGradient(
+        colors: [
+          const Color(0xffff3d00).withValues(alpha: alpha),
+          const Color(0xffff3d00).withValues(alpha: 0),
+        ],
+      ).createShader(rect);
+    canvas.drawOval(rect, gradient);
+
+    final line = Paint()
+      ..color = const Color(0xffff3d00).withValues(alpha: (1 - progress) * 0.85)
+      ..strokeWidth = 5 * (1 - progress) + 1
+      ..strokeCap = StrokeCap.round;
+    canvas.drawLine(center, end, line);
+  }
+
+  @override
+  bool shouldRepaint(_ArenaDashPainter oldDelegate) =>
+      oldDelegate.effect.sequence != effect.sequence ||
+      oldDelegate.progress != progress;
+}
+
 class SpriteArenaDemoScreen extends StatefulWidget {
   const SpriteArenaDemoScreen({super.key, this.game});
 
@@ -454,6 +490,43 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
                             ),
                           ),
                         if (ready)
+                          ValueListenableBuilder<ArenaDashEffect?>(
+                            valueListenable: _game.dashEffect,
+                            builder: (context, effect, _) {
+                              if (effect == null) {
+                                return const SizedBox.shrink();
+                              }
+                              return Positioned.fill(
+                                child: IgnorePointer(
+                                  child: TweenAnimationBuilder<double>(
+                                    key: ValueKey(effect.sequence),
+                                    tween: Tween(begin: 0, end: 1),
+                                    duration: const Duration(milliseconds: 260),
+                                    onEnd: () {
+                                      if (_game.dashEffect.value?.sequence ==
+                                          effect.sequence) {
+                                        _game.dashEffect.value = null;
+                                      }
+                                    },
+                                    builder: (context, progress, _) {
+                                      final global = _game.camera.localToGlobal(
+                                        effect.position,
+                                      );
+                                      final center = Offset(global.x, global.y);
+                                      return CustomPaint(
+                                        painter: _ArenaDashPainter(
+                                          effect,
+                                          center,
+                                          progress,
+                                        ),
+                                      );
+                                    },
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        if (ready)
                           Positioned(
                             top: 172,
                             right: padding,
@@ -853,11 +926,19 @@ class _SpriteArenaDemoScreenState extends State<SpriteArenaDemoScreen> {
       ArenaUpgradeKind.extraLife => (Icons.favorite, NeonTheme.pink),
     };
 
-    return InkWell(
-      borderRadius: BorderRadius.circular(16),
+    return PressableScale(
       onTap: () {
         _game.applyUpgrade(kind);
         _game.resumeEngine();
+        _haptics.play(
+          HapticPattern([
+            const HapticPulse(level: HapticLevel.light),
+            const HapticPulse(
+              level: HapticLevel.medium,
+              delayAfter: Duration(milliseconds: 90),
+            ),
+          ]),
+        );
       },
       child: Container(
         padding: const EdgeInsets.all(12),
