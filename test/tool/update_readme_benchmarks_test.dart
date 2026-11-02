@@ -14,6 +14,13 @@ void main() {
           'recordedAtMs': 1789913922550,
         },
         {
+          'name': 'example_app_boot_wall_ms_emulator',
+          'source': 'realDevice',
+          'value': 338690.0,
+          'unit': 'ms',
+          'recordedAtMs': 1790050364949,
+        },
+        {
           'name': 'object_pool_allocation_reduction_percent',
           'source': 'hostHeadless',
           'value': 97.5,
@@ -24,14 +31,31 @@ void main() {
 
       expect(section, startsWith(startMarker));
       expect(section, endsWith(endMarker));
-      expect(section, contains('| Example App Boot Wall Ms | 32318 ms | realDevice |'));
-      expect(section, contains('| Object Pool Allocation Reduction Percent | 97.5% | hostHeadless |'));
+      expect(
+        section,
+        contains('| Example App Boot Wall Ms | 32318 ms | realDevice |'),
+      );
+      expect(
+        section,
+        contains(
+          '| Example App Boot Wall Ms Emulator | 338690 ms | emulator |',
+        ),
+      );
+      expect(
+        section,
+        contains(
+          '| Object Pool Allocation Reduction Percent | 97.5% | hostHeadless |',
+        ),
+      );
     });
 
     test('renders an empty table body for an empty metric list', () {
       final section = renderBenchmarkSection(const []);
       expect(section, contains('| Metric | Value | Source | Recorded |'));
-      expect(section.split('\n').length, 4); // marker, header, separator, marker
+      expect(
+        section.split('\n').length,
+        4,
+      ); // marker, header, separator, marker
     });
   });
 

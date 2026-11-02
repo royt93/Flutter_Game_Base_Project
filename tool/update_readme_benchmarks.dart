@@ -22,12 +22,16 @@ String _fmtMetricName(String name) => name
 
 String _fmtValue(Object? value, String unit) {
   final v = (value as num).toDouble();
-  final rounded = v == v.roundToDouble() ? v.toInt().toString() : v.toStringAsFixed(1);
+  final rounded = v == v.roundToDouble()
+      ? v.toInt().toString()
+      : v.toStringAsFixed(1);
   return unit == '%' ? '$rounded%' : '$rounded $unit';
 }
 
-String _fmtRecordedAt(int recordedAtMs) =>
-    DateTime.fromMillisecondsSinceEpoch(recordedAtMs, isUtc: true).toIso8601String().split('T').first;
+String _fmtRecordedAt(int recordedAtMs) => DateTime.fromMillisecondsSinceEpoch(
+  recordedAtMs,
+  isUtc: true,
+).toIso8601String().split('T').first;
 
 /// Pure — renders the markdown table body from a decoded baseline JSON list.
 /// Exposed for tests; never touches the filesystem.
@@ -38,9 +42,12 @@ String renderBenchmarkSection(List<Object?> metrics) {
     ..writeln('|---|---|---|---|');
   for (final raw in metrics) {
     final m = raw as Map<String, Object?>;
-    final name = _fmtMetricName(m['name'] as String);
+    final metricName = m['name'] as String;
+    final name = _fmtMetricName(metricName);
     final value = _fmtValue(m['value'], m['unit'] as String);
-    final source = m['source'] as String;
+    final source = metricName.endsWith('_emulator')
+        ? 'emulator'
+        : m['source'] as String;
     final recordedAt = _fmtRecordedAt(m['recordedAtMs'] as int);
     buffer.writeln('| $name | $value | $source | $recordedAt |');
   }
@@ -81,7 +88,8 @@ Map<String, String> _parseArgs(List<String> args) {
 
 Future<void> main(List<String> args) async {
   final options = _parseArgs(args);
-  final baselinePath = options['baseline'] ?? 'tool/performance_budget_baseline.json';
+  final baselinePath =
+      options['baseline'] ?? 'tool/performance_budget_baseline.json';
   final readmePath = options['readme'] ?? 'README.md';
 
   final baselineFile = File(baselinePath);
@@ -90,7 +98,8 @@ Future<void> main(List<String> args) async {
     exitCode = 1;
     return;
   }
-  final metrics = jsonDecode(await baselineFile.readAsString()) as List<Object?>;
+  final metrics =
+      jsonDecode(await baselineFile.readAsString()) as List<Object?>;
   final section = renderBenchmarkSection(metrics);
 
   final readmeFile = File(readmePath);
