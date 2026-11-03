@@ -258,5 +258,35 @@ void main() {
       expect(node.value, '75%');
       handle.dispose();
     });
+
+    testWidgets('grows past height instead of overflowing at 1.15 text scale', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.15)),
+          child: MaterialApp(
+            home: Scaffold(
+              body: SeasonEventBanner(
+                title: 'Autumn Harvest',
+                subtitle: 'Earn Golden Acorns',
+                milestoneLabel: 'Tier 3/5',
+                endsAt: DateTime.now().add(const Duration(days: 2)),
+                progress: 0.5,
+                height: 72,
+                width: 296,
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(tester.takeException(), isNull);
+      expect(
+        tester.getSize(find.byType(SeasonEventBanner)).height,
+        greaterThanOrEqualTo(72),
+      );
+    });
   });
 }

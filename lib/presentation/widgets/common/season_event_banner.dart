@@ -95,6 +95,8 @@ class SeasonEventBanner extends StatefulWidget {
   final Widget? icon;
   final IconData iconData;
   final Color? color;
+
+  /// Minimum banner height; grows when text scale needs more room.
   final double height;
   final double? width;
 
@@ -187,7 +189,7 @@ class _SeasonEventBannerState extends State<SeasonEventBanner> {
 
     final bannerContent = Container(
       width: widget.width,
-      height: widget.height,
+      constraints: BoxConstraints(minHeight: widget.height),
       padding: const EdgeInsetsDirectional.all(12),
       decoration: BoxDecoration(
         color: NeonTheme.card,
