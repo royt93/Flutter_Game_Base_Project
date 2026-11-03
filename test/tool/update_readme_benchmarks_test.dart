@@ -15,7 +15,7 @@ void main() {
         },
         {
           'name': 'example_app_boot_wall_ms_emulator',
-          'source': 'realDevice',
+          'source': 'emulator',
           'value': 338690.0,
           'unit': 'ms',
           'recordedAtMs': 1790050364949,

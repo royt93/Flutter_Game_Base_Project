@@ -20,7 +20,10 @@ library;
 import 'safe_json.dart';
 
 /// Where a [PerformanceBudgetMetric]'s value actually came from.
-enum MeasurementSource { hostHeadless, realDevice }
+///
+/// [emulator] is an Android emulator run: kept distinct from [realDevice]
+/// because a policy that requires physical-device evidence must reject it.
+enum MeasurementSource { hostHeadless, realDevice, emulator }
 
 /// Whether a budget's [BudgetPolicy.limit] is a ceiling or a floor.
 enum BudgetDirection { atMost, atLeast }

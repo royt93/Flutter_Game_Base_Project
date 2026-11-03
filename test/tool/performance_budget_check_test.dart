@@ -7,6 +7,36 @@ Future<ProcessResult> _run(List<String> args) =>
     Process.run('dart', ['run', 'tool/performance_budget_check.dart', ...args]);
 
 void main() {
+  group('CLI: --deviceSource', () {
+    test(
+      'invalid or non-device source is rejected with usage exit code',
+      () async {
+        for (final source in ['hostHeadless', 'unknown']) {
+          final result = await _run(['check', '--deviceSource=$source']);
+          expect(result.exitCode, 64, reason: '$source: ${result.stderr}');
+          expect(
+            result.stderr as String,
+            contains('--deviceSource must be realDevice or emulator'),
+          );
+        }
+      },
+    );
+
+    test(
+      'valid sources without a device keep check behaviour unchanged',
+      () async {
+        for (final source in ['realDevice', 'emulator']) {
+          final result = await _run(['check', '--deviceSource=$source']);
+          expect(
+            result.exitCode,
+            0,
+            reason: '$source: ${result.stdout}\n${result.stderr}',
+          );
+        }
+      },
+    );
+  });
+
   group('CLI: check trên chính policy/baseline thật của repo', () {
     test(
       'check (không --device) pass nhờ baseline realDevice đã commit sẵn',
@@ -160,18 +190,17 @@ void main() {
     }, timeout: const Timeout(Duration(seconds: 30)));
 
     test(
-      '--deviceMetricName chỉ đổi tên khi --device được đo — không '
-      '--device thì baseline không đổi tên/giá trị gì cả',
+      'snapshot không đo lại thì giữ nguyên source emulator đã ghi',
       () async {
         final baselinePath = '${tempDir.path}/baseline.json';
         File(baselinePath).writeAsStringSync(
           jsonEncode([
             {
-              'name': 'example_app_boot_wall_ms',
-              'source': 'realDevice',
-              'value': 12345.0,
+              'name': 'example_app_boot_wall_ms_emulator',
+              'source': 'emulator',
+              'value': 406428.0,
               'unit': 'ms',
-              'recordedAtMs': 1000,
+              'recordedAtMs': 2000,
             },
           ]),
         );
@@ -179,7 +208,7 @@ void main() {
         final result = await _run([
           'snapshot',
           '--baseline=$baselinePath',
-          '--deviceMetricName=example_app_boot_wall_ms_emulator',
+          '--deviceSource=emulator',
         ]);
 
         expect(
@@ -188,19 +217,50 @@ void main() {
           reason: '${result.stdout}\n${result.stderr}',
         );
         final written =
-            jsonDecode(File(baselinePath).readAsStringSync())
-                as List<Object?>;
-        final names = written
-            .cast<Map<String, Object?>>()
-            .map((e) => e['name'])
-            .toSet();
-        // No --device given -> _measureRealDevice never runs -> the
-        // renamed metric is never written, the original name's old value
-        // survives untouched.
-        expect(names, isNot(contains('example_app_boot_wall_ms_emulator')));
-        expect(names, contains('example_app_boot_wall_ms'));
+            jsonDecode(File(baselinePath).readAsStringSync()) as List<Object?>;
+        final emulator = written.cast<Map<String, Object?>>().singleWhere(
+          (entry) => entry['name'] == 'example_app_boot_wall_ms_emulator',
+        );
+        expect(emulator['source'], 'emulator');
+        expect(emulator['value'], 406428.0);
+        expect(emulator['recordedAtMs'], 2000);
       },
       timeout: const Timeout(Duration(seconds: 30)),
     );
+
+    test('--deviceMetricName chỉ đổi tên khi --device được đo — không '
+        '--device thì baseline không đổi tên/giá trị gì cả', () async {
+      final baselinePath = '${tempDir.path}/baseline.json';
+      File(baselinePath).writeAsStringSync(
+        jsonEncode([
+          {
+            'name': 'example_app_boot_wall_ms',
+            'source': 'realDevice',
+            'value': 12345.0,
+            'unit': 'ms',
+            'recordedAtMs': 1000,
+          },
+        ]),
+      );
+
+      final result = await _run([
+        'snapshot',
+        '--baseline=$baselinePath',
+        '--deviceMetricName=example_app_boot_wall_ms_emulator',
+      ]);
+
+      expect(result.exitCode, 0, reason: '${result.stdout}\n${result.stderr}');
+      final written =
+          jsonDecode(File(baselinePath).readAsStringSync()) as List<Object?>;
+      final names = written
+          .cast<Map<String, Object?>>()
+          .map((e) => e['name'])
+          .toSet();
+      // No --device given -> _measureRealDevice never runs -> the
+      // renamed metric is never written, the original name's old value
+      // survives untouched.
+      expect(names, isNot(contains('example_app_boot_wall_ms_emulator')));
+      expect(names, contains('example_app_boot_wall_ms'));
+    }, timeout: const Timeout(Duration(seconds: 30)));
   });
 }

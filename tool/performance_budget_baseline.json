@@ -8,7 +8,7 @@
   },
   {
     "name": "example_app_boot_wall_ms_emulator",
-    "source": "realDevice",
+    "source": "emulator",
     "value": 406428.0,
     "unit": "ms",
     "recordedAtMs": 1793627884454

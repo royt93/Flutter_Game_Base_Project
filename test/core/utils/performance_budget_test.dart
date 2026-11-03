@@ -185,6 +185,36 @@ void main() {
   });
 
   group('PerformanceBudgetMetric JSON round-trip', () {
+    test(
+      'emulator provenance round-trips without becoming physical-device',
+      () {
+        const metric = PerformanceBudgetMetric(
+          name: 'boot_emulator_ms',
+          source: MeasurementSource.emulator,
+          value: 1234,
+          unit: 'ms',
+        );
+        final json = metric.toJson();
+        expect(json['source'], 'emulator');
+        final roundTripped = PerformanceBudgetMetric.fromJson(json);
+        expect(roundTripped.source, MeasurementSource.emulator);
+        final result = checkPerformanceBudgets(
+          measurements: [roundTripped],
+          policies: [
+            _policy(
+              name: 'boot_emulator_ms',
+              source: MeasurementSource.realDevice,
+            ),
+          ],
+        );
+        expect(result.passed, isFalse);
+        expect(
+          result.violations.single.kind,
+          PerformanceBudgetViolationKind.wrongSource,
+        );
+      },
+    );
+
     test('toJson/fromJson giữ nguyên dữ liệu', () {
       const metric = PerformanceBudgetMetric(
         name: 'boot_ms',

@@ -42,12 +42,9 @@ String renderBenchmarkSection(List<Object?> metrics) {
     ..writeln('|---|---|---|---|');
   for (final raw in metrics) {
     final m = raw as Map<String, Object?>;
-    final metricName = m['name'] as String;
-    final name = _fmtMetricName(metricName);
+    final name = _fmtMetricName(m['name'] as String);
     final value = _fmtValue(m['value'], m['unit'] as String);
-    final source = metricName.endsWith('_emulator')
-        ? 'emulator'
-        : m['source'] as String;
+    final source = m['source'] as String;
     final recordedAt = _fmtRecordedAt(m['recordedAtMs'] as int);
     buffer.writeln('| $name | $value | $source | $recordedAt |');
   }
