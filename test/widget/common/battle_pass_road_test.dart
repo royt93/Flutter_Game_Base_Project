@@ -168,6 +168,34 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('milestone cards fit at 1.15 text scale in a narrow panel', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(textScaler: TextScaler.linear(1.15)),
+          child: Scaffold(
+            body: SizedBox(
+              width: 250,
+              height: 600,
+              child: BattlePassRoad(
+                milestones: _milestones(6),
+                progress: 500,
+                vipEnabled: true,
+                claimedFreeIds: const {},
+                claimedVipIds: const {},
+                onClaimMilestone: (_, _) {},
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 300));
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('locked/claimed tracks have no active claim buttons', (
     tester,
   ) async {

@@ -4,7 +4,7 @@ import '../../../core/neon_theme.dart';
 import '../../../core/reward_transaction_pipeline.dart';
 import 'common_button.dart';
 
-const double _milestoneExtent = 164;
+const double _milestoneExtent = 168;
 
 enum BattlePassTrack { free, vip }
 
