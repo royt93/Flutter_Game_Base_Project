@@ -5882,6 +5882,9 @@ void main() {
     await _scrollUntilVisible(tester, jackpot);
     await tester.ensureVisible(jackpot.first);
     await tester.pump(const Duration(milliseconds: 2500));
+    for (var i = 0; i < 10 && find.byType(ShaderMask).evaluate().isEmpty; i++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
     expect(jackpot, findsOneWidget);
     expect(find.byType(ShaderMask), findsWidgets);
     expect(find.text('JACKPOT 1,000,000'), findsWidgets);
