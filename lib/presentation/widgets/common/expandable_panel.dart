@@ -160,10 +160,13 @@ class ExpandablePanelState extends State<ExpandablePanel>
                 excluding: !_expanded,
                 child: IgnorePointer(
                   ignoring: !_expanded,
-                  child: SizeTransition(
-                    sizeFactor: _height,
-                    axisAlignment: -1,
-                    axis: Axis.vertical,
+                  child: AnimatedBuilder(
+                    animation: _height,
+                    builder: (context, child) => Align(
+                      alignment: AlignmentDirectional.topStart,
+                      heightFactor: _height.value,
+                      child: child,
+                    ),
                     child: Padding(
                       padding: const EdgeInsetsDirectional.only(
                         start: NeonTheme.s16,

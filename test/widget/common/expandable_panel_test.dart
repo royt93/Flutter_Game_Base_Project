@@ -34,7 +34,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 120));
     expect(expanded, isTrue);
     expect(changes, [true]);
-    expect(find.byType(SizeTransition), findsOneWidget);
+    expect(find.text('Answer'), findsOneWidget);
     await tester.pump(const Duration(milliseconds: 200));
     expect(find.text('Answer'), findsOneWidget);
     await tester.tap(find.text('FAQ'));
