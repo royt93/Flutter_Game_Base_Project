@@ -27,6 +27,7 @@ Widget `CharacterCollectionGrid` hiển thị:
 - [x] **Network conditioning test**: N/A — catalog/unlock sync thuộc caller.
 - [x] **Memory leak & profiling test**: Pixel 7 Pro debug (`character_collection_perf_test.dart`, 2026-10-18): 60 nhân vật, 5 chu kỳ mount/scroll/unmount, 5 `ScrollPosition` đã dispose (kiểm tra trực tiếp `ChangeNotifier.debugAssertNotDisposed`), MemoryWatchdog có 0 orphan mới. RSS sau mỗi unmount: 483.504.128 / 496.951.296 / 467.034.112 / 480.784.384 / 479.129.600 byte. Watchdog handle do test đăng ký và release sau khi xác nhận disposal; không tự quét allocation của widget, không chứng minh toàn bộ heap không leak.
 - [x] **Frame rate / Jank test**: Pixel 7 Pro profile qua `flutter drive --profile` (`character_collection_perf_test.dart`, 2026-10-18): 3.547 frames, totalSpan p50/p95/p99 = 6.023/10.470/13.729ms, max(build,raster) p50/p95/p99 = 4.364/5.393/6.548ms, slow-frame 0,0846%, jank 3 với ngưỡng max(build,raster) > 16.667ms. Mẫu là scroll 60 nhân vật 32 giây sau warm-up. Đây là engine FrameTiming, không phải số missed-vsync từ compositor.
+- Pixel 7 Pro profile rerun ngày 2026-11-07: 3.518 frames, totalSpan p50/p95/p99 = 6.037/10.344/15.985ms, max(build,raster) p50/p95/p99 = 4.382/5.362/6.224ms, slow-frame 0,0853%, jank 3 ở ngưỡng >16.667ms; 5 `ScrollPosition` được dispose, 0 watchdog orphan mới. Cùng workload 60 nhân vật; profile report, watchdog tắt ở profile mode. Kết quả gần baseline 2026-10-18, không cho thấy regression rõ.
 - [x] **IAP & Ad mediation test**: N/A — unlock/purchase logic ở caller.
 
 ## Hiệu năng & Animation

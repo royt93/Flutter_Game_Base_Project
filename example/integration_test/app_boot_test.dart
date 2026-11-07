@@ -5628,7 +5628,7 @@ void main() {
       final position = tester.state<ScrollableState>(scrollable).position;
       for (
         var attempt = 0;
-        attempt < 80 && target.evaluate().isEmpty;
+        attempt < 80 && target.hitTestable().evaluate().isEmpty;
         attempt++
       ) {
         final next = (position.pixels + 400).clamp(
@@ -5641,6 +5641,8 @@ void main() {
       }
       expect(target, findsOneWidget);
       await tester.ensureVisible(target);
+      await tester.pump();
+      expect(target.hitTestable(), findsOneWidget);
       await tester.tap(target);
       await tester.pump(const Duration(milliseconds: 300));
     }
