@@ -1,3 +1,12 @@
+## 0.6.7
+
+- Added deterministic levels, match cascades, local economy progression, save/sync, and playtest telemetry to the example Match-3 Lite demo.
+- Expanded the example Sprite Arena survival loop with enemies, breakable crates, pickups, boss waves, objectives, post-boss upgrades, and responsive controls.
+- Added `MeasurementSource.emulator` so emulator benchmark results remain distinct from physical-device measurements in reports and baseline data.
+- Fixed `SeasonEventBanner` and `BattlePassRoad` overflows at increased text scale; fixed FEAT-108 shader timing and FEAT-114 accordion device-test hit testing.
+- Replaced deprecated `SizeTransition.axisAlignment` usage in `ExpandablePanel` while preserving top-start expansion behavior.
+- Verified: root non-golden tests, example tests, analyzers, API compatibility, Pixel 7 Pro E2E (140 pass, 5 skipped), and profile benchmarks pass. CI run 42387567542 passes all three jobs.
+
 ## 0.6.6
 
 - Fixed the Sprite Arena example accepting Attack while paused or still loading. The button is disabled and its callback checks the current game state before firing.
