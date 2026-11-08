@@ -27,8 +27,11 @@ Determine why GitHub Actions `consumer-smoke` sometimes exceeds the emulator boo
 - The follow-up one-line `bash -c` trap passes shell syntax, preserves the Flutter test exit status in a stubbed local check, and was validated on CI run `42479899176` after commit `1a60b126`.
 - CI run `42479899176` passed `consumer-smoke`, `analyze-test`, and `quality-gate`. Diagnostics ran after the integration test: `adb devices -l` showed `emulator-5554` as `device`, `sys.boot_completed` was `1`, and `init.svc.bootanim` was `stopped`. The log also showed transient `adb: device offline` polling during boot before the emulator became ready; the integration test then passed.
 - This successful run verifies the diagnostic script and confirms one ADB-offline-during-boot event recovered. It does not establish the cause of prior 20-minute timeouts.
+- CI run `42475936590`, job `128717208224`, on commit `b259f2b4` ran in `centralus` / Ubuntu 26.04.1. Generated-consumer checks and APK build passed; emulator boot setup completed in about 42 seconds after transient `adb: device offline` recovered. The job then failed before Flutter tests with `/usr/bin/sh: 1: Syntax error: Unterminated quoted string`, from the multiline trap on that older commit. This is a shell-quoting failure, not another emulator timeout; the fix is in `1a60b126`. It does not explain earlier 20-minute stalls.
 - Separate from emulator investigation: run `42468614356`, attempts 1 and 2, failed at APK build with HTTP 504 downloading Gradle 8.14 from GitHub Releases; emulator setup was skipped. A local HEAD request to that URL timed out after 30 seconds, which does not establish endpoint status during CI.
-- Current evidence establishes intermittent ADB offline during boot that recovered before setup completed; it does not establish this as the cause of earlier 20-minute emulator timeouts.
+- CI run `42484320589` on commit `1a60b126`, runner region `centralus` / Ubuntu 26.04.1: all `analyze-test` and `quality-gate` steps passed; generated-consumer analyze/tests, APK build and emulator setup passed. Emulator reported `sys.boot_completed=1` at 13:26:01 UTC, about 45 seconds after launch; transient `adb: device offline` messages occurred earlier and recovered. `flutter test integration_test/app_boot_test.dart` then built the app and installed the APK by 13:26:50 UTC, but emitted no test-runner output before the emulator step hit its 20-minute timeout at 13:44:25 UTC. The `EXIT` trap diagnostics did not appear because the outer GitHub Actions step timeout killed the action. The stall is after emulator boot and APK install, before observable integration-test progress; exact cause (test launch/handshake, app startup, or device communication) remains unknown.
+- CI uses generated test source from `tool/create_consumer_app.dart` (`integrationBootTestTemplate`), not `example/integration_test/app_boot_test.dart`.
+- Current evidence establishes intermittent ADB offline during boot that recovered before setup completed; this is not by itself the cause of the observed post-install hang.
 
 ## Investigation checklist
 
@@ -37,6 +40,7 @@ Determine why GitHub Actions `consumer-smoke` sometimes exceeds the emulator boo
 - [x] Check generated-consumer setup: analysis/tests and APK build passed before emulator setup, so current evidence does not implicate generated-consumer configuration.
 - [x] One further rerun was performed; it failed at the same emulator integration step. Do not retry again without a distinct diagnostic reason.
 - [x] Keep emulator configuration and timeout unchanged; the later passing run does not identify a bounded fix for the earlier timeout.
+- [x] Compare naturally scheduled run `42475936590` against the passing diagnostics run: it reproduces the already-fixed trap quoting error on older commit `b259f2b4`, not the cold-boot timeout.
 - [ ] If another independently scheduled run occurs, compare its emulator readiness and action logs against successful job `128633219027` and failed jobs `128655469951` / `128664806552` before proposing a change.
 
 ## Diagnostic instrumentation
@@ -45,13 +49,13 @@ The emulator script runs bounded, read-only diagnostics on shell exit: `adb devi
 
 ## Next action
 
-Wait for the next independently scheduled `consumer-smoke` run. If emulator readiness times out again, compare its captured ADB/boot state with successful job `128729361841` and failed jobs `128655469951` / `128664806552` before proposing any configuration or timeout change.
+Dispatch one CI run with the generated integration test checkpoints (`[consumer-smoke] <name> <timestamp>` via `debugPrint`) to determine whether a future hang occurs before `main()`, during app/test steps, or in teardown. Keep timeout and emulator configuration unchanged. If this run times out, compare its last checkpoint with job `128742776448` before proposing workflow changes.
 
 ## Investigation conclusion
 
 Past failures are localized with high confidence to emulator readiness/provisioning before Flutter integration tests start. Run `42479899176` proves the integration test and diagnostics work on a later successful attempt, with a transient ADB-offline state recovering during boot. Available evidence still does not establish why earlier runs timed out or distinguish runner infrastructure from AVD/ADB behavior; keep this item open and do not change emulator configuration or timeout without stronger evidence.
 
-Reference: successful jobs `128633219027` and `128729361841`; failed jobs `128655469951` and `128664806552` in run `42456145100`; Gradle download failure run `42468614356`.
+Reference: successful jobs `128633219027` and `128729361841`; failed jobs `128655469951` / `128664806552` in run `42456145100`; Gradle download failure run `42468614356`.
 
 - [x] Add bounded, read-only post-emulator diagnostics after approval; leave emulator configuration and timeouts unchanged.
 

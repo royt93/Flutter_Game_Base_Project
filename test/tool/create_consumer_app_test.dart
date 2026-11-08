@@ -199,6 +199,17 @@ android {
       expect(content, contains('AuroraBgLayer'));
       expect(content, contains('state.shader, isNotNull'));
       expect(content, isNot(contains('pumpAndSettle')));
+      for (final name in [
+        'test-start',
+        'app-main-complete',
+        'font-asset-load-complete',
+        'persistence-check-complete',
+        'game-demo-navigation-complete',
+        'shader-checks-complete',
+        'test-teardown-complete',
+      ]) {
+        expect(content, contains("checkpoint('$name')"));
+      }
     });
 
     test('gameDemoScreenTemplate: dùng đúng RoyGame/GameWidget của kit', () {

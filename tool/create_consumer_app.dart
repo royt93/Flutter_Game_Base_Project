@@ -458,25 +458,39 @@ import 'package:$appName/screens/game_demo_screen.dart';
 void main() {
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
 
+  void checkpoint(String name) {
+    debugPrint('[consumer-smoke] \$name \${DateTime.now().toIso8601String()}');
+  }
+
   testWidgets('consumer bootstrap, font, persistence and navigation', (tester) async {
+    checkpoint('test-start');
+    checkpoint('app-main-start');
     await app.main();
+    checkpoint('app-main-complete');
     await tester.pump(const Duration(seconds: 2));
+    checkpoint('home-pumped');
     expect(find.byType(HomeScreen), findsOneWidget);
 
+    checkpoint('font-manifest-load-start');
     final manifest = jsonDecode(await rootBundle.loadString('FontManifest.json')) as List;
+    checkpoint('font-manifest-load-complete');
     final font = manifest.cast<Map<String, dynamic>>().singleWhere(
       (entry) => entry['family'] == NeonTheme.fontFamily,
     );
     final asset = (font['fonts'] as List).first['asset'] as String;
+    checkpoint('font-asset-load-start');
     expect((await rootBundle.load(asset)).lengthInBytes, greaterThan(1000));
+    checkpoint('font-asset-load-complete');
     expect(Theme.of(tester.element(find.byType(HomeScreen))).textTheme.bodyMedium!.fontFamily,
         NeonTheme.fontFamily);
+    checkpoint('font-check-complete');
 
     await StorageService.to.setBool(StorageKeys.themeDark, true);
     final prefs = await SharedPreferences.getInstance();
     await prefs.reload();
     expect(StorageService(prefs).getBool(StorageKeys.themeDark), isTrue);
     await StorageService.to.remove(StorageKeys.themeDark);
+    checkpoint('persistence-check-complete');
 
     await tester.tap(find.byKey(const Key('open_widget_showcase')));
     await tester.pump(const Duration(seconds: 1));
@@ -484,14 +498,17 @@ void main() {
     expect(find.text('Widget Showcase'), findsWidgets);
     await tester.pageBack();
     await tester.pump(const Duration(seconds: 1));
+    checkpoint('widget-showcase-navigation-complete');
     await tester.tap(find.byKey(const Key('open_game_demo')));
     await tester.pump(const Duration(seconds: 2));
+    checkpoint('game-demo-navigation-complete');
     expect(find.byType(GameDemoScreen), findsOneWidget);
     expect(tester.takeException(), isNull);
     await tester.pageBack();
     await tester.pump(const Duration(seconds: 1));
     expect(find.text('Game Demo'), findsWidgets);
 
+    checkpoint('shader-checks-start');
     for (final layer in <Widget>[
       const NeonAuraLayer(color: Colors.orange),
       const AuroraBgLayer(color: Colors.orange),
@@ -565,7 +582,9 @@ void main() {
       expect(tester.takeException(), isNull);
       await tester.pumpWidget(const SizedBox.shrink());
     }
+    checkpoint('shader-checks-complete');
     await RoyCasualKit.resetForTesting();
+    checkpoint('test-teardown-complete');
   });
 }
 ''';
