@@ -20,6 +20,9 @@ Determine why GitHub Actions `consumer-smoke` sometimes exceeds the emulator boo
 - A prior `consumer-smoke` run `42392120613` retry and the above run have timed out, while earlier runs `42387567542` and `42374006248` passed. This is intermittent runner/setup behavior, not yet a proven code or dependency defect.
 - CI run `42456145100` (final rerun after Stage A/B dependency upgrade): `analyze-test` and `quality-gate` passed; consumer app analyze/tests and APK build passed. Emulator action reported `Unable to connect to adb daemon on port: 5037`, repeatedly polled `adb shell getprop sys.boot_completed`, then timed out after 20 minutes. Integration test script did not reach Flutter test output.
 - Physical Pixel 7 Pro full E2E passed after the dependency upgrade (140 passed, 5 skipped); this does not replace generated-consumer emulator coverage.
+- CI run `42468614356`, attempt 1 and rerun attempt 2: `analyze-test` and `quality-gate` passed, generated-consumer analyze/tests and NDK setup passed, but `Build debug APK` failed both times before emulator setup. Gradle wrapper received HTTP 504 downloading `gradle-8.14-all.zip` from GitHub Releases; emulator step and its diagnostics were skipped.
+- Local read-only HEAD request to the same Gradle distribution URL timed out after 30 seconds without response; this does not establish endpoint status during either CI attempt.
+- Workflow diagnostics were moved into the emulator script via an `EXIT` trap and committed/pushed as `b259f2b4`; not yet exercised because both CI attempts failed earlier at APK build.
 
 ## Investigation checklist
 
