@@ -22,7 +22,11 @@ Determine why GitHub Actions `consumer-smoke` sometimes exceeds the emulator boo
 - Physical Pixel 7 Pro full E2E passed after the dependency upgrade (140 passed, 5 skipped); this does not replace generated-consumer emulator coverage.
 - CI run `42468614356`, attempt 1 and rerun attempt 2: `analyze-test` and `quality-gate` passed, generated-consumer analyze/tests and NDK setup passed, but `Build debug APK` failed both times before emulator setup. Gradle wrapper received HTTP 504 downloading `gradle-8.14-all.zip` from GitHub Releases; emulator step and its diagnostics were skipped.
 - Local read-only HEAD request to the same Gradle distribution URL timed out after 30 seconds without response; this does not establish endpoint status during either CI attempt.
-- Workflow diagnostics were moved into the emulator script via an `EXIT` trap and committed/pushed as `b259f2b4`; not yet exercised because both CI attempts failed earlier at APK build.
+- Workflow diagnostics were moved into the emulator script via an `EXIT` trap and committed/pushed as `b259f2b4`.
+- CI run `42475936590` on `b259f2b4`: generated-consumer checks, NDK install, and APK build passed. Emulator runner started API 34 AVD; its log showed initial `adb: device offline`, then `sys.boot_completed` polling succeeded and boot setup completed in about 41 seconds. The integration script then failed before Flutter tests with `/usr/bin/sh: 1: Syntax error: Unterminated quoted string`; this was caused by the newly added multiline `trap` body, so the diagnostics did not execute.
+- The follow-up local one-line `bash -c` trap passes shell syntax and preserves the Flutter test exit status in a stubbed local check. It remains uncommitted/unpushed and needs a CI run to validate under the emulator action.
+- Separate from emulator investigation: run `42468614356`, attempts 1 and 2, failed at APK build with HTTP 504 downloading Gradle 8.14 from GitHub Releases; emulator setup was skipped. A local HEAD request to that URL timed out after 30 seconds, which does not establish endpoint status during CI.
+- Current evidence establishes intermittent ADB offline during boot that recovered before setup completed; it does not establish this as the cause of earlier 20-minute emulator timeouts.
 
 ## Investigation checklist
 

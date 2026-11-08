@@ -168,17 +168,4 @@ jobs:
           target: google_apis
           working-directory: ${{ runner.temp }}/ci_smoke
           script: |
-            trap '
-              echo "--- adb devices ---"
-              timeout 20 adb devices -l || true
-              echo "--- boot properties ---"
-              timeout 20 adb shell getprop sys.boot_completed || true
-              timeout 20 adb shell getprop init.svc.bootanim || true
-              echo "--- emulator/adb processes ---"
-              ps -eo pid,args | grep -E "[e]mulator|[q]emu|[a]db" || true
-              echo "--- emulator log files ---"
-              find "$ANDROID_USER_HOME" -type f \( -name "emulator*.log" -o -name "adb*.log" \) -print 2>/dev/null | head -20 || true
-              echo "--- recent emulator logcat ---"
-              timeout 20 adb logcat -d -t 300 2>&1 | tail -300 || true
-            ' EXIT
-            flutter test integration_test/app_boot_test.dart
+            bash -c 'capture_emulator_diagnostics() { echo "--- adb devices ---"; timeout 20 adb devices -l || true; echo "--- boot properties ---"; timeout 20 adb shell getprop sys.boot_completed || true; timeout 20 adb shell getprop init.svc.bootanim || true; echo "--- emulator/adb processes ---"; ps -eo pid,comm,args | awk '\''$2 ~ /^(emulator|qemu-system|adb)$/ { print }'\'' || true; echo "--- emulator log files ---"; find "$ANDROID_USER_HOME" -type f \( -name "emulator*.log" -o -name "adb*.log" \) -print 2>/dev/null | head -20 || true; echo "--- recent emulator logcat ---"; timeout 20 adb logcat -d -t 300 2>&1 | tail -300 || true; }; trap capture_emulator_diagnostics EXIT; flutter test integration_test/app_boot_test.dart'
