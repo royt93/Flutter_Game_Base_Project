@@ -24,7 +24,9 @@ Determine why GitHub Actions `consumer-smoke` sometimes exceeds the emulator boo
 - Local read-only HEAD request to the same Gradle distribution URL timed out after 30 seconds without response; this does not establish endpoint status during either CI attempt.
 - Workflow diagnostics were moved into the emulator script via an `EXIT` trap and committed/pushed as `b259f2b4`.
 - CI run `42475936590` on `b259f2b4`: generated-consumer checks, NDK install, and APK build passed. Emulator runner started API 34 AVD; its log showed initial `adb: device offline`, then `sys.boot_completed` polling succeeded and boot setup completed in about 41 seconds. The integration script then failed before Flutter tests with `/usr/bin/sh: 1: Syntax error: Unterminated quoted string`; this was caused by the newly added multiline `trap` body, so the diagnostics did not execute.
-- The follow-up local one-line `bash -c` trap passes shell syntax and preserves the Flutter test exit status in a stubbed local check. It remains uncommitted/unpushed and needs a CI run to validate under the emulator action.
+- The follow-up one-line `bash -c` trap passes shell syntax, preserves the Flutter test exit status in a stubbed local check, and was validated on CI run `42479899176` after commit `1a60b126`.
+- CI run `42479899176` passed `consumer-smoke`, `analyze-test`, and `quality-gate`. Diagnostics ran after the integration test: `adb devices -l` showed `emulator-5554` as `device`, `sys.boot_completed` was `1`, and `init.svc.bootanim` was `stopped`. The log also showed transient `adb: device offline` polling during boot before the emulator became ready; the integration test then passed.
+- This successful run verifies the diagnostic script and confirms one ADB-offline-during-boot event recovered. It does not establish the cause of prior 20-minute timeouts.
 - Separate from emulator investigation: run `42468614356`, attempts 1 and 2, failed at APK build with HTTP 504 downloading Gradle 8.14 from GitHub Releases; emulator setup was skipped. A local HEAD request to that URL timed out after 30 seconds, which does not establish endpoint status during CI.
 - Current evidence establishes intermittent ADB offline during boot that recovered before setup completed; it does not establish this as the cause of earlier 20-minute emulator timeouts.
 
@@ -34,29 +36,29 @@ Determine why GitHub Actions `consumer-smoke` sometimes exceeds the emulator boo
 - [x] Compare runner image/tool versions and emulator logs: versions matched, regions differed (`westcentralus` vs `southcentralus`); failed attempt stalled before test output while polling boot readiness. Exact ADB/emulator cause remains unproven.
 - [x] Check generated-consumer setup: analysis/tests and APK build passed before emulator setup, so current evidence does not implicate generated-consumer configuration.
 - [x] One further rerun was performed; it failed at the same emulator integration step. Do not retry again without a distinct diagnostic reason.
-- [x] No workflow change justified by current evidence. Do not increase timeout; revisit only with logs that identify a bounded provisioning/ADB fix.
+- [x] Keep emulator configuration and timeout unchanged; the later passing run does not identify a bounded fix for the earlier timeout.
 - [ ] If another independently scheduled run occurs, compare its emulator readiness and action logs against successful job `128633219027` and failed jobs `128655469951` / `128664806552` before proposing a change.
 
-## Proposed diagnostic-only instrumentation (approval required before workflow edit)
+## Diagnostic instrumentation
 
-Keep emulator version/API/timeout unchanged. Add one post-emulator step guarded by `if: always()` to capture bounded diagnostics even when the emulator step fails: `adb devices -l`, selected boot properties (`sys.boot_completed`, `init.svc.bootanim`), emulator/adb process status, and recent emulator logcat. Guard commands so missing device/log files do not mask the original failure; cap log output to avoid noisy CI logs. Do not add retries or alter SDK/AVD setup. This can distinguish an ADB server/device disconnect from a live emulator stuck during boot; it cannot prove a GitHub-hosted runner host fault by itself. Wait for a distinct CI run before deciding whether this instrumentation is needed; obtain explicit approval before editing `.github/workflows/ci.yml`.
+The emulator script runs bounded, read-only diagnostics on shell exit: `adb devices -l`, boot properties (`sys.boot_completed`, `init.svc.bootanim`), emulator/ADB process status, emulator log paths, and recent logcat. CI run `42479899176` verified the capture runs after a successful integration test and does not change its result. The capture is limited to the emulator script; it cannot observe a failure that occurs before that script starts.
 
 ## Next action
 
-Wait for next independently scheduled `consumer-smoke` run. Keep workflow unchanged until that run provides a distinct diagnostic reason; then compare its boot/ADB state with the successful and failed job evidence above.
+Wait for the next independently scheduled `consumer-smoke` run. If emulator readiness times out again, compare its captured ADB/boot state with successful job `128729361841` and failed jobs `128655469951` / `128664806552` before proposing any configuration or timeout change.
 
 ## Investigation conclusion
 
-The failure is localized with high confidence to emulator readiness/provisioning before Flutter integration tests start. Generated-consumer analysis/tests/APK build pass. Runner image versions match between success and failure, but Azure regions differ; available evidence does not establish whether the underlying cause is runner infrastructure, AVD cold boot, or ADB. Leave `.github/workflows/ci.yml` unchanged and keep this item open for a distinct future run with more diagnostic logs.
+Past failures are localized with high confidence to emulator readiness/provisioning before Flutter integration tests start. Run `42479899176` proves the integration test and diagnostics work on a later successful attempt, with a transient ADB-offline state recovering during boot. Available evidence still does not establish why earlier runs timed out or distinguish runner infrastructure from AVD/ADB behavior; keep this item open and do not change emulator configuration or timeout without stronger evidence.
 
-Reference: successful job `128633219027`; failed jobs `128655469951` and `128664806552` in run `42456145100`.
+Reference: successful jobs `128633219027` and `128729361841`; failed jobs `128655469951` and `128664806552` in run `42456145100`; Gradle download failure run `42468614356`.
 
 - [x] Add bounded, read-only post-emulator diagnostics after approval; leave emulator configuration and timeouts unchanged.
 
 ## Acceptance criteria
 
 - [ ] Classify failure as one of: runner/emulator infrastructure, generated-consumer build/configuration, or integration-test code, with exact log evidence.
-- [ ] If a distinct rerun passes: record transient cold-boot/ADB instability and leave workflow unchanged.
+- [x] Passing run `42479899176` recorded transient ADB-offline-during-boot recovery; emulator configuration and timeout remain unchanged.
 - [ ] If it fails consistently at the same stage: document reproducible cause and a minimal proposed workflow fix; obtain approval before editing CI.
 - [ ] Do not tag or publish a release as a workaround for a red required CI job.
 
