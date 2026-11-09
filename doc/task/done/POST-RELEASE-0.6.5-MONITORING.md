@@ -10,6 +10,7 @@ source: "user-selected post-release sequence 2026-10-26"
 
 ## Trạng thái phát hành
 
+- Monitoring đã superseded bởi `0.6.6` và `0.6.7` (pub.dev latest `0.6.7`, tag `v0.6.7`; không có open GitHub issue, kiểm tra 2026-11-09). Lưu trữ vào `done/`.
 - pub.dev liệt kê `roy_casual_kit 0.6.5` là `latest` (đăng 2026-10-26T04:13Z). Phiên bản 0.6.4 chưa từng được publish lên pub.dev; pub.dev đi thẳng từ 0.6.3 lên 0.6.5.
 - Git tag `v0.6.5` trỏ commit `7cfadce`; GitHub Release: https://github.com/royt93/Flutter_Game_Base_Project/releases/tag/v0.6.5
 - GitHub CI: run 40265823288 trên `7cfadce`, run 40268097876 trên `d0dd9b8` và run 40269662059 trên `fa6908f` pass cả `quality-gate`, `analyze-test`, `consumer-smoke`. Run 40210322949 trên `4fb904c` có một lần `consumer-smoke` timeout emulator, pass khi rerun.

@@ -10,6 +10,7 @@ source: "user-selected post-release sequence 2026-10-25"
 
 ## Trạng thái phát hành
 
+- Monitoring đã superseded bởi các release sau: `0.6.5` và pub.dev latest `0.6.7` (kiểm tra 2026-11-09).
 - pub.dev hosted package `roy_casual_kit 0.6.3` đã resolve thành công trong consumer sample.
 - Consumer sample bên ngoài repo: `flutter analyze` sạch; 3/3 tests pass.
 - Git tag `v0.6.3`, GitHub Release và upload pub.dev đã hoàn tất.
