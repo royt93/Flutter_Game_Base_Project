@@ -157,50 +157,52 @@ class PauseOverlay extends StatelessWidget {
             ...NeonTheme.drop(y: 8, blur: 24),
           ],
         ),
-        child: Semantics(
-          container: true,
-          label: title ?? 'pause_title'.tr,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                title ?? 'pause_title'.tr,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: NeonTheme.ink,
-                  fontSize: 26,
-                  fontWeight: FontWeight.w900,
-                  letterSpacing: 1,
+        child: SingleChildScrollView(
+          child: Semantics(
+            container: true,
+            label: title ?? 'pause_title'.tr,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  title ?? 'pause_title'.tr,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: NeonTheme.ink,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w900,
+                    letterSpacing: 1,
+                  ),
                 ),
-              ),
-              const SizedBox(height: NeonTheme.s24),
-              CommonButton(
-                label: resumeLabel ?? 'pause_resume'.tr,
-                onTap: _handleResume,
-              ),
-              const SizedBox(height: NeonTheme.s16),
-              CommonButton(
-                label: restartLabel ?? 'pause_restart'.tr,
-                variant: CommonButtonVariant.secondary,
-                onTap: _handleRestart,
-              ),
-              if (onSettings != null) ...[
+                const SizedBox(height: NeonTheme.s24),
+                CommonButton(
+                  label: resumeLabel ?? 'pause_resume'.tr,
+                  onTap: _handleResume,
+                ),
                 const SizedBox(height: NeonTheme.s16),
                 CommonButton(
-                  label: settingsLabel ?? 'settings'.tr,
+                  label: restartLabel ?? 'pause_restart'.tr,
                   variant: CommonButtonVariant.secondary,
-                  onTap: onSettings!,
+                  onTap: _handleRestart,
                 ),
+                if (onSettings != null) ...[
+                  const SizedBox(height: NeonTheme.s16),
+                  CommonButton(
+                    label: settingsLabel ?? 'settings'.tr,
+                    variant: CommonButtonVariant.secondary,
+                    onTap: onSettings!,
+                  ),
+                ],
+                if (onQuit != null) ...[
+                  const SizedBox(height: NeonTheme.s16),
+                  CommonButton(
+                    label: quitLabel ?? 'pause_quit'.tr,
+                    variant: CommonButtonVariant.danger,
+                    onTap: onQuit!,
+                  ),
+                ],
               ],
-              if (onQuit != null) ...[
-                const SizedBox(height: NeonTheme.s16),
-                CommonButton(
-                  label: quitLabel ?? 'pause_quit'.tr,
-                  variant: CommonButtonVariant.danger,
-                  onTap: onQuit!,
-                ),
-              ],
-            ],
+            ),
           ),
         ),
       ),

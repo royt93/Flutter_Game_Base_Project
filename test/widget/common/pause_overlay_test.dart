@@ -309,6 +309,40 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  group('landscape: panel đủ 4 nút cuộn được, không overflow', () {
+    for (final size in const [Size(640, 320), Size(568, 320)]) {
+      testWidgets('${size.width.toInt()}x${size.height.toInt()}', (
+        tester,
+      ) async {
+        await tester.binding.setSurfaceSize(size);
+        addTearDown(() => tester.binding.setSurfaceSize(null));
+        final session = _playingSession()..pause(GamePauseReason.user);
+        await tester.pumpWidget(
+          GetMaterialApp(
+            translations: AppTranslations(),
+            home: Material(
+              child: Stack(
+                children: [
+                  PauseOverlay(
+                    session: session,
+                    onSettings: () {},
+                    onQuit: () {},
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(tester.takeException(), isNull);
+        await tester.ensureVisible(_button('Quit').first);
+        await tester.pump();
+        expect(tester.takeException(), isNull);
+      });
+    }
+  });
+
   group('FEAT-82: focus trap/release qua đúng modal lifecycle', () {
     testWidgets(
       'pause khi 1 nút game đang focus -> panel giành focus; resume -> focus trả lại đúng nút đó',
