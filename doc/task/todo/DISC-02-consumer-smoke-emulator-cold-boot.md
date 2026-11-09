@@ -31,6 +31,9 @@ Determine why GitHub Actions `consumer-smoke` sometimes exceeds the emulator boo
 - Separate from emulator investigation: run `42468614356`, attempts 1 and 2, failed at APK build with HTTP 504 downloading Gradle 8.14 from GitHub Releases; emulator setup was skipped. A local HEAD request to that URL timed out after 30 seconds, which does not establish endpoint status during CI.
 - CI run `42484320589` on commit `1a60b126`, runner region `centralus` / Ubuntu 26.04.1: all `analyze-test` and `quality-gate` steps passed; generated-consumer analyze/tests, APK build and emulator setup passed. Emulator reported `sys.boot_completed=1` at 13:26:01 UTC, about 45 seconds after launch; transient `adb: device offline` messages occurred earlier and recovered. `flutter test integration_test/app_boot_test.dart` then built the app and installed the APK by 13:26:50 UTC, but emitted no test-runner output before the emulator step hit its 20-minute timeout at 13:44:25 UTC. The `EXIT` trap diagnostics did not appear because the outer GitHub Actions step timeout killed the action. The stall is after emulator boot and APK install, before observable integration-test progress; exact cause (test launch/handshake, app startup, or device communication) remains unknown.
 - CI uses generated test source from `tool/create_consumer_app.dart` (`integrationBootTestTemplate`), not `example/integration_test/app_boot_test.dart`.
+- CI run `42489295855` on commit `5cc456e4` (job `128757931523`, region `eastus2`) added generated-test checkpoints. Emulator booted at 14:27:35 UTC, APK built and installed at 14:28:23 UTC, then `flutter test` emitted nothing until the 20-minute step timeout at 14:46:03 UTC; no `[consumer-smoke]` checkpoint appeared. Because stdout forwarding depends on the test starting and the VM Service handshake completing, this places the stall at or before test start, not in a specific test step.
+- CI run `42494121926` on commit `28d1e967` (job `128772586593`) added a 60-second host watcher and `flutter test --verbose`. All three jobs passed. Emulator booted at 15:25:43 UTC; Flutter connected to VM Service and the `ext.flutter.integrationTest` isolate, and every checkpoint from `test-start` to `test-teardown-complete` printed; the test finished about 10 seconds after connecting. The watcher and cleanup ran normally.
+- This pass verifies the new instrumentation and shows the generated test and handshake succeed when the app launches normally. It does not explain the earlier 20-minute stalls, and one pass does not rule out the intermittent failure.
 - Current evidence establishes intermittent ADB offline during boot that recovered before setup completed; this is not by itself the cause of the observed post-install hang.
 
 ## Investigation checklist
@@ -49,7 +52,7 @@ The emulator script runs bounded, read-only diagnostics on shell exit: `adb devi
 
 ## Next action
 
-Dispatch one CI run with the generated integration test checkpoints (`[consumer-smoke] <name> <timestamp>` via `debugPrint`) to determine whether a future hang occurs before `main()`, during app/test steps, or in teardown. Keep timeout and emulator configuration unchanged. If this run times out, compare its last checkpoint with job `128742776448` before proposing workflow changes.
+Keep instrumentation (60s host watcher + test checkpoints + `--verbose`) on `main` and wait for the next naturally occurring CI run. If `consumer-smoke` stalls again, compare the watcher's intermediate snapshots (ADB state, running processes, logcat) and the last checkpoint with passing job `128772586593` and stalled jobs `128742776448` / `128757931523`. Do not change timeout or emulator configuration without log proof of the cause.
 
 ## Investigation conclusion
 
