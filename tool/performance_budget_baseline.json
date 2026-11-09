@@ -18,13 +18,13 @@
     "source": "hostHeadless",
     "value": 97.5,
     "unit": "%",
-    "recordedAtMs": 1793709725958
+    "recordedAtMs": 1794222180859
   },
   {
     "name": "object_pool_pooled_elapsed_us",
     "source": "hostHeadless",
-    "value": 40205.0,
+    "value": 20488.0,
     "unit": "us",
-    "recordedAtMs": 1793709725958
+    "recordedAtMs": 1794222180859
   }
 ]
