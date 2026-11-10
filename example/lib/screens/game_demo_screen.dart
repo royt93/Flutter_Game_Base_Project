@@ -288,6 +288,9 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     super.dispose();
   }
 
+  bool _isLandscape(BuildContext context) =>
+      MediaQuery.orientationOf(context) == Orientation.landscape;
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -454,9 +457,15 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
               ),
               Positioned(
                 right: NeonTheme.s16,
-                bottom: 240,
+                // BUG-103: a 240 px bottom offset pushes the 2-FAB column
+                // above the screen on short landscape viewports.
+                top: _isLandscape(context) ? NeonTheme.s8 : null,
+                bottom: _isLandscape(context) ? null : 240,
                 child: RepaintBoundary(
-                  child: Column(
+                  child: Flex(
+                    direction: _isLandscape(context)
+                        ? Axis.horizontal
+                        : Axis.vertical,
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       FloatingActionButton(
@@ -472,7 +481,10 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
                         backgroundColor: NeonTheme.cyan,
                         child: const Icon(Icons.pause, color: Colors.white),
                       ),
-                      const SizedBox(height: NeonTheme.s16),
+                      const SizedBox(
+                        width: NeonTheme.s16,
+                        height: NeonTheme.s16,
+                      ),
                       FloatingActionButton(
                         heroTag: 'info',
                         tooltip: 'game_demo_info_tooltip'.tr,

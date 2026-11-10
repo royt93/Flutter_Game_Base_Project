@@ -113,6 +113,31 @@ void main() {
   );
 
   testWidgets(
+    'BUG-103: landscape TECNO viewport keeps the pause FAB on-screen and tappable',
+    (tester) async {
+      tester.view.physicalSize = const Size(2436, 1080);
+      tester.view.devicePixelRatio = 3;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_wrap(const GameDemoScreen()));
+      await tester.pump(const Duration(milliseconds: 100));
+
+      final pauseFab = find.byWidgetPredicate(
+        (widget) => widget is FloatingActionButton && widget.heroTag == 'pause',
+      );
+      final viewport = tester.view.physicalSize / tester.view.devicePixelRatio;
+      final rect = tester.getRect(pauseFab);
+      expect(rect.top, greaterThanOrEqualTo(0));
+      expect(rect.bottom, lessThanOrEqualTo(viewport.height));
+
+      await tester.tap(pauseFab);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.text('pause_title'.tr), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'FEAT-53 + BUG-91: pause FAB shows PauseOverlay above the GameWidget AND '
     'actually freezes the Flame engine (not just the session UI); Resume '
     'hides overlay and unfreezes it',
@@ -654,12 +679,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       final pauseFabFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is FloatingActionButton && widget.heroTag == 'pause',
+        (widget) => widget is FloatingActionButton && widget.heroTag == 'pause',
       );
       final infoFabFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is FloatingActionButton && widget.heroTag == 'info',
+        (widget) => widget is FloatingActionButton && widget.heroTag == 'info',
       );
 
       expect(pauseFabFinder, findsOneWidget);
@@ -682,12 +705,10 @@ void main() {
       await tester.pump(const Duration(milliseconds: 100));
 
       final pauseFabFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is FloatingActionButton && widget.heroTag == 'pause',
+        (widget) => widget is FloatingActionButton && widget.heroTag == 'pause',
       );
       final infoFabFinder = find.byWidgetPredicate(
-        (widget) =>
-            widget is FloatingActionButton && widget.heroTag == 'info',
+        (widget) => widget is FloatingActionButton && widget.heroTag == 'info',
       );
 
       final pauseSemantics = tester.getSemantics(pauseFabFinder);
@@ -699,5 +720,4 @@ void main() {
       handle.dispose();
     });
   });
-
 }
