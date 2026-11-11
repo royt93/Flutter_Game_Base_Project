@@ -101,6 +101,48 @@ void main() {
         expect(NeonTheme.gemColors.first, const Color(0xFF00FF00));
       },
     );
+
+    group('ENH-103: locked state tokens', () {
+      tearDown(() => NeonTheme.dark = false);
+
+      test('each theme resolves its own locked border/fill pair', () {
+        NeonTheme.dark = false;
+        expect(NeonTheme.lockedBorder, const Color(0xFF7B8499));
+        expect(NeonTheme.lockedFill, const Color(0xFFEDEAF5));
+        NeonTheme.dark = true;
+        expect(NeonTheme.lockedBorder, const Color(0xFF7C86A8));
+        expect(NeonTheme.lockedFill, const Color(0xFF2A2A4A));
+      });
+
+      test('exportPalette exposes the four per-theme locked keys', () {
+        final exported = NeonTheme.exportPalette();
+        expect(exported['lockedBorderLight'], '#7B8499');
+        expect(exported['lockedFillLight'], '#EDEAF5');
+        expect(exported['lockedBorderDark'], '#7C86A8');
+        expect(exported['lockedFillDark'], '#2A2A4A');
+        expect(exported.containsKey('lockedBorder'), isFalse);
+      });
+
+      test('importPalette per-theme keys override only that theme', () {
+        NeonTheme.importPalette({'lockedBorderDark': '#AABBCC'});
+        NeonTheme.dark = true;
+        expect(NeonTheme.lockedBorder, const Color(0xFFAABBCC));
+        NeonTheme.dark = false;
+        expect(NeonTheme.lockedBorder, const Color(0xFF7B8499));
+      });
+
+      test('legacy single-pair keys still reskin the light variant', () {
+        NeonTheme.importPalette({
+          'lockedBorder': '#102030',
+          'lockedFill': '#405060',
+        });
+        NeonTheme.dark = false;
+        expect(NeonTheme.lockedBorder, const Color(0xFF102030));
+        expect(NeonTheme.lockedFill, const Color(0xFF405060));
+        NeonTheme.dark = true;
+        expect(NeonTheme.lockedBorder, const Color(0xFF7C86A8));
+      });
+    });
   });
 
   group('color blind safe palette', () {

@@ -147,9 +147,8 @@ List<ContrastIssue> validateNeonThemeContrastPairs(
 /// - `disabled`: `muted` on `card`/`cardAlt`, for light and dark (WCAG
 ///   exempts disabled controls from a real contrast bar — see
 ///   [ThemeContrastConfig.disabledMinRatio]'s doc).
-/// - `uiComponent`: `lockedBorder` on `lockedFill` — checked once, not
-///   per-theme, because neither token has a separate dark variant (a
-///   finding in itself, see this file's test).
+/// - `uiComponent`: `lockedBorder` on `lockedFill`, for light and dark
+///   (each theme has its own pair since ENH-103).
 /// - `gemPalette`: every pair in `NeonTheme.gemColors`, for the default
 ///   and the `colorBlindSafe` set.
 List<ContrastIssue> validateNeonThemeContrast({
@@ -206,21 +205,16 @@ List<ContrastIssue> validateNeonThemeContrast({
             threshold: config.disabledMinRatio,
             kind: ContrastCheckKind.disabled,
           ),
+          ContrastCheck(
+            token: 'lockedBorder on lockedFill',
+            foreground: NeonTheme.lockedBorder,
+            background: NeonTheme.lockedFill,
+            threshold: config.uiComponentThreshold,
+            kind: ContrastCheckKind.uiComponent,
+          ),
         ], state: state),
       );
     }
-
-    issues.addAll(
-      validateNeonThemeContrastPairs([
-        ContrastCheck(
-          token: 'lockedBorder on lockedFill',
-          foreground: NeonTheme.lockedBorder,
-          background: NeonTheme.lockedFill,
-          threshold: config.uiComponentThreshold,
-          kind: ContrastCheckKind.uiComponent,
-        ),
-      ], state: 'constant'),
-    );
 
     for (final cvdOn in [false, true]) {
       NeonTheme.colorBlindSafe = cvdOn;

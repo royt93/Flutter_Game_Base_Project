@@ -4,17 +4,22 @@ import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/utils/theme_contrast_validator.dart';
 
 void main() {
-  test('contrast diagnostic includes token, state, ratio, threshold and kind', () {
-    const issue = ContrastIssue(
-      token: 'ink on card',
-      state: 'dark',
-      ratio: 2.125,
-      threshold: 4.5,
-      kind: ContrastCheckKind.text,
-    );
-    expect(issue.toString(),
-        'ink on card (dark): 2.13 < threshold 4.50 [ContrastCheckKind.text]');
-  });
+  test(
+    'contrast diagnostic includes token, state, ratio, threshold and kind',
+    () {
+      const issue = ContrastIssue(
+        token: 'ink on card',
+        state: 'dark',
+        ratio: 2.125,
+        threshold: 4.5,
+        kind: ContrastCheckKind.text,
+      );
+      expect(
+        issue.toString(),
+        'ink on card (dark): 2.13 < threshold 4.50 [ContrastCheckKind.text]',
+      );
+    },
+  );
 
   group('relativeLuminance / contrastRatio', () {
     test('trắng có luminance ~1.0, đen có luminance ~0.0', () {
@@ -120,18 +125,22 @@ void main() {
       },
     );
 
-    test(
-      'PHÁT HIỆN THẬT: lockedBorder/lockedFill không đạt ngưỡng UI-component '
-      '3.0 và không có biến thể dark riêng (cùng 1 cặp màu cho cả 2 theme)',
-      () {
-        final issues = validateNeonThemeContrast();
-        final lockedIssues = issues.where(
-          (i) => i.kind == ContrastCheckKind.uiComponent,
-        );
-        expect(lockedIssues, hasLength(1));
-        expect(lockedIssues.single.state, 'constant');
-      },
-    );
+    test('ENH-103: lockedBorder/lockedFill đạt ngưỡng UI-component 3.0 ở cả '
+        'light lẫn dark (mỗi theme một cặp màu riêng)', () {
+      final issues = validateNeonThemeContrast();
+      expect(
+        issues.where((i) => i.kind == ContrastCheckKind.uiComponent),
+        isEmpty,
+      );
+
+      NeonTheme.dark = false;
+      final lightBorder = NeonTheme.lockedBorder;
+      final lightFill = NeonTheme.lockedFill;
+      NeonTheme.dark = true;
+      addTearDown(() => NeonTheme.dark = false);
+      expect(NeonTheme.lockedBorder, isNot(lightBorder));
+      expect(NeonTheme.lockedFill, isNot(lightFill));
+    });
 
     test('không mutate NeonTheme.dark/colorBlindSafe sau khi chạy xong', () {
       NeonTheme.dark = true;

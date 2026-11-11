@@ -175,8 +175,15 @@ class NeonTheme {
   static Color muted = const Color(0xFFC9C3DA);
 
   // Node màn chưa mở khoá trên Level Select (viền/icon dùng chung 1 tông).
-  static Color lockedBorder = const Color(0xFFBFC7D6);
-  static Color lockedFill = const Color(0xFFEDEAF5);
+  // ENH-103: mỗi theme một cặp, viền/fill đạt >= 3.0:1 (WCAG UI-component).
+  static Color _lockedBorderLight = const Color(0xFF7B8499);
+  static Color _lockedFillLight = const Color(0xFFEDEAF5);
+  static Color _lockedBorderDark = const Color(0xFF7C86A8);
+  static Color _lockedFillDark = const Color(0xFF2A2A4A);
+
+  static Color get lockedBorder =>
+      dark ? _lockedBorderDark : _lockedBorderLight;
+  static Color get lockedFill => dark ? _lockedFillDark : _lockedFillLight;
 
   static List<Color> get gemColors => colorBlindSafe
       ? colorBlindSafeGemColors
@@ -226,8 +233,10 @@ class NeonTheme {
     'gold': _hex(gold),
     'coral': _hex(coral),
     'muted': _hex(muted),
-    'lockedBorder': _hex(lockedBorder),
-    'lockedFill': _hex(lockedFill),
+    'lockedBorderLight': _hex(_lockedBorderLight),
+    'lockedFillLight': _hex(_lockedFillLight),
+    'lockedBorderDark': _hex(_lockedBorderDark),
+    'lockedFillDark': _hex(_lockedFillDark),
   };
 
   /// Overwrites every known field present in [json] (value must be a
@@ -298,10 +307,16 @@ class NeonTheme {
           coral = color;
         case 'muted':
           muted = color;
-        case 'lockedBorder':
-          lockedBorder = color;
-        case 'lockedFill':
-          lockedFill = color;
+        // 'lockedBorder'/'lockedFill' (pre-ENH-103 single-pair keys) still
+        // reskin the light variant so older palette files keep working.
+        case 'lockedBorder' || 'lockedBorderLight':
+          _lockedBorderLight = color;
+        case 'lockedFill' || 'lockedFillLight':
+          _lockedFillLight = color;
+        case 'lockedBorderDark':
+          _lockedBorderDark = color;
+        case 'lockedFillDark':
+          _lockedFillDark = color;
         default:
         // unknown key — ignored, forward-compatible with future palette additions.
       }
