@@ -35,17 +35,21 @@ không đổi orientation mặc định chỉ để demo.
 
 ## Acceptance criteria
 
-- [ ] Widget test landscape cho `GameDemoScreen`: Pause FAB nằm hoàn toàn trong viewport và chạm mở được `PauseOverlay`.
-- [ ] Kiểm tra TECNO KJ7 thật ở landscape: Pause FAB chạm được, panel Paused hiển thị, cuộn/chạm tới Quit không overflow.
-- [ ] Giữ nguyên portrait layout, hero tags, tooltip/semantics và action handlers hiện có.
+- [x] Widget test landscape cho `GameDemoScreen`: Pause FAB nằm hoàn toàn trong viewport và chạm mở được `PauseOverlay` (`BUG-103` trong `example/test/game_demo_screen_test.dart`, viewport TECNO 2436×1080 @3x; fail `-8.0` trước khi sửa).
+- [ ] Kiểm tra TECNO KJ7 thật ở landscape: Pause FAB chạm được, panel Paused hiển thị, cuộn/chạm tới Quit không overflow. **Chưa thực hiện** — đóng task theo quyết định của owner (2026-11-11) dựa trên widget test; example vẫn khóa portrait tại `example/lib/main.dart:56`, nên cần quyết định hỗ trợ landscape trước khi kiểm tra máy thật.
+- [x] Giữ nguyên portrait layout, hero tags, tooltip/semantics và action handlers hiện có (portrait vẫn `bottom: 240` dạng cột; 442 test example pass).
 
 ## Test plan
 
-- [ ] Widget test dùng viewport landscape và `tester.tap` vào Pause FAB.
-- [ ] `flutter analyze` và `flutter test --exclude-tags slow` pass ở `example/`.
-- [ ] Device smoke trên TECNO KJ7 sau khi quyết định hỗ trợ landscape.
+- [x] Widget test dùng viewport landscape và `tester.tap` vào Pause FAB.
+- [x] `flutter analyze` và `flutter test --exclude-tags slow` pass ở `example/`.
+- [ ] Device smoke trên TECNO KJ7 sau khi quyết định hỗ trợ landscape (chưa thực hiện).
 
 ## Constraints
 
 - Chỉ code trên `main`, không branch/worktree.
 - Không đổi orientation mặc định của example khi chưa có quyết định hỗ trợ landscape.
+
+## Kết quả
+
+Sửa trong commit `da9e2020`: ở landscape cột FAB đổi thành hàng ngang neo `top: 8`; portrait giữ nguyên. Các tiêu chí thiết bị thật vẫn mở; nếu sau này example hỗ trợ landscape, tạo task kiểm tra riêng trên TECNO KJ7.
