@@ -36,14 +36,14 @@ không đổi orientation mặc định chỉ để demo.
 ## Acceptance criteria
 
 - [x] Widget test landscape cho `GameDemoScreen`: Pause FAB nằm hoàn toàn trong viewport và chạm mở được `PauseOverlay` (`BUG-103` trong `example/test/game_demo_screen_test.dart`, viewport TECNO 2436×1080 @3x; fail `-8.0` trước khi sửa).
-- [ ] Kiểm tra TECNO KJ7 thật ở landscape: Pause FAB chạm được, panel Paused hiển thị, cuộn/chạm tới Quit không overflow. **Chưa thực hiện** — đóng task theo quyết định của owner (2026-11-11) dựa trên widget test; example vẫn khóa portrait tại `example/lib/main.dart:56`, nên cần quyết định hỗ trợ landscape trước khi kiểm tra máy thật.
+- [x] Kiểm tra TECNO KJ7 thật ở landscape: Pause FAB chạm được, panel Paused hiển thị, cuộn/chạm tới Quit không overflow. Đã kiểm tra 2026-11-11 trên TECNO KJ7 (2436×1080, `ROTATION_90`): Pause FAB nằm hoàn toàn trong màn hình và chạm được, PauseOverlay hiện đủ Resume/Restart/Quit không cần cuộn, không có `RenderFlex overflowed` trong logcat, Resume đóng overlay.
 - [x] Giữ nguyên portrait layout, hero tags, tooltip/semantics và action handlers hiện có (portrait vẫn `bottom: 240` dạng cột; 442 test example pass).
 
 ## Test plan
 
 - [x] Widget test dùng viewport landscape và `tester.tap` vào Pause FAB.
 - [x] `flutter analyze` và `flutter test --exclude-tags slow` pass ở `example/`.
-- [ ] Device smoke trên TECNO KJ7 sau khi quyết định hỗ trợ landscape (chưa thực hiện).
+- [x] Device smoke trên TECNO KJ7 (2026-11-11), chạy example với landscape mở tạm (`example/lib/main.dart` đã hoàn về `portraitUp`, không commit thay đổi orientation).
 
 ## Constraints
 
@@ -52,4 +52,6 @@ không đổi orientation mặc định chỉ để demo.
 
 ## Kết quả
 
-Sửa trong commit `da9e2020`: ở landscape cột FAB đổi thành hàng ngang neo `top: 8`; portrait giữ nguyên. Các tiêu chí thiết bị thật vẫn mở; nếu sau này example hỗ trợ landscape, tạo task kiểm tra riêng trên TECNO KJ7.
+Sửa trong commit `da9e2020`: ở landscape cột FAB đổi thành hàng ngang neo `top: 8`; portrait giữ nguyên.
+
+Kiểm tra thiết bị thật 2026-11-11 (TECNO KJ7): phải force-stop app quảng cáo `com.roy.admobwrapper` trước, vì quảng cáo của app đó tự chèn lên và kéo màn hình về portrait ở hai lần thử đầu. Orientation của example chỉ được mở tạm để kiểm tra rồi hoàn tác; example vẫn khóa portrait tại `example/lib/main.dart:56`.
