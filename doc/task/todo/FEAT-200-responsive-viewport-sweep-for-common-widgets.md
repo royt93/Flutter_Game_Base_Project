@@ -21,6 +21,11 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 2. Phần còn lại của common/; widget cố tình không hỗ trợ viewport nhỏ phải có lý do ghi trong allowlist.
 3. Gắn vào CI (`flutter test` root đã chạy, không cần job mới).
 
+## Tiến độ
+- [x] Pha 1 khung: `test/support/viewport_sweep.dart` (`ViewportCase`, `runViewportSweep`) và `test/widget/common/viewport_sweep_test.dart` với StreakRepairDialog (1x và 2x text), PrestigeConfirmationCard, RewardPopup, SupportDiagnosticsCard. Đã chứng minh: hoàn nguyên tạm bug width 320 thì 2 test đỏ.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 165 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
+
 ## Tiêu chí xong
 - Sweep xanh; allowlist có lý do từng dòng.
 - Thử đưa lại bug cũ (width cố định 320) thì test đỏ.
