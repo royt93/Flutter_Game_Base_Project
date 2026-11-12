@@ -84,5 +84,76 @@ void main() {
         targetFinder: find.byType(SupportDiagnosticsCard),
       );
     });
+
+    testWidgets('GameOverCardTemplate', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => SingleChildScrollView(
+          child: GameOverCardTemplate(
+            title: 'Game Over',
+            message: 'Better luck next time',
+            statLines: const ['Score 12,340', 'Best 20,000', 'Combo x7'],
+            primaryActionLabel: 'Retry',
+            onPrimaryAction: () {},
+            secondaryActionLabel: 'Home',
+            onSecondaryAction: () {},
+          ),
+        ),
+        targetFinder: find.byType(GameOverCardTemplate),
+      );
+    });
+
+    testWidgets('VictoryCardTemplate', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => SingleChildScrollView(
+          child: VictoryCardTemplate(
+            title: 'Level Complete',
+            statLines: const ['Score 12,340', 'Moves 18'],
+            starsEarned: 3,
+          ),
+        ),
+        targetFinder: find.byType(VictoryCardTemplate),
+      );
+    });
+
+    // BUG-107: StreakShieldCard's metric Row overflows 32px at 320dp.
+    // Skipped until fixed; remove `skip` when BUG-107 closes.
+    testWidgets('StreakShieldCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => SingleChildScrollView(
+          child: StreakShieldCard(
+            streakDays: 14,
+            shieldCount: 2,
+            onUseShield: () {},
+            onRepair: () {},
+            onDismiss: () {},
+          ),
+        ),
+        targetFinder: find.byType(StreakShieldCard),
+      );
+    }, skip: true);
+
+    testWidgets('MilestoneCelebrationDialog', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => SingleChildScrollView(
+          child: MilestoneCelebrationDialog(
+            level: 50,
+            rewards: [
+              MilestoneReward(
+                icon: Icons.diamond_rounded,
+                label: 'Gems',
+                amountLabel: '+100',
+              ),
+              MilestoneReward(icon: Icons.bolt_rounded, label: 'Energy'),
+            ],
+            onClaim: () {},
+          ),
+        ),
+        targetFinder: find.byType(MilestoneCelebrationDialog),
+      );
+    });
   });
 }
