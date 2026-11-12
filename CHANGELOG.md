@@ -1,3 +1,11 @@
+## 0.6.9
+
+- Fixed `RoyCasualKit.resetForTesting()` leaving palette colors set by `NeonTheme.importPalette` (or direct assignment such as `NeonTheme.cyan = ...`) in place, which leaked colors between consumer tests. It now also calls the new `NeonTheme.resetPalette()`, which restores every palette color to its built-in default and leaves `dark` / `colorBlindSafe` untouched.
+- Added `NeonTheme.resetPalette()` (additive public API).
+- `NeonTheme.red` replaces the fixed `Colors.redAccent` on the `TeamRosterList` kick button, and a disabled boxed `NeonIcon` uses `NeonTheme.muted` instead of `Colors.grey`, so both follow dark mode and reskins.
+- Fixed `StreakShieldCard` overflowing its metric row by 32px at 320dp wide.
+- Added a read-only `dart run tool/release_readiness_check.dart` pre-tag checklist, a `hardcodedColor` rule in `tool/accessibility_audit_check.dart`, and a viewport sweep test harness (repo tooling, no package API change).
+
 ## 0.6.8
 
 - Fixed `PauseOverlay` panel overflowing in landscape (e.g. 640x320, 568x320): content now scrolls, all four buttons stay reachable.
