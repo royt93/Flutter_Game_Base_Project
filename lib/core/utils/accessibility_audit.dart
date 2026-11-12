@@ -20,6 +20,7 @@ enum AuditRuleId {
   tapTargetSemantics,
   rtlDirectionalSafety,
   hardcodedColor,
+  tapTargetSite,
 }
 
 /// One heuristic: if [triggerPattern] matches a file's source, the file
@@ -43,7 +44,7 @@ class AuditRule {
   final RegExp? requiredPattern;
 }
 
-/// The 4 rules this audit actually runs — see this file's doc comment for
+/// The 5 rules this audit actually runs — see this file's doc comment for
 /// why only these (contrast/text-scale need real pixels, not source text).
 final List<AuditRule> defaultAuditRules = [
   AuditRule(
@@ -61,6 +62,14 @@ final List<AuditRule> defaultAuditRules = [
         'File tạo GestureDetector/InkWell nhưng không có Semantics/semanticLabel/ExcludeSemantics nào',
     triggerPattern: RegExp(r'GestureDetector\(|InkWell\('),
     requiredPattern: RegExp('Semantics\\(|semanticLabel|ExcludeSemantics'),
+  ),
+  AuditRule(
+    id: AuditRuleId.tapTargetSite,
+    severity: AuditSeverity.warning,
+    description:
+        'GestureDetector/InkWell không có Semantics/MergeSemantics/semanticLabel trong vùng lân cận (8 dòng trước, 30 dòng sau): nút thiếu role/nhãn cho screen reader (ENH-106)',
+    // Unused: _violatesRule evaluates this rule per site, not per file.
+    triggerPattern: RegExp(r'GestureDetector\(|InkWell\('),
   ),
   AuditRule(
     id: AuditRuleId.hardcodedColor,
@@ -82,6 +91,34 @@ final List<AuditRule> defaultAuditRules = [
   ),
 ];
 
+/// Per-site tap target rule (FEAT-202): every `GestureDetector(`/`InkWell(`
+/// call needs a Semantics marker within [_siteLinesBefore] lines before or
+/// [_siteLinesAfter] lines after it. Complements the per-file
+/// [AuditRuleId.tapTargetSemantics], which one unrelated `Semantics(` anywhere
+/// in the file satisfies. Heuristic: window-based, so a wrapper that
+/// provides semantics from further away must be baselined with a reason.
+const int _siteLinesBefore = 8;
+const int _siteLinesAfter = 30;
+final RegExp _siteTrigger = RegExp(r'GestureDetector\(|InkWell\(');
+final RegExp _siteMarker = RegExp(
+  r'Semantics\(|MergeSemantics\(|semanticLabel|ExcludeSemantics\(',
+);
+
+/// Number of tap-target sites in [content] with no semantics marker nearby.
+int _countUnlabeledTapSites(String content) {
+  final lines = _stripLineComments(content).split('\n');
+  var count = 0;
+  for (var i = 0; i < lines.length; i++) {
+    if (!_siteTrigger.hasMatch(lines[i])) continue;
+    final from = i - _siteLinesBefore < 0 ? 0 : i - _siteLinesBefore;
+    final to = i + _siteLinesAfter > lines.length
+        ? lines.length
+        : i + _siteLinesAfter;
+    if (!_siteMarker.hasMatch(lines.sublist(from, to).join('\n'))) count++;
+  }
+  return count;
+}
+
 /// Strips `//` line comments before matching — a doc comment showing
 /// example code (`/// ...BadgeDot(top: -2, right: -2)`) is not itself a
 /// layout call a rule should react to. Approximate (a `//` inside a
@@ -99,6 +136,9 @@ String _stripLineComments(String content) {
 }
 
 bool _violatesRule(AuditRule rule, String content) {
+  if (rule.id == AuditRuleId.tapTargetSite) {
+    return _countUnlabeledTapSites(content) > 0;
+  }
   final code = _stripLineComments(content);
   if (!rule.triggerPattern.hasMatch(code)) return false;
   final required = rule.requiredPattern;

@@ -88,5 +88,85 @@
     "file": "lib/presentation/widgets/common/prestige_confirmation_card.dart",
     "rule": "hardcodedColor",
     "reason": "Chỉ còn nền/viền tint alpha thấp (orange/green) không chứa chữ; chữ đã dùng NeonTheme.ink (ENH-104, đo 4.5:1 ở cả hai theme)."
+  },
+  {
+    "file": "lib/presentation/widgets/common/achievement_roadmap_card.dart",
+    "rule": "tapTargetSite",
+    "reason": "Link chữ (Text) bọc GestureDetector không có role button và vùng chạm nhỏ hơn 48dp; thiếu thật, theo dõi ở ENH-107. Chưa sửa vì thêm padding làm đổi layout/golden. Dòng 274 (Claim)."
+  },
+  {
+    "file": "lib/presentation/widgets/common/collection_album_panel.dart",
+    "rule": "tapTargetSite",
+    "reason": "Link chữ (Text) bọc GestureDetector không có role button và vùng chạm nhỏ hơn 48dp; thiếu thật, theo dõi ở ENH-107. Chưa sửa vì thêm padding làm đổi layout/golden. Dòng 171 (View Reward)."
+  },
+  {
+    "file": "lib/presentation/widgets/common/friend_invite_progress_card.dart",
+    "rule": "tapTargetSite",
+    "reason": "Link chữ (Text) bọc GestureDetector không có role button và vùng chạm nhỏ hơn 48dp; thiếu thật, theo dõi ở ENH-107. Chưa sửa vì thêm padding làm đổi layout/golden. Dòng 200 (copy) và 240 (chip mốc)."
+  },
+  {
+    "file": "lib/presentation/widgets/common/guild_contribution_card.dart",
+    "rule": "tapTargetSite",
+    "reason": "Link chữ (Text) bọc GestureDetector không có role button và vùng chạm nhỏ hơn 48dp; thiếu thật, theo dõi ở ENH-107. Chưa sửa vì thêm padding làm đổi layout/golden. Dòng 227 (chip mốc) và 284 (Retry)."
+  },
+  {
+    "file": "lib/presentation/widgets/common/reward_track_road.dart",
+    "rule": "tapTargetSite",
+    "reason": "Link chữ (Text) bọc GestureDetector không có role button và vùng chạm nhỏ hơn 48dp; thiếu thật, theo dõi ở ENH-107. Chưa sửa vì thêm padding làm đổi layout/golden. Dòng 374 (Claim)."
+  },
+  {
+    "file": "lib/presentation/widgets/common/level_up_overlay.dart",
+    "rule": "tapTargetSite",
+    "reason": "Link chữ (Text) bọc GestureDetector không có role button và vùng chạm nhỏ hơn 48dp; thiếu thật, theo dõi ở ENH-107. Chưa sửa vì thêm padding làm đổi layout/golden. Dòng 436 (skip)."
+  },
+  {
+    "file": "lib/presentation/widgets/common/crafting_recipe_card.dart",
+    "rule": "tapTargetSite",
+    "reason": "Link chữ (Text) bọc GestureDetector không có role button và vùng chạm nhỏ hơn 48dp; thiếu thật, theo dõi ở ENH-107. Chưa sửa vì thêm padding làm đổi layout/golden. Dòng 263 (chip nguyên liệu)."
+  },
+  {
+    "file": "lib/presentation/widgets/common/character_collection_grid.dart",
+    "rule": "tapTargetSite",
+    "reason": "Nút Select đã có vùng chạm tối thiểu 48dp (ConstrainedBox minHeight: 48) nhưng chưa có Semantics(button); thiếu role, theo dõi ở ENH-107. Dòng 343."
+  },
+  {
+    "file": "lib/presentation/widgets/common/currency_counter.dart",
+    "rule": "tapTargetSite",
+    "reason": "Cử chỉ chạm-để-bỏ-qua animation trên chính nội dung (HitTestBehavior.translucent), không phải nút độc lập; cần quyết định có cần Semantics hay không, theo dõi ở ENH-107. Dòng 204."
+  },
+  {
+    "file": "lib/presentation/widgets/common/offline_earnings_popup.dart",
+    "rule": "tapTargetSite",
+    "reason": "Cử chỉ chạm-để-bỏ-qua animation đếm trên nội dung (HitTestBehavior.opaque), không phải nút độc lập; cần quyết định riêng, theo dõi ở ENH-107. Dòng 244."
+  },
+  {
+    "file": "lib/presentation/widgets/common/reward_sequence_coordinator.dart",
+    "rule": "tapTargetSite",
+    "reason": "Cử chỉ chạm-để-bỏ-qua phân đoạn thưởng bọc cả Stack, không phải nút độc lập; cần quyết định riêng, theo dõi ở ENH-107. Dòng 277."
+  },
+  {
+    "file": "lib/presentation/widgets/common/spotlight_overlay.dart",
+    "rule": "tapTargetSite",
+    "reason": "Dòng 115 là lớp chắn toàn màn hình chặn tương tác bên dưới (nhấn để đóng); nút Skip đã được sửa ở ENH-106. Barrier dismiss chưa có semantics, theo dõi ở ENH-107."
+  },
+  {
+    "file": "lib/presentation/widgets/neon_dialog.dart",
+    "rule": "tapTargetSite",
+    "reason": "Dòng 179 và 238 là barrier tối mờ phía sau dialog (nhấn ra ngoài để đóng), không phải nút; nút của dialog có semantics riêng. Barrier chưa có nhãn, theo dõi ở ENH-107."
+  },
+  {
+    "file": "lib/presentation/widgets/common/squash_stretch.dart",
+    "rule": "tapTargetSite",
+    "reason": "Wrapper hiệu ứng squash dùng chung, không tự sở hữu ý nghĩa semantic; caller chịu trách nhiệm Semantics của nội dung (cùng lý do với baseline tapTargetSemantics của file này)."
+  },
+  {
+    "file": "lib/presentation/widgets/pressable_scale.dart",
+    "rule": "tapTargetSite",
+    "reason": "Wrapper scale-on-press dùng chung, không tự sở hữu ý nghĩa semantic; caller chịu trách nhiệm Semantics (cùng lý do với baseline tapTargetSemantics của file này)."
+  },
+  {
+    "file": "lib/presentation/widgets/debug_qa_overlay.dart",
+    "rule": "tapTargetSite",
+    "reason": "Overlay QA chỉ dùng khi phát triển (DebugQaOverlay), không hiển thị cho người chơi."
   }
 ]

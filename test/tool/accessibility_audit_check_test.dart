@@ -92,11 +92,13 @@ void main() {
         writeFile(
           'baseline.json',
           jsonEncode([
-            {
-              'file': '${tempDir.path}/widgets/bad.dart',
-              'rule': 'tapTargetSemantics',
-              'reason': 'wrapper chung, đã review',
-            },
+            // Một GestureDetector trần vi phạm cả luật theo file lẫn theo vị trí.
+            for (final rule in ['tapTargetSemantics', 'tapTargetSite'])
+              {
+                'file': '${tempDir.path}/widgets/bad.dart',
+                'rule': rule,
+                'reason': 'wrapper chung, đã review',
+              },
           ]),
         );
 
@@ -148,7 +150,8 @@ void main() {
           0,
           reason: '${result.stdout}\n${result.stderr}',
         );
-        expect(result.stdout as String, contains('1 issue(s) found'));
+        // per-file tapTargetSemantics + per-site tapTargetSite, both warnings.
+        expect(result.stdout as String, contains('2 issue(s) found'));
       },
       timeout: const Timeout(Duration(seconds: 30)),
     );

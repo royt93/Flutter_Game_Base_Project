@@ -1,6 +1,11 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/utils/accessibility_audit.dart';
 
+/// Isolates one rule so a fixture can assert a single violation even when
+/// another rule (e.g. the per-site tap check) also fires on the same source.
+List<AuditRule> _only(AuditRuleId id) =>
+    defaultAuditRules.where((r) => r.id == id).toList();
+
 void main() {
   group('scanAccessibility: reducedMotionCoverage', () {
     test(
@@ -61,6 +66,7 @@ class Good extends State<X> with SingleTickerProviderStateMixin {
       'fixture cố tình lỗi: GestureDetector không có Semantics -> bị bắt',
       () {
         final violations = scanAccessibility(
+          rules: _only(AuditRuleId.tapTargetSemantics),
           fileContents: {
             'bad_tap.dart': '''
 Widget build(BuildContext context) {
@@ -80,6 +86,7 @@ Widget build(BuildContext context) {
       'fixture hợp lệ: GestureDetector có Semantics -> không false fail',
       () {
         final violations = scanAccessibility(
+          rules: _only(AuditRuleId.tapTargetSemantics),
           fileContents: {
             'good_tap.dart': '''
 Widget build(BuildContext context) {
@@ -100,6 +107,7 @@ Widget build(BuildContext context) {
       'fixture hợp lệ: dùng ExcludeSemantics (trang trí, có lý do rõ) -> không false fail',
       () {
         final violations = scanAccessibility(
+          rules: _only(AuditRuleId.tapTargetSemantics),
           fileContents: {
             'decor_tap.dart': '''
 Widget build(BuildContext context) {
@@ -116,12 +124,59 @@ Widget build(BuildContext context) {
 
     test('InkWell cũng bị áp dụng rule y hệt GestureDetector', () {
       final violations = scanAccessibility(
+        rules: _only(AuditRuleId.tapTargetSemantics),
         fileContents: {
           'bad_ink.dart': "InkWell(onTap: () {}, child: Text('x'))",
         },
       );
       expect(violations, hasLength(1));
       expect(violations.single.ruleId, AuditRuleId.tapTargetSemantics);
+    });
+  });
+
+  group('scanAccessibility: tapTargetSite (FEAT-202)', () {
+    List<AuditViolation> scan(String src) => scanAccessibility(
+      rules: _only(AuditRuleId.tapTargetSite),
+      fileContents: {'w.dart': src},
+    );
+
+    test('bắt GestureDetector trần dù file có Semantics ở chỗ khác (rule theo '
+        'file bỏ sót)', () {
+      final src =
+          '''
+Widget a() => Semantics(label: 'a', child: Text('a'));
+${List.filled(40, '// filler').join('\n')}
+Widget b() => GestureDetector(onTap: () {}, child: Text('b'));
+''';
+      expect(scan(src).single.ruleId, AuditRuleId.tapTargetSite);
+      expect(
+        scanAccessibility(
+          rules: _only(AuditRuleId.tapTargetSemantics),
+          fileContents: {'w.dart': src},
+        ),
+        isEmpty,
+        reason: 'rule theo file bị 1 Semantics( bất kỳ làm im lặng',
+      );
+    });
+
+    test('không báo khi Semantics bọc ngay quanh hoặc nằm ngay sau', () {
+      expect(
+        scan("Semantics(button: true, child: GestureDetector(onTap: () {}))"),
+        isEmpty,
+      );
+      expect(
+        scan("GestureDetector(onTap: () {}, child: Semantics(label: 'x'))"),
+        isEmpty,
+      );
+    });
+
+    test('mỗi vị trí đếm riêng: 2 vị trí trần xa nhau vẫn chỉ ra 1 vi phạm '
+        'cho file (mức file)', () {
+      final gap = List.filled(50, 'Widget pad;').join('\n');
+      expect(
+        scan("GestureDetector(onTap: () {})\n$gap\nInkWell(onTap: () {})"),
+        hasLength(1),
+      );
     });
   });
 
@@ -242,6 +297,7 @@ class Real extends StatelessWidget {}
         ]);
 
         final violations = scanAccessibility(
+          rules: _only(AuditRuleId.tapTargetSemantics),
           fileContents: {
             'legacy.dart': "GestureDetector(onTap: () {}, child: Text('x'))",
             'other.dart': "InkWell(onTap: () {}, child: Text('y'))",
@@ -262,6 +318,7 @@ class Real extends StatelessWidget {}
         ]);
 
         final violations = scanAccessibility(
+          rules: _only(AuditRuleId.tapTargetSemantics),
           fileContents: {
             'legacy.dart': "GestureDetector(onTap: () {}, child: Text('x'))",
           },
@@ -329,6 +386,7 @@ Colors.orange;
       'file sạch hoàn toàn -> không có trong kết quả (không báo "clean" thừa)',
       () {
         final violations = scanAccessibility(
+          rules: _only(AuditRuleId.tapTargetSemantics),
           fileContents: {
             'clean.dart': "class Clean extends StatelessWidget {}",
             'dirty.dart': "GestureDetector(onTap: () {})",
