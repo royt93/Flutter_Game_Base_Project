@@ -49,6 +49,9 @@ dart run tool/asset_license_check.dart
 dart run tool/performance_budget_check.dart check
 dart run tool/deprecation_check.dart
 
+# before tagging a release (read-only; never tags or publishes)
+dart run tool/release_readiness_check.dart
+
 # example/ app — its own analyze/test surface, run from example/
 cd example
 flutter analyze

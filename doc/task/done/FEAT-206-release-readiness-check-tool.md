@@ -21,6 +21,9 @@ source: "Phiên 2026-11-12: bump 0.6.8 cần nhớ tay CHANGELOG, snapshot API, 
 6. Liệt kê task P0/P1 còn trong `doc/task/todo` (cảnh báo, không chặn).
 7. `example/pubspec.lock` khớp version package.
 
+## Đã làm (2026-11-12)
+`tool/release_readiness_check.dart` + `test/tool/release_readiness_check_test.dart` (5 test). Kiểm: version pubspec khớp CHANGELOG, khớp `example/pubspec.lock`, tag chưa tồn tại, cây sạch, `main` đồng bộ `origin/main`, API gate, CI trên HEAD xanh (`--no-ci` để bỏ), liệt kê task P0/P1 (chỉ WARN). Chỉ đọc, không tag/publish. Chạy thử trên repo cho kết quả đúng sự thật (0.6.8 đã tag nên FAIL tag).
+
 ## Tiêu chí xong
 Chạy trên repo hiện tại cho kết quả đúng; test đơn vị cho phần parse version/CHANGELOG. Không tự tag hay publish.
 
