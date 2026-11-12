@@ -85,12 +85,12 @@ on Linux + the pinned Flutter 3.41.9, so macOS-generated images fail the "Test
 host" job (the comparator's 1% tolerance only absorbs sub-pixel font noise, it
 is not a substitute). Flow for a new golden test: commit and push the widget +
 golden test first (CI is red until baselines exist), run
-`gh workflow run regenerate-goldens.yml --ref main`, then take **only** the new
-PNGs from the PR branch it opens
-(`git fetch origin chore/regenerate-goldens && git checkout FETCH_HEAD -- 'test/widget/goldens/goldens/<name>_*.png'`),
-commit, push and close that PR. Do not merge the PR as-is: running
-`flutter pub get` in the regeneration workflow may rewrite lockfiles; verify
-both lockfiles remain unchanged before importing only the new PNGs. Locally, run
+`gh workflow run regenerate-goldens.yml --ref main`, wait for it, then download the
+`regenerated-goldens` artifact (`gh run download <run-id> -n regenerated-goldens -D /tmp/goldens`)
+and copy **only** the PNGs that should change into `test/widget/goldens/goldens/`
+(the workflow no longer opens a PR: this repo blocks Actions from creating
+PRs, BUG-105), then commit and push. Never copy the whole artifact over the
+directory. Locally, run
 `flutter test --exclude-tags slow test/widget/common test/core test/tool test/presentation`
 to skip the golden directory (it fails on macOS by design).
 
