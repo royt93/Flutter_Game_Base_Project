@@ -151,6 +151,72 @@ Future<void> claimOfflineCoins() async {
 
 Dữ liệu có schema dùng `VersionedJsonStore`; save quan trọng dùng `signExport`/`verifyAndStrip`; cloud dùng `CloudSaveProvider` adapter.
 
+## 5b. Service tuỳ chọn khác (đăng ký thủ công)
+
+Bảy service dưới đây không nằm trong `RoyCasualKitModule`; đăng ký bằng `Get.put(x, permanent: true)` khi cần. Trong test, gọi `Get.reset` ở `tearDown`.
+
+**Cooldown bền vững** — `PersistentCooldownService` lưu thời điểm kết thúc theo `key`, không có timer nền; `start` ném `ArgumentError` với key rỗng hoặc thời lượng <= 0.
+
+```dart
+final cooldown = Get.put(PersistentCooldownService(), permanent: true);
+cooldown.start('booster', const Duration(minutes: 5));
+final left = cooldown.remainingOf('booster');
+cooldown.cancel('booster');
+```
+
+**Đồng ý quyền riêng tư** — `ConsentStateService` mặc định `unknown`, nên `isGranted` là `false` cho tới khi người chơi chọn; hạ `policyVersion` thấp hơn bản đã lưu coi như chưa quyết định.
+
+```dart
+final consent = Get.put(ConsentStateService(policyVersion: 1), permanent: true);
+consent.grant(ConsentCategory.analytics);
+if (consent.isGranted(ConsentCategory.analytics)) { /* bật analytics */ }
+```
+
+**Phiên chơi** — `AppSessionTracker` đo phiên và thời gian foreground (timeout mặc định 30 phút); `analyticsContext()` trả map rỗng khi chưa có consent analytics.
+
+```dart
+Get.put(AppSessionTracker(), permanent: true);
+final ctx = AppSessionTracker.maybe?.analyticsContext() ?? const {};
+```
+
+**Đồng hồ game** — `GameTimeController` cộng `dt` thành các bước cố định, im lặng khi `session` đang paused.
+
+```dart
+final time = GameTimeController();
+final steps = time.tick(0.016);
+```
+
+**Checkpoint** — `CheckpointCoordinator(storage: ...)` gom snapshot của từng participant; `requestCheckpoint()` debounce, `critical: true` lưu ngay, `flushNow()` ép lưu, `restoreLatest()` khôi phục (có thế hệ dự phòng).
+
+```dart
+final cp = CheckpointCoordinator(storage: StorageService.to);
+cp.registerParticipant(
+  'game',
+  snapshot: () => state.toJson(),
+  restore: (data) => state.load(data),
+);
+await cp.requestCheckpoint();
+```
+
+**Hàng đợi offline** — `OfflineOutboxService` xếp thay đổi cục bộ rồi `drain()` đẩy qua `uploader`; mọi hàm công khai trả `SdkResult`, không ném lỗi. Mỗi mục cần `idempotencyKey` không rỗng.
+
+```dart
+final outbox = Get.put(
+  OfflineOutboxService(
+    storage: StorageService.to,
+    uploader: (payload, idempotencyKey) async {
+      // gọi server của bạn; trả SyncAck() khi thành công
+      return const SyncAck();
+    },
+  ),
+  permanent: true,
+);
+outbox.enqueue(idempotencyKey: 'score_42', payload: {'score': 42});
+await outbox.drain();
+```
+
+**Giao dịch thưởng** — `RewardTransactionPipeline` thực thi kế hoạch thưởng idempotent trên ví: `preview(source:, transactionId:, currencyLines:, itemLines:)` trả `RewardPlan`, rồi `executePlan`; `resumePending()` hoàn tất giao dịch dở sau khi app bị kill. Ví dụ đăng ký (ví + kho đồ): `example/lib/screens/widget_showcase_screen.dart` quanh dòng 786, dùng `RewardTransactionPipeline.withInventory(wallet: ..., inventory: ...)`.
+
 ## 6. Audio và haptics
 
 Khai báo audio game trong `pubspec.yaml`:
