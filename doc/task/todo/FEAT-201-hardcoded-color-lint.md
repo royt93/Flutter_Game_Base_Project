@@ -20,7 +20,7 @@ Màu cố định bỏ qua `NeonTheme.dark` và reskin `importPalette`, nên h�
 - [x] Rule `AuditRuleId.hardcodedColor` trong `lib/core/utils/accessibility_audit.dart`, chạy qua `tool/accessibility_audit_check.dart`. Bỏ qua `Colors.transparent`, mọi `Colors.white*`/`Colors.black*` (scrim), token `NeonTheme.*` và comment.
 - [x] Baseline: 9 file, mỗi mục có lý do thật (artwork rương, huy chương, scrim, viền debug, tint không chứa chữ). Hai mục đã ghi hướng sửa: `team_roster_list.dart` (redAccent nút xoá, theo FEAT-205) và `neon_icon.dart` (`Colors.grey` disabled, nên đổi sang `NeonTheme.muted`).
 - [x] Test rule: 3 test trong `accessibility_audit_test.dart`; test "mọi rule" cập nhật.
-- [ ] Mở ENH cho hai mục baseline có hướng sửa.
+- [x] Hai mục baseline có hướng sửa đã xử lý: `team_roster_list.dart` dùng `NeonTheme.red` (7 golden `team_roster_list_*` đổi pixel, đã nhập từ run `43237292937`), `neon_icon.dart` dùng `NeonTheme.muted` (golden không đổi). Baseline còn 7 mục hardcodedColor, đều là artwork/scrim/debug/tint.
 
 ## Tiêu chí xong
 - Chạy trên repo: số vi phạm cũ được ghi vào baseline, không phá `quality-gate`.
