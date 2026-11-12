@@ -125,6 +125,34 @@ Widget build(BuildContext context) {
     });
   });
 
+  group('scanAccessibility: hardcodedColor (FEAT-201)', () {
+    List<AuditViolation> scan(String src) =>
+        scanAccessibility(fileContents: {'w.dart': src});
+
+    test('Colors.orange và Color(0x..) bị bắt', () {
+      expect(
+        scan('color: Colors.orange,').single.ruleId,
+        AuditRuleId.hardcodedColor,
+      );
+      expect(
+        scan('color: const Color(0xFF123456),').single.ruleId,
+        AuditRuleId.hardcodedColor,
+      );
+    });
+
+    test('transparent/white/black (kể cả black54) không bị báo', () {
+      expect(
+        scan('color: Colors.transparent, a: Colors.white, b: Colors.black54,'),
+        isEmpty,
+      );
+    });
+
+    test('token NeonTheme và comment không bị báo', () {
+      expect(scan('color: NeonTheme.ink, // Colors.red cũ'), isEmpty);
+      expect(scan('color: myColors.red,'), isEmpty);
+    });
+  });
+
   group('scanAccessibility: rtlDirectionalSafety', () {
     test('fixture cố tình lỗi: EdgeInsets.only(left:) -> bị bắt', () {
       final violations = scanAccessibility(
@@ -289,10 +317,11 @@ class Real extends StatelessWidget {}
 AnimationController(vsync: this);
 GestureDetector(onTap: () {}, child: Text('x'));
 EdgeInsets.only(left: 4);
+Colors.orange;
 ''',
         },
       );
-      expect(violations, hasLength(3));
+      expect(violations, hasLength(AuditRuleId.values.length));
       expect(violations.map((v) => v.ruleId), containsAll(AuditRuleId.values));
     });
 

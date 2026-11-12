@@ -19,6 +19,7 @@ enum AuditRuleId {
   reducedMotionCoverage,
   tapTargetSemantics,
   rtlDirectionalSafety,
+  hardcodedColor,
 }
 
 /// One heuristic: if [triggerPattern] matches a file's source, the file
@@ -42,8 +43,8 @@ class AuditRule {
   final RegExp? requiredPattern;
 }
 
-/// The 3 rules this audit actually runs — see this file's doc comment for
-/// why there are only 3, not 6.
+/// The 4 rules this audit actually runs — see this file's doc comment for
+/// why only these (contrast/text-scale need real pixels, not source text).
 final List<AuditRule> defaultAuditRules = [
   AuditRule(
     id: AuditRuleId.reducedMotionCoverage,
@@ -60,6 +61,15 @@ final List<AuditRule> defaultAuditRules = [
         'File tạo GestureDetector/InkWell nhưng không có Semantics/semanticLabel/ExcludeSemantics nào',
     triggerPattern: RegExp(r'GestureDetector\(|InkWell\('),
     requiredPattern: RegExp('Semantics\\(|semanticLabel|ExcludeSemantics'),
+  ),
+  AuditRule(
+    id: AuditRuleId.hardcodedColor,
+    severity: AuditSeverity.warning,
+    description:
+        'File dùng Colors.<tên>/Color(0x...) cố định thay vì token NeonTheme nên không đổi theo dark mode/reskin (ENH-104). Artwork cố ý: ghi vào baseline kèm lý do.',
+    triggerPattern: RegExp(
+      r'\bColors\.(?!transparent\b|white|black)[a-z]\w*|\bColor\(0x',
+    ),
   ),
   AuditRule(
     id: AuditRuleId.rtlDirectionalSafety,

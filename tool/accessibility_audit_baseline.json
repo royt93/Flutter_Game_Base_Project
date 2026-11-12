@@ -53,5 +53,50 @@
     "file": "lib/presentation/widgets/flame_tracked_overlay.dart",
     "rule": "rtlDirectionalSafety",
     "reason": "Định vị 1 overlay Flutter tại điểm world-space của Flame GameWidget (toạ độ tuyệt đối theo camera, không phải layout theo hướng chữ)."
+  },
+  {
+    "file": "lib/presentation/widgets/common/adaptive_game_hud.dart",
+    "rule": "hardcodedColor",
+    "reason": "Chỉ viền debug (debugShowBounds) màu magenta để nhìn ranh giới layout; không hiển thị cho người chơi."
+  },
+  {
+    "file": "lib/presentation/widgets/common/level_up_overlay.dart",
+    "rule": "hardcodedColor",
+    "reason": "Scrim đen alpha 0.6 phủ nền để làm nổi banner; trung tính theo thiết kế, đen trong suốt đọc được ở cả light lẫn dark."
+  },
+  {
+    "file": "lib/presentation/widgets/common/golden_shimmer_text.dart",
+    "rule": "hardcodedColor",
+    "reason": "Màu mặc định vàng thương hiệu của chữ ánh vàng (caller ghi đè qua tham số color); chữ này luôn kèm stroke nên không phụ thuộc nền."
+  },
+  {
+    "file": "lib/presentation/widgets/common/mystery_chest_opening.dart",
+    "rule": "hardcodedColor",
+    "reason": "Artwork rương vẽ bằng Canvas (gỗ, vàng); màu minh hoạ cố định, không phải màu UI theo theme."
+  },
+  {
+    "file": "lib/presentation/widgets/common/tiered_reward_chest.dart",
+    "rule": "hardcodedColor",
+    "reason": "Bảng màu rương theo hạng (wood/silver/gold/diamond) là artwork minh hoạ, cố định theo hạng."
+  },
+  {
+    "file": "lib/presentation/widgets/common/tiered_leaderboard_row.dart",
+    "rule": "hardcodedColor",
+    "reason": "Màu huy chương đồng/bạc là quy ước hạng cố định (không có token tương ứng); vàng/kim cương đã dùng NeonTheme."
+  },
+  {
+    "file": "lib/presentation/widgets/common/team_roster_list.dart",
+    "rule": "hardcodedColor",
+    "reason": "Nút xoá thành viên dùng đỏ cảnh báo (redAccent); cần đổi sang NeonTheme.red và đo contrast, theo dõi ở FEAT-205."
+  },
+  {
+    "file": "lib/presentation/widgets/common/prestige_confirmation_card.dart",
+    "rule": "hardcodedColor",
+    "reason": "Chỉ còn nền/viền tint alpha thấp (orange/green) không chứa chữ; chữ đã dùng NeonTheme.ink (ENH-104, đo 4.5:1 ở cả hai theme)."
+  },
+  {
+    "file": "lib/presentation/widgets/neon_icon.dart",
+    "rule": "hardcodedColor",
+    "reason": "Colors.grey cho trạng thái disabled; WCAG miễn contrast cho control vô hiệu, nhưng nên đổi sang NeonTheme.muted (ENH sau)."
   }
 ]

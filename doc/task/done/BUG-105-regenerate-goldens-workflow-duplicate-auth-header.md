@@ -19,6 +19,9 @@ Run `43225790287`: các bước checkout, pub get, `flutter test --update-golden
 2. Bỏ bước PR, thay bằng `actions/upload-artifact` chứa `test/widget/goldens/goldens/`; người dùng tải artifact và commit PNG mới. Ưu: không phụ thuộc quyền tạo PR. Nhược: thêm thao tác tay.
 3. Thêm `persist-credentials: false` vào checkout. Ưu: sửa nhỏ nhất cho lỗi header. Nhược: có thể vẫn bị chặn tạo PR.
 
+## Kết quả (2026-11-12)
+Chọn phương án 2 (artifact). `regenerate-goldens.yml` giờ chỉ có quyền `contents: read` và upload `regenerated-goldens`. Dispatch run `43232142182` thành công; artifact 5.6 MB chứa đủ 1152 PNG (bằng số file hiện có). Lấy bằng `gh run download <id> -n regenerated-goldens` và chỉ chép PNG cần đổi. `CLAUDE.md` đã cập nhật quy trình. Ghi chú: ảnh khác byte so với bản commit ở mọi file (metadata PNG), nên không so byte để quyết định; dùng kết quả CI "Test host".
+
 ## Tiêu chí xong
 - Dispatch workflow trên `main` cho ra PNG nhận được (PR hoặc artifact) mà không lỗi.
 - Quy trình trong `CLAUDE.md` (mục golden baselines) cập nhật nếu đổi từ PR sang artifact.
