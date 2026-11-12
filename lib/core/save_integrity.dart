@@ -31,6 +31,12 @@ String _canonicalize(Map<String, Object?> data) {
   return jsonEncode(ordered);
 }
 
+void _requireSecret(String secret) {
+  if (secret.isEmpty) {
+    throw ArgumentError.value(secret, 'secret', 'must not be empty');
+  }
+}
+
 String _hmac(Map<String, Object?> data, String secret) {
   final mac = Hmac(sha256, utf8.encode(secret));
   return mac.convert(utf8.encode(_canonicalize(data))).toString();
@@ -39,7 +45,21 @@ String _hmac(Map<String, Object?> data, String secret) {
 /// Signs [data] (the output of `StorageService.exportAll()`) with an
 /// HMAC-SHA256 keyed by [secret], returning a new map equal to [data] plus
 /// one reserved [checksumKey] entry holding the hex-encoded digest.
+///
+/// Throws [ArgumentError] if [secret] is empty (an HMAC with an empty key can
+/// be recomputed by anyone, so the signature would protect nothing) or if
+/// [data] already contains [checksumKey] (the digest would be computed over
+/// that stray entry, then [verifyAndStrip] removes it and the round trip
+/// could never verify).
 Map<String, Object?> signExport(Map<String, Object?> data, String secret) {
+  _requireSecret(secret);
+  if (data.containsKey(checksumKey)) {
+    throw ArgumentError.value(
+      data,
+      'data',
+      'must not contain the reserved "$checksumKey" key',
+    );
+  }
   return {...data, checksumKey: _hmac(data, secret)};
 }
 
@@ -55,6 +75,7 @@ Map<String, Object?> verifyAndStrip(
   Map<String, Object?> signed,
   String secret,
 ) {
+  _requireSecret(secret);
   if (!signed.containsKey(checksumKey)) {
     throw const FormatException(
       'Save file thiếu checksum — không thể xác minh tính toàn vẹn dữ liệu.',

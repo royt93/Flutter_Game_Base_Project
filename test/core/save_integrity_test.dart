@@ -53,4 +53,24 @@ void main() {
       expect(signed1['_checksum'], equals(signed2['_checksum']));
     });
   });
+
+  group('BUG-108/109: input validation', () {
+    test('BUG-108: data containing the reserved checksum key is rejected', () {
+      expect(
+        () => signExport({'coins': 5, checksumKey: 'x'}, 'k'),
+        throwsArgumentError,
+      );
+    });
+
+    test('BUG-109: empty secret is rejected by sign and verify', () {
+      expect(() => signExport({'a': 1}, ''), throwsArgumentError);
+      final signed = signExport({'a': 1}, 'k');
+      expect(() => verifyAndStrip(signed, ''), throwsArgumentError);
+    });
+
+    test('a normal round trip still works', () {
+      final signed = signExport({'a': 1, 'b': 'x'}, 'k');
+      expect(verifyAndStrip(signed, 'k'), {'a': 1, 'b': 'x'});
+    });
+  });
 }
