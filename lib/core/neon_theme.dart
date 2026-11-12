@@ -239,6 +239,51 @@ class NeonTheme {
     'lockedFillDark': _hex(_lockedFillDark),
   };
 
+  /// Built-in palette as `#RRGGBB` strings, in [exportPalette]'s key space.
+  /// A second copy of the defaults on purpose: a lazily-captured snapshot
+  /// would be taken after a reskin had already run. `neon_theme_test.dart`
+  /// asserts this equals the live defaults, so the two cannot drift.
+  static const Map<String, String> _defaultPalette = {
+    'bgTopLight': '#7ED8FF',
+    'bgMidLight': '#B6A9FF',
+    'bgBotLight': '#FFC2E0',
+    'bgTopDark': '#2A2350',
+    'bgMidDark': '#1C1740',
+    'bgBotDark': '#1A0A2E',
+    'cardLight': '#FFFFFF',
+    'cardAltLight': '#F2ECFF',
+    'cardDark': '#1B1B3A',
+    'cardAltDark': '#14142E',
+    'inkLight': '#3A2E6B',
+    'inkSoftLight': '#8579B0',
+    'inkDark': '#EDEBFF',
+    'inkSoftDark': '#A7A0D9',
+    'cyan': '#35C4F0',
+    'magenta': '#FF6FC1',
+    'lime': '#5FD35A',
+    'yellow': '#FFD23F',
+    'orange': '#FF9F3A',
+    'purple': '#B36BFF',
+    'blue': '#4DA6FF',
+    'pink': '#FF8AD0',
+    'teal': '#2DD4C4',
+    'red': '#FF6B6B',
+    'indigo': '#6C7BFF',
+    'gold': '#FFB300',
+    'coral': '#FF7A5C',
+    'muted': '#C9C3DA',
+    'lockedBorderLight': '#7B8499',
+    'lockedFillLight': '#EDEAF5',
+    'lockedBorderDark': '#7C86A8',
+    'lockedFillDark': '#2A2A4A',
+  };
+
+  /// Restores every palette color to its built-in default, undoing
+  /// [importPalette] and direct assignments such as `NeonTheme.cyan = ...`.
+  /// Does not touch [dark] or [colorBlindSafe] (those are flags, reset
+  /// separately by `RoyCasualKit.resetForTesting`).
+  static void resetPalette() => importPalette(_defaultPalette);
+
   /// Overwrites every known field present in [json] (value must be a
   /// `#RRGGBB`/`RRGGBB` hex `String`) — a studio "reskin" JSON. Keys absent
   /// from [json] keep their current value (partial reskins are fine).

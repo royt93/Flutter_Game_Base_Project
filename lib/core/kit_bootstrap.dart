@@ -206,6 +206,7 @@ class RoyCasualKit {
     _owned.clear();
     _result = null;
     _pending = null;
+    NeonTheme.resetPalette();
     NeonTheme.dark = false;
     NeonTheme.colorBlindSafe = false;
   }

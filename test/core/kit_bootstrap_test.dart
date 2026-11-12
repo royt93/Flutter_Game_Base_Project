@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/kit_bootstrap.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
 import 'package:roy_casual_kit/core/locale_service.dart';
 import 'package:roy_casual_kit/core/performance_tier_service.dart';
@@ -84,9 +85,7 @@ void main() {
     'locale without storage degrades instead of throwing (BUG-47)',
     () async {
       final result = await RoyCasualKit.initialize(
-        config: const RoyCasualKitConfig(
-          modules: {RoyCasualKitModule.locale},
-        ),
+        config: const RoyCasualKitConfig(modules: {RoyCasualKitModule.locale}),
       );
 
       expect(result.status, RoyCasualKitStatus.degraded);
@@ -201,10 +200,7 @@ void main() {
         final prefs = await SharedPreferences.getInstance();
         final secondResult = await RoyCasualKit.initialize(
           config: RoyCasualKitConfig(
-            modules: {
-              RoyCasualKitModule.storage,
-              RoyCasualKitModule.wakeLock,
-            },
+            modules: {RoyCasualKitModule.storage, RoyCasualKitModule.wakeLock},
             preferences: prefs,
           ),
         );
@@ -236,9 +232,7 @@ void main() {
 
     test('phản ánh đúng status degraded khi 1 module lỗi', () async {
       final result = await RoyCasualKit.initialize(
-        config: const RoyCasualKitConfig(
-          modules: {RoyCasualKitModule.locale},
-        ),
+        config: const RoyCasualKitConfig(modules: {RoyCasualKitModule.locale}),
       );
 
       expect(RoyCasualKit.lastResult, same(result));
@@ -259,5 +253,20 @@ void main() {
 
       expect(RoyCasualKit.lastResult, isNull);
     });
+
+    test(
+      'BUG-106: resetForTesting() phục hồi palette đã importPalette',
+      () async {
+        final before = NeonTheme.exportPalette();
+        NeonTheme.importPalette({
+          'cyan': '#123456',
+          'lockedBorderLight': '#010203',
+        });
+
+        await RoyCasualKit.resetForTesting();
+
+        expect(NeonTheme.exportPalette(), before);
+      },
+    );
   });
 }

@@ -1,5 +1,5 @@
 {
-  "version": "0.6.8",
+  "version": "0.6.9",
   "entrypoint": "lib/roy_casual_kit.dart",
   "exports": [
     "core/achievement_service.dart",
@@ -1112,6 +1112,7 @@
     "core/neon_theme.dart:NeonTheme.importPalette(Map<String, Object?> json): void",
     "core/neon_theme.dart:NeonTheme.motionDuration(BuildContext context, Duration base): Duration",
     "core/neon_theme.dart:NeonTheme.reducedMotion(BuildContext context): bool",
+    "core/neon_theme.dart:NeonTheme.resetPalette(): void",
     "core/offline_outbox_service.dart:OfflineOutboxService.drain(): Future<void>",
     "core/offline_outbox_service.dart:OfflineOutboxService.enqueue({ required String idempotencyKey, required Map<String, Object?> payload, int priority = 0, int? expiresAtMs, }): SdkResult<void>",
     "core/offline_outbox_service.dart:OfflineOutboxService.new({ required this.storage, required this.uploader, this.connectivity, this.conflictPolicy = ConflictPolicy.manual, this.merger, this.capacity = 200, this.retryPolicy = const RetryPolicy(maxAttempts: 3), RetryExecutor? retryExecutor, String? storageKey, })",

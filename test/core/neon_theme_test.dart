@@ -102,6 +102,45 @@ void main() {
       },
     );
 
+    group('BUG-106: resetPalette', () {
+      test('phục hồi mọi màu về mặc định dựng sẵn (không chỉ key đã đổi)', () {
+        // `original` được chụp ở setUp, trước mọi thay đổi trong test này;
+        // file test chạy trong isolate mới nên đó chính là mặc định của code.
+        NeonTheme.importPalette({
+          'cyan': '#123456',
+          'lockedBorderLight': '#010203',
+          'inkDark': '#0A0B0C',
+        });
+        NeonTheme.gold = const Color(0xFF111111);
+        NeonTheme.resetPalette();
+        expect(NeonTheme.exportPalette(), original);
+      });
+
+      test(
+        'bảng mặc định dựng sẵn khớp màu khai báo thật (chống lệch 2 bản)',
+        () {
+          // Chạy trong isolate mới, trước khi test nào đổi màu: `original`
+          // (chụp ở setUp) chính là các giá trị khai báo trong NeonTheme.
+          NeonTheme.importPalette({'cyan': '#000000', 'inkLight': '#000000'});
+          NeonTheme.resetPalette();
+          expect(NeonTheme.exportPalette(), original);
+          expect(NeonTheme.exportPalette().length, 32);
+        },
+      );
+
+      test('không đổi cờ dark/colorBlindSafe', () {
+        NeonTheme.dark = true;
+        NeonTheme.colorBlindSafe = true;
+        addTearDown(() {
+          NeonTheme.dark = false;
+          NeonTheme.colorBlindSafe = false;
+        });
+        NeonTheme.resetPalette();
+        expect(NeonTheme.dark, isTrue);
+        expect(NeonTheme.colorBlindSafe, isTrue);
+      });
+    });
+
     group('ENH-103: locked state tokens', () {
       tearDown(() => NeonTheme.dark = false);
 
