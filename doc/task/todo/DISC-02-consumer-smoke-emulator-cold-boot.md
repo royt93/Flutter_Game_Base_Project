@@ -69,6 +69,8 @@ The stall recurred on runs `42820500983` and `42826929020` after the handshake (
 
 Update 2026-11-12 (run `43225773834`): the first VM probe shows an idle, healthy isolate with the integration-test extension registered. Next evidence to add, still without changing timeout/AVD: have the watcher also print the host-side `flutter test` process state (open sockets / child processes) and whether the `ext.flutter.integrationTest` request was issued, and compare against a passing job's timeline between `awaiting test result` and `test-start`.
 
+Update 2026-11-12 (host probe added): `ci.yml` watcher now also prints, at minutes 6 and 12, the host `flutter_tools`/`dart`/DDS processes with elapsed time and state, localhost TCP sockets (`ss -tnp`) and `adb forward --list`, and repeats the VM probe at minute 12. Timeout and AVD unchanged. Next hang will show whether the host side is still waiting on the app and whether the isolate state changes between minute 6 and 12.
+
 ## Investigation conclusion
 
 Past failures are localized with high confidence to emulator readiness/provisioning before Flutter integration tests start. Run `42479899176` proves the integration test and diagnostics work on a later successful attempt, with a transient ADB-offline state recovering during boot. Available evidence still does not establish why earlier runs timed out or distinguish runner infrastructure from AVD/ADB behavior; keep this item open and do not change emulator configuration or timeout without stronger evidence.
