@@ -1,3 +1,16 @@
+## 0.6.8
+
+- Fixed `PauseOverlay` panel overflowing in landscape (e.g. 640x320, 568x320): content now scrolls, all four buttons stay reachable.
+- Fixed the example `GameDemoScreen` Pause FAB being clipped off-screen in landscape; FABs lay out horizontally at the top-right there.
+- `NeonTheme.lockedBorder` / `lockedFill` now resolve per theme and meet the 3.0:1 WCAG UI-component contrast in both light and dark. **Behavior change:** they are read-only getters now, so assigning `NeonTheme.lockedBorder = ...` no longer compiles; reskin through `importPalette` instead.
+- `NeonTheme.exportPalette()` emits `lockedBorderLight`, `lockedFillLight`, `lockedBorderDark`, `lockedFillDark` instead of `lockedBorder` / `lockedFill`. `importPalette` still accepts the old single-pair keys and applies them to the light variant.
+- `validateNeonThemeContrast` now checks the locked pair in both themes.
+- Fixed `StreakRepairDialog` overflowing below 368dp wide and clipping in landscape: the panel now caps at 320dp, shrinks with the screen and scrolls.
+- `PrestigeConfirmationCard` warning chip and multiplier badge text now use `NeonTheme.ink` instead of fixed orange/green (1.96:1 and 2.30:1 in the light theme); it now reaches 4.5:1 in both themes.
+- Added optional label overrides so consumers can localize previously hard-coded English text: `OutboxConflictSummaryPanel` (`emptyLabel`, `remoteLabel`), `SessionTimelineInspector` (`durationLabel`), `SupportDiagnosticsCard` (`appVersionLabel`, `truncatedLabel`, `privacyNote`, `sectionErrorsLabel`). Defaults are unchanged; constructors only gained optional named parameters.
+- `SpotlightOverlay` skip link now has a 48dp tap target and button semantics; `InventoryGrid` slots with `onTap`/`onLongPress` expose button semantics.
+- CI: `consumer-smoke` gained emulator diagnostics (watcher, VM Service probe) for the intermittent emulator stall tracked in DISC-02; timeout and AVD unchanged.
+
 ## 0.6.7
 
 - Added deterministic levels, match cascades, local economy progression, save/sync, and playtest telemetry to the example Match-3 Lite demo.
