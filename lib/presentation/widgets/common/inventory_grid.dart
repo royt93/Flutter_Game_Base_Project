@@ -250,10 +250,15 @@ class _ItemCell extends StatelessWidget {
   Widget build(BuildContext context) {
     Widget baseContent = itemBuilder(context, slot, isSelected);
     if (onTap != null || onLongPress != null) {
-      baseContent = GestureDetector(
-        onTap: onTap == null ? null : () => onTap!(slot),
-        onLongPress: onLongPress == null ? null : () => onLongPress!(slot),
-        child: baseContent,
+      baseContent = MergeSemantics(
+        child: Semantics(
+          button: true,
+          child: GestureDetector(
+            onTap: onTap == null ? null : () => onTap!(slot),
+            onLongPress: onLongPress == null ? null : () => onLongPress!(slot),
+            child: baseContent,
+          ),
+        ),
       );
     }
 

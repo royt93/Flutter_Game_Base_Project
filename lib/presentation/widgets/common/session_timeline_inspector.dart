@@ -40,6 +40,7 @@ class SessionTimelineInspector extends StatelessWidget {
     this.title = 'Session timeline',
     this.emptyLabel = 'No session transitions yet.',
     this.hiddenRowsLabel = 'Older transitions hidden.',
+    this.durationLabel = 'Duration',
   }) : rows = List.unmodifiable(rows) {
     if (maxVisibleRows <= 0) {
       throw ArgumentError.value(
@@ -54,6 +55,7 @@ class SessionTimelineInspector extends StatelessWidget {
       ('title', title),
       ('emptyLabel', emptyLabel),
       ('hiddenRowsLabel', hiddenRowsLabel),
+      ('durationLabel', durationLabel),
     ]) {
       if (value != null && value.trim().isEmpty) {
         throw ArgumentError.value(value, name, 'must not be blank');
@@ -68,6 +70,7 @@ class SessionTimelineInspector extends StatelessWidget {
   final String title;
   final String emptyLabel;
   final String hiddenRowsLabel;
+  final String durationLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -85,7 +88,7 @@ class SessionTimelineInspector extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(title, style: TextStyle(color: NeonTheme.ink, fontSize: 18)),
-              if (durationText != null) Text('Duration: $durationText'),
+              if (durationText != null) Text('$durationLabel: $durationText'),
               if (terminalLabel != null) Text(terminalLabel!),
               if (rows.isEmpty) Text(emptyLabel),
               if (hiddenCount > 0) Text('$hiddenRowsLabel ($hiddenCount)'),

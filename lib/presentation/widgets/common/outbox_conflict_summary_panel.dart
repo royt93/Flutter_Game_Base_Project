@@ -48,6 +48,8 @@ class OutboxConflictSummaryPanel extends StatelessWidget {
     this.acceptRemoteConfirmation =
         'Remove this queued change. This does not undo changes already applied on this device.',
     this.errorLabel = 'Could not save this choice. Review and try again.',
+    this.emptyLabel = 'No queued changes need review.',
+    this.remoteLabel = 'Remote',
   }) {
     for (final (name, value) in [
       ('title', title),
@@ -58,6 +60,8 @@ class OutboxConflictSummaryPanel extends StatelessWidget {
       ('keepLocalConfirmation', keepLocalConfirmation),
       ('acceptRemoteConfirmation', acceptRemoteConfirmation),
       ('errorLabel', errorLabel),
+      ('emptyLabel', emptyLabel),
+      ('remoteLabel', remoteLabel),
     ]) {
       if (value.trim().isEmpty) {
         throw ArgumentError.value(value, name, 'must not be blank');
@@ -90,6 +94,8 @@ class OutboxConflictSummaryPanel extends StatelessWidget {
   final String keepLocalConfirmation;
   final String acceptRemoteConfirmation;
   final String errorLabel;
+  final String emptyLabel;
+  final String remoteLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -103,7 +109,7 @@ class OutboxConflictSummaryPanel extends StatelessWidget {
           children: [
             Text(title, style: TextStyle(color: NeonTheme.ink, fontSize: 18)),
             if (conflicts.isEmpty)
-              const Text('No queued changes need review.')
+              Text(emptyLabel)
             else
               for (final conflict in conflicts)
                 _OutboxConflictRow(
@@ -117,6 +123,7 @@ class OutboxConflictSummaryPanel extends StatelessWidget {
                   keepLocalConfirmation: keepLocalConfirmation,
                   acceptRemoteConfirmation: acceptRemoteConfirmation,
                   errorLabel: errorLabel,
+                  remoteLabel: remoteLabel,
                   onResolve: onResolve,
                 ),
           ],
@@ -137,6 +144,7 @@ class _OutboxConflictRow extends StatefulWidget {
     required this.keepLocalConfirmation,
     required this.acceptRemoteConfirmation,
     required this.errorLabel,
+    required this.remoteLabel,
     required this.onResolve,
     super.key,
   });
@@ -150,6 +158,7 @@ class _OutboxConflictRow extends StatefulWidget {
   final String keepLocalConfirmation;
   final String acceptRemoteConfirmation;
   final String errorLabel;
+  final String remoteLabel;
   final Future<void> Function(
     String reference,
     OutboxConflictResolution resolution,
@@ -210,7 +219,7 @@ class _OutboxConflictRowState extends State<_OutboxConflictRow> {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(widget.conflict.localLabel),
-          Text('Remote: ${widget.conflict.remoteLabel}'),
+          Text('${widget.remoteLabel}: ${widget.conflict.remoteLabel}'),
           if (widget.conflict.timestampText != null)
             Text(widget.conflict.timestampText!),
           if (_failed) Text(widget.errorLabel),

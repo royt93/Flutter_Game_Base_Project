@@ -120,93 +120,98 @@ class _StreakRepairDialogState extends State<StreakRepairDialog>
       label:
           '${widget.title}. Streak of ${widget.streakDays} days lost. $repairText or $skipText.',
       child: Center(
-        child: Container(
-          width: 320,
-          margin: const EdgeInsets.symmetric(horizontal: NeonTheme.s24),
-          padding: const EdgeInsets.all(NeonTheme.s24),
-          decoration: BoxDecoration(
-            color: NeonTheme.card,
-            borderRadius: BorderRadius.circular(24),
-            border: Border.all(
-              color: NeonTheme.cyan.withValues(alpha: 0.6),
-              width: 2,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(maxWidth: 320),
+          child: Container(
+            key: const ValueKey('streakPanel'),
+            margin: const EdgeInsets.symmetric(horizontal: NeonTheme.s16),
+            padding: const EdgeInsets.all(NeonTheme.s24),
+            decoration: BoxDecoration(
+              color: NeonTheme.card,
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: NeonTheme.cyan.withValues(alpha: 0.6),
+                width: 2,
+              ),
+              boxShadow: NeonTheme.glow(NeonTheme.cyan, blur: 16),
             ),
-            boxShadow: NeonTheme.glow(NeonTheme.cyan, blur: 16),
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              AnimatedBuilder(
-                animation: _pulse,
-                builder: (context, child) {
-                  final scale = reduced ? 1.0 : 0.95 + 0.1 * _pulse.value;
-                  return Transform.scale(scale: scale, child: child);
-                },
-                child: Container(
-                  width: 80,
-                  height: 80,
-                  decoration: BoxDecoration(
-                    shape: BoxShape.circle,
-                    color: NeonTheme.cardAlt,
-                    border: Border.all(color: NeonTheme.orange, width: 3),
-                    boxShadow: NeonTheme.glow(NeonTheme.orange, blur: 14),
-                  ),
-                  child: Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      Icon(
-                        Icons.ac_unit_rounded,
-                        color: NeonTheme.cyan.withValues(alpha: 0.8),
-                        size: 56,
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedBuilder(
+                    animation: _pulse,
+                    builder: (context, child) {
+                      final scale = reduced ? 1.0 : 0.95 + 0.1 * _pulse.value;
+                      return Transform.scale(scale: scale, child: child);
+                    },
+                    child: Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: NeonTheme.cardAlt,
+                        border: Border.all(color: NeonTheme.orange, width: 3),
+                        boxShadow: NeonTheme.glow(NeonTheme.orange, blur: 14),
                       ),
-                      Icon(
-                        Icons.local_fire_department_rounded,
-                        color: NeonTheme.orange,
-                        size: 40,
+                      child: Stack(
+                        alignment: Alignment.center,
+                        children: [
+                          Icon(
+                            Icons.ac_unit_rounded,
+                            color: NeonTheme.cyan.withValues(alpha: 0.8),
+                            size: 56,
+                          ),
+                          Icon(
+                            Icons.local_fire_department_rounded,
+                            color: NeonTheme.orange,
+                            size: 40,
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
+                  const SizedBox(height: NeonTheme.s16),
+                  Text(
+                    widget.title,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: NeonTheme.ink,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                  const SizedBox(height: NeonTheme.s8),
+                  Text(
+                    widget.subtitle ??
+                        'Your ${widget.streakDays}-day streak is frozen! Repair it to continue where you left off.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: NeonTheme.inkSoft,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      height: 1.3,
+                    ),
+                  ),
+                  const SizedBox(height: NeonTheme.s24),
+                  CommonButton(
+                    key: const ValueKey('streakRepairConfirm'),
+                    label: repairText,
+                    color: NeonTheme.orange,
+                    width: double.infinity,
+                    onTap: widget.onRepair,
+                  ),
+                  const SizedBox(height: NeonTheme.s8),
+                  CommonButton(
+                    key: const ValueKey('streakRepairSkip'),
+                    label: skipText,
+                    variant: CommonButtonVariant.secondary,
+                    width: double.infinity,
+                    onTap: widget.onSkip,
+                  ),
+                ],
               ),
-              const SizedBox(height: NeonTheme.s16),
-              Text(
-                widget.title,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: NeonTheme.ink,
-                  fontSize: 22,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: NeonTheme.s8),
-              Text(
-                widget.subtitle ??
-                    'Your ${widget.streakDays}-day streak is frozen! Repair it to continue where you left off.',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: NeonTheme.inkSoft,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                  height: 1.3,
-                ),
-              ),
-              const SizedBox(height: NeonTheme.s24),
-              CommonButton(
-                key: const ValueKey('streakRepairConfirm'),
-                label: repairText,
-                color: NeonTheme.orange,
-                width: double.infinity,
-                onTap: widget.onRepair,
-              ),
-              const SizedBox(height: NeonTheme.s8),
-              CommonButton(
-                key: const ValueKey('streakRepairSkip'),
-                label: skipText,
-                variant: CommonButtonVariant.secondary,
-                width: double.infinity,
-                onTap: widget.onSkip,
-              ),
-            ],
+            ),
           ),
         ),
       ),

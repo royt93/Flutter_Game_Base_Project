@@ -65,6 +65,12 @@ class SupportDiagnosticsCard extends StatefulWidget {
         'This shares the listed diagnostic summary with support.',
     this.errorLabel = 'Share failed. You can try again.',
     this.semanticLabel,
+    this.appVersionLabel = 'App',
+    this.truncatedLabel =
+        'Some optional sections were omitted to fit the size limit.',
+    this.privacyNote =
+        'Logs and diagnostic details are shared only after confirmation.',
+    this.sectionErrorsLabel,
   }) {
     for (final (name, value) in [
       ('title', title),
@@ -75,6 +81,9 @@ class SupportDiagnosticsCard extends StatefulWidget {
       ('closePreviewLabel', closePreviewLabel),
       ('confirmationText', confirmationText),
       ('errorLabel', errorLabel),
+      ('appVersionLabel', appVersionLabel),
+      ('truncatedLabel', truncatedLabel),
+      ('privacyNote', privacyNote),
     ]) {
       if (value.trim().isEmpty) {
         throw ArgumentError.value(value, name, 'must not be blank');
@@ -101,6 +110,12 @@ class SupportDiagnosticsCard extends StatefulWidget {
   final String confirmationText;
   final String errorLabel;
   final String? semanticLabel;
+  final String appVersionLabel;
+  final String truncatedLabel;
+  final String privacyNote;
+
+  /// Builds the "N sections failed" line; null keeps the English default.
+  final String Function(int count)? sectionErrorsLabel;
 
   @override
   State<SupportDiagnosticsCard> createState() => _SupportDiagnosticsCardState();
@@ -165,7 +180,7 @@ class _SupportDiagnosticsCardState extends State<SupportDiagnosticsCard> {
               ),
             ),
             const SizedBox(height: 8),
-            Text('App ${widget.summary.appVersion}'),
+            Text('${widget.appVersionLabel} ${widget.summary.appVersion}'),
             Text(widget.summary.generatedAtText),
             const SizedBox(height: 8),
             Wrap(
@@ -203,16 +218,17 @@ class _SupportDiagnosticsCardState extends State<SupportDiagnosticsCard> {
             ),
             if (widget.summary.truncated)
               Text(
-                'Some optional sections were omitted to fit the size limit.',
+                widget.truncatedLabel,
                 style: TextStyle(color: NeonTheme.orange),
               ),
             if (widget.summary.errors.isNotEmpty)
               Text(
-                '${widget.summary.errors.length} section(s) could not be included.',
+                widget.sectionErrorsLabel?.call(widget.summary.errors.length) ??
+                    '${widget.summary.errors.length} section(s) could not be included.',
                 style: TextStyle(color: NeonTheme.orange),
               ),
             Text(
-              'Logs and diagnostic details are shared only after confirmation.',
+              widget.privacyNote,
               style: TextStyle(color: NeonTheme.inkSoft, fontSize: 12),
             ),
             if (_shareFailed)

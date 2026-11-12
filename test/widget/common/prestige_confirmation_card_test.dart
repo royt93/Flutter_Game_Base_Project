@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/core/utils/theme_contrast_validator.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/prestige_confirmation_card.dart';
 
 void main() {
@@ -371,5 +373,32 @@ void main() {
       expect(confirmed, isFalse);
       expect(tester.takeException(), isNull);
     });
+  });
+
+  group('ENH-104: chữ cảnh báo/diff đọc được ở cả light lẫn dark', () {
+    tearDown(() => NeonTheme.dark = false);
+
+    for (final dark in [false, true]) {
+      testWidgets('dark=$dark: chữ chip + badge đạt AA 4.5:1', (tester) async {
+        NeonTheme.dark = dark;
+        await tester.pumpWidget(buildSubject());
+
+        final card = NeonTheme.card;
+        for (final text in [
+          'Requires Level 50 · Level 50 resets to 1',
+          '+0.5x',
+        ]) {
+          final w = tester.widget<Text>(find.text(text));
+          final tint = text.startsWith('+') ? Colors.green : Colors.orange;
+          final alpha = text.startsWith('+') ? 0.2 : 0.12;
+          final bg = Color.alphaBlend(tint.withValues(alpha: alpha), card);
+          expect(
+            contrastRatio(w.style!.color!, bg),
+            greaterThanOrEqualTo(4.5),
+            reason: '$text dark=$dark',
+          );
+        }
+      });
+    }
   });
 }

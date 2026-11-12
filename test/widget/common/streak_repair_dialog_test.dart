@@ -20,6 +20,36 @@ void main() {
     );
   });
 
+  for (final size in const [Size(320, 480), Size(568, 320), Size(640, 320)]) {
+    testWidgets('BUG-104: no overflow at ${size.width}x${size.height}', (
+      tester,
+    ) async {
+      tester.view.physicalSize = size;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: StreakRepairDialog(
+              streakDays: 14,
+              onRepair: () {},
+              onSkip: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      final panel = tester.getRect(find.byKey(const ValueKey('streakPanel')));
+      expect(panel.left, greaterThanOrEqualTo(0));
+      expect(panel.right, lessThanOrEqualTo(size.width));
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('streakRepairSkip')),
+      );
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('shows streak length and optional caller-owned repair price', (
     tester,
   ) async {

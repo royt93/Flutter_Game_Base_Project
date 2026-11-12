@@ -268,19 +268,19 @@ class PrestigeConfirmationCard extends StatelessWidget {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                const Icon(
+                Icon(
                   Icons.warning_amber_rounded,
-                  color: Colors.orange,
+                  color: NeonTheme.ink,
                   size: 18,
                 ),
                 const SizedBox(width: NeonTheme.s8),
                 Flexible(
                   child: Text(
                     'Requires $requiredPrestigeValue · Level $currentLevel resets to 1',
-                    style: const TextStyle(
+                    style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w700,
-                      color: Colors.orange,
+                      color: NeonTheme.ink,
                     ),
                   ),
                 ),
@@ -374,10 +374,10 @@ class PrestigeConfirmationCard extends StatelessWidget {
             ),
             child: Text(
               diff,
-              style: const TextStyle(
+              style: TextStyle(
                 fontSize: 10,
                 fontWeight: FontWeight.w800,
-                color: Colors.green,
+                color: NeonTheme.ink,
               ),
             ),
           ),

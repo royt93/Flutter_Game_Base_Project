@@ -394,6 +394,55 @@ void main() {
       },
     );
 
+    testWidgets('ENH-106: skip link có vùng chạm >= 48dp và là button', (
+      tester,
+    ) async {
+      final targetKey = GlobalKey();
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: AppTranslations.fallback,
+          fallbackLocale: AppTranslations.fallback,
+          home: Scaffold(
+            body: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: 200, left: 40),
+                    child: SizedBox(key: targetKey, width: 120, height: 48),
+                  ),
+                ),
+                SpotlightOverlay(
+                  targetKey: targetKey,
+                  message: 'm',
+                  title: 't',
+                  onDismiss: () {},
+                  onSkip: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      final gesture = find.ancestor(
+        of: find.text('Skip'),
+        matching: find.byType(GestureDetector),
+      );
+      expect(tester.getSize(gesture.first).height, greaterThanOrEqualTo(48));
+      expect(
+        find.ancestor(
+          of: find.text('Skip'),
+          matching: find.byWidgetPredicate(
+            (w) => w is Semantics && w.properties.button == true,
+          ),
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets('skipLabel tuỳ chỉnh → hiện đúng chuỗi đó thay vì "Skip"', (
       tester,
     ) async {

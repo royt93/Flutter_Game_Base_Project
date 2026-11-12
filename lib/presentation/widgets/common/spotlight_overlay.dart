@@ -287,16 +287,25 @@ class _Callout extends StatelessWidget {
                     : MainAxisAlignment.spaceBetween,
                 children: [
                   if (onSkip != null)
-                    GestureDetector(
-                      onTap: onSkip,
-                      child: Text(
-                        skipLabel,
-                        style: TextStyle(
-                          color: NeonTheme.inkSoft,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w700,
-                          decoration: TextDecoration.underline,
-                          decorationColor: NeonTheme.inkSoft,
+                    MergeSemantics(
+                      child: Semantics(
+                        button: true,
+                        child: GestureDetector(
+                          behavior: HitTestBehavior.opaque,
+                          onTap: onSkip,
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            child: Text(
+                              skipLabel,
+                              style: TextStyle(
+                                color: NeonTheme.inkSoft,
+                                fontSize: 14,
+                                fontWeight: FontWeight.w700,
+                                decoration: TextDecoration.underline,
+                                decorationColor: NeonTheme.inkSoft,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
