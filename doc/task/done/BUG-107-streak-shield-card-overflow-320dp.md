@@ -17,5 +17,8 @@ source: "FEAT-200 pha 2: viewport sweep 2026-11-12"
 ## Hướng sửa
 Bọc từng cột metric trong `Expanded`/`Flexible` hoặc dùng `Wrap`; giữ nguyên hình ảnh ở màn rộng (không đổi golden nếu có thể). Kiểm text scale 2.0 sau khi sửa.
 
+## Kết quả (2026-11-12)
+Mỗi cột metric bọc `Flexible`, giá trị `Text` ellipsis, nhãn căn giữa. Bỏ `skip` của test sweep; 9 case sweep và `streak_shield_card_test.dart` xanh. Không có golden `streak_shield_card_*` nên không cần regenerate.
+
 ## Tiêu chí xong
 Bỏ `skip` của test `StreakShieldCard` trong `viewport_sweep_test.dart`, sweep xanh; nếu golden `streak_shield_card_*` đổi thì regenerate bằng quy trình artifact.

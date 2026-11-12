@@ -23,7 +23,7 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 
 ## Tiến độ
 - [x] Pha 1 khung: `test/support/viewport_sweep.dart` (`ViewportCase`, `runViewportSweep`) và `test/widget/common/viewport_sweep_test.dart` với StreakRepairDialog (1x và 2x text), PrestigeConfirmationCard, RewardPopup, SupportDiagnosticsCard. Đã chứng minh: hoàn nguyên tạm bug width 320 thì 2 test đỏ.
-- [x] Pha 2a: thêm GameOverCardTemplate, VictoryCardTemplate, MilestoneCelebrationDialog (xanh) và StreakShieldCard (lộ lỗi thật, BUG-107, test để `skip` có lý do).
+- [x] Pha 2a: thêm GameOverCardTemplate, VictoryCardTemplate, MilestoneCelebrationDialog (xanh) và StreakShieldCard (lộ lỗi thật BUG-107, đã sửa và đóng).
 - [ ] Mở rộng sang phần còn lại của `common/` (khoảng 165 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 

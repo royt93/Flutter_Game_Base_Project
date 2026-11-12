@@ -194,24 +194,28 @@ class StreakShieldCard extends StatelessWidget {
               child: Row(
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
-                  _buildMetric(
-                    label: 'Current Streak',
-                    value: '$streakDays days',
-                    icon: Icons.local_fire_department_rounded,
-                    color: NeonTheme.orange,
+                  Flexible(
+                    child: _buildMetric(
+                      label: 'Current Streak',
+                      value: '$streakDays days',
+                      icon: Icons.local_fire_department_rounded,
+                      color: NeonTheme.orange,
+                    ),
                   ),
                   Container(
                     width: 1,
                     height: 40,
                     color: NeonTheme.inkSoft.withValues(alpha: 0.2),
                   ),
-                  _buildMetric(
-                    label: 'Freeze Shields',
-                    value: '$shieldCount left',
-                    icon: hasShield
-                        ? Icons.shield_rounded
-                        : Icons.shield_outlined,
-                    color: hasShield ? NeonTheme.cyan : NeonTheme.red,
+                  Flexible(
+                    child: _buildMetric(
+                      label: 'Freeze Shields',
+                      value: '$shieldCount left',
+                      icon: hasShield
+                          ? Icons.shield_rounded
+                          : Icons.shield_outlined,
+                      color: hasShield ? NeonTheme.cyan : NeonTheme.red,
+                    ),
                   ),
                 ],
               ),
@@ -264,12 +268,15 @@ class StreakShieldCard extends StatelessWidget {
           children: [
             Icon(icon, color: color, size: 20),
             const SizedBox(width: 4),
-            Text(
-              value,
-              style: TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.w900,
-                color: color,
+            Flexible(
+              child: Text(
+                value,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  color: color,
+                ),
               ),
             ),
           ],
@@ -277,6 +284,7 @@ class StreakShieldCard extends StatelessWidget {
         const SizedBox(height: 2),
         Text(
           label,
+          textAlign: TextAlign.center,
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,

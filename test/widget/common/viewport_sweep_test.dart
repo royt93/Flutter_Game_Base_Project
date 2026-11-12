@@ -117,8 +117,6 @@ void main() {
       );
     });
 
-    // BUG-107: StreakShieldCard's metric Row overflows 32px at 320dp.
-    // Skipped until fixed; remove `skip` when BUG-107 closes.
     testWidgets('StreakShieldCard', (tester) async {
       await runViewportSweep(
         tester,
@@ -133,7 +131,7 @@ void main() {
         ),
         targetFinder: find.byType(StreakShieldCard),
       );
-    }, skip: true);
+    });
 
     testWidgets('MilestoneCelebrationDialog', (tester) async {
       await runViewportSweep(
