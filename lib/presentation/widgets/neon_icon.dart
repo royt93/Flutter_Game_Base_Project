@@ -71,7 +71,7 @@ class NeonIconButton extends StatelessWidget {
   Widget build(BuildContext context) {
     if (boxed) {
       final enabled = onTap != null;
-      final c = enabled ? color : Colors.grey;
+      final c = enabled ? color : NeonTheme.muted;
       return Semantics(
         button: true,
         enabled: enabled,

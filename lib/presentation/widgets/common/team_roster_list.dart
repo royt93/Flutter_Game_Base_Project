@@ -455,13 +455,13 @@ class TeamRosterList extends StatelessWidget {
                         child: Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: Colors.redAccent.withValues(alpha: 0.15),
+                            color: NeonTheme.red.withValues(alpha: 0.15),
                             shape: BoxShape.circle,
                           ),
-                          child: const Icon(
+                          child: Icon(
                             Icons.close_rounded,
                             size: 16,
-                            color: Colors.redAccent,
+                            color: NeonTheme.red,
                           ),
                         ),
                       ),
