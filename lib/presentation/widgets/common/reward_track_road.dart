@@ -142,7 +142,7 @@ class RewardTrackRoad extends StatelessWidget {
           ),
           const SizedBox(height: NeonTheme.s8),
           SizedBox(
-            height: MediaQuery.textScalerOf(context).scale(230),
+            height: MediaQuery.textScalerOf(context).scale(240),
             child: ListView.builder(
               key: const ValueKey('rewardTrackScroll'),
               scrollDirection: Axis.horizontal,
@@ -371,16 +371,34 @@ class _RewardCell extends StatelessWidget {
               ),
             ),
           if (status == RewardTrackClaimState.claimable)
-            GestureDetector(
-              key: ValueKey('rewardTrackClaim_${tierId}_${lane.name}_$title'),
-              onTap: onClaim,
-              child: Text(
-                'Claim',
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: color,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
+            MergeSemantics(
+              child: Semantics(
+                button: true,
+                child: GestureDetector(
+                  key: ValueKey(
+                    'rewardTrackClaim_${tierId}_${lane.name}_$title',
+                  ),
+                  onTap: onClaim,
+                  behavior: HitTestBehavior.opaque,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    child: Align(
+                      widthFactor: 1,
+                      heightFactor: 1,
+                      child: Text(
+                        'Claim',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),

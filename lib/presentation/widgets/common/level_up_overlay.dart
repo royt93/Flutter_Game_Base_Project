@@ -433,14 +433,30 @@ class _LevelUpPanelState extends State<_LevelUpPanel> {
           ],
           if (widget.onSkipTap != null) ...[
             const SizedBox(height: NeonTheme.s16),
-            GestureDetector(
-              onTap: widget.onSkipTap,
-              child: Text(
-                'level_up_skip'.tr,
-                style: TextStyle(
-                  color: NeonTheme.inkSoft,
-                  fontWeight: FontWeight.w700,
-                  decoration: TextDecoration.underline,
+            MergeSemantics(
+              child: Semantics(
+                button: true,
+                child: GestureDetector(
+                  onTap: widget.onSkipTap,
+                  behavior: HitTestBehavior.opaque,
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(
+                      minWidth: 48,
+                      minHeight: 48,
+                    ),
+                    child: Align(
+                      widthFactor: 1,
+                      heightFactor: 1,
+                      child: Text(
+                        'level_up_skip'.tr,
+                        style: TextStyle(
+                          color: NeonTheme.inkSoft,
+                          fontWeight: FontWeight.w700,
+                          decoration: TextDecoration.underline,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ),

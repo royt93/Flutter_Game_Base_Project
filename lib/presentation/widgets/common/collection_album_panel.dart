@@ -168,15 +168,31 @@ class _CollectionAlbumPanelState extends State<CollectionAlbumPanel> {
                     ),
                   ),
                   if (widget.onViewReward != null)
-                    GestureDetector(
-                      key: const ValueKey('collectionViewRewardBtn'),
-                      onTap: widget.onViewReward,
-                      child: Text(
-                        'View Reward',
-                        style: TextStyle(
-                          color: NeonTheme.cyan,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
+                    MergeSemantics(
+                      child: Semantics(
+                        button: true,
+                        child: GestureDetector(
+                          key: const ValueKey('collectionViewRewardBtn'),
+                          onTap: widget.onViewReward,
+                          behavior: HitTestBehavior.opaque,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            child: Align(
+                              widthFactor: 1,
+                              heightFactor: 1,
+                              child: Text(
+                                'View Reward',
+                                style: TextStyle(
+                                  color: NeonTheme.cyan,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),

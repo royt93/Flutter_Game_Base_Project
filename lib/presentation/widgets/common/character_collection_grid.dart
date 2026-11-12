@@ -340,21 +340,26 @@ class _CharacterCollectionGridState extends State<CharacterCollectionGrid> {
                 ],
               ),
               if (character.isOwned && widget.onSelect != null)
-                GestureDetector(
-                  key: ValueKey('characterSelect_${character.id}'),
-                  behavior: HitTestBehavior.opaque,
-                  onTap: () => widget.onSelect!(character.id),
-                  child: ConstrainedBox(
-                    constraints: const BoxConstraints(minHeight: 48),
-                    child: Center(
-                      child: Text(
-                        character.isSelected ? 'Selected' : 'Select',
-                        style: TextStyle(
-                          color: character.isSelected
-                              ? NeonTheme.inkSoft
-                              : NeonTheme.cyan,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w900,
+                MergeSemantics(
+                  child: Semantics(
+                    button: true,
+                    child: GestureDetector(
+                      key: ValueKey('characterSelect_${character.id}'),
+                      behavior: HitTestBehavior.opaque,
+                      onTap: () => widget.onSelect!(character.id),
+                      child: ConstrainedBox(
+                        constraints: const BoxConstraints(minHeight: 48),
+                        child: Center(
+                          child: Text(
+                            character.isSelected ? 'Selected' : 'Select',
+                            style: TextStyle(
+                              color: character.isSelected
+                                  ? NeonTheme.inkSoft
+                                  : NeonTheme.cyan,
+                              fontSize: 9,
+                              fontWeight: FontWeight.w900,
+                            ),
+                          ),
                         ),
                       ),
                     ),

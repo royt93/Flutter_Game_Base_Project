@@ -260,40 +260,53 @@ class CraftingRecipeCard extends StatelessWidget {
   Widget _ingredientChip(CraftingIngredient ingredient) {
     final available = ingredient.isAvailable;
     final color = available ? NeonTheme.lime : NeonTheme.red;
-    return GestureDetector(
-      key: ValueKey('craftingIngredient_${ingredient.itemId}'),
-      onTap: onIngredientTap == null
-          ? null
-          : () => onIngredientTap!(ingredient.itemId),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: color.withValues(alpha: 0.4)),
-        ),
-        child: Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 4,
-          children: [
-            Icon(ingredient.icon, size: 15, color: color),
-            Text(
-              ingredient.label,
-              style: TextStyle(
-                color: NeonTheme.ink,
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
+    return MergeSemantics(
+      child: Semantics(
+        button: onIngredientTap != null,
+        child: GestureDetector(
+          key: ValueKey('craftingIngredient_${ingredient.itemId}'),
+          onTap: onIngredientTap == null
+              ? null
+              : () => onIngredientTap!(ingredient.itemId),
+          behavior: HitTestBehavior.opaque,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Align(
+              widthFactor: 1,
+              heightFactor: 1,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: color.withValues(alpha: 0.4)),
+                ),
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 4,
+                  children: [
+                    Icon(ingredient.icon, size: 15, color: color),
+                    Text(
+                      ingredient.label,
+                      style: TextStyle(
+                        color: NeonTheme.ink,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
+                    Text(
+                      '${ingredient.ownedQuantity}/${ingredient.requiredQuantity}',
+                      style: TextStyle(
+                        color: color,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ),
-            Text(
-              '${ingredient.ownedQuantity}/${ingredient.requiredQuantity}',
-              style: TextStyle(
-                color: color,
-                fontSize: 10,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );

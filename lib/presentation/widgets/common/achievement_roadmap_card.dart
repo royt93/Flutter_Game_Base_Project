@@ -271,15 +271,31 @@ class _RoadmapItem extends StatelessWidget {
                     ),
                   ),
                   if (item.isClaimable)
-                    GestureDetector(
-                      key: ValueKey('achievementClaim_${item.id}'),
-                      onTap: onClaim,
-                      child: Text(
-                        'Claim',
-                        style: TextStyle(
-                          color: NeonTheme.gold,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w900,
+                    MergeSemantics(
+                      child: Semantics(
+                        button: true,
+                        child: GestureDetector(
+                          key: ValueKey('achievementClaim_${item.id}'),
+                          onTap: onClaim,
+                          behavior: HitTestBehavior.opaque,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            child: Align(
+                              widthFactor: 1,
+                              heightFactor: 1,
+                              child: Text(
+                                'Claim',
+                                style: TextStyle(
+                                  color: NeonTheme.gold,
+                                  fontSize: 11,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),

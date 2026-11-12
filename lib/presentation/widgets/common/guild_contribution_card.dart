@@ -224,49 +224,64 @@ class GuildContributionCard extends StatelessWidget {
     final claimed = milestone.isClaimed;
     final color = reached ? NeonTheme.gold : NeonTheme.muted;
     final reward = milestone.reward;
-    return GestureDetector(
-      key: ValueKey('guildMilestone_${milestone.id}'),
-      onTap: reached && !claimed ? () => onClaimMilestone(milestone.id) : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: color.withValues(alpha: 0.45)),
-        ),
-        child: Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 4,
-          children: [
-            Icon(
-              claimed
-                  ? Icons.check_circle_rounded
-                  : reached
-                  ? reward.icon
-                  : Icons.lock_rounded,
-              size: 15,
-              color: color,
-            ),
-            Text(
-              claimed
-                  ? 'Claimed'
-                  : '${fmtNum(milestone.requiredContribution)}: ${reward.label}',
-              style: TextStyle(
-                color: reached ? NeonTheme.ink : NeonTheme.inkSoft,
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            if (!claimed && reached)
-              Text(
-                reward.amountLabel ?? '',
-                style: TextStyle(
-                  color: NeonTheme.gold,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
+    return MergeSemantics(
+      child: Semantics(
+        button: reached && !claimed,
+        child: GestureDetector(
+          key: ValueKey('guildMilestone_${milestone.id}'),
+          onTap: reached && !claimed
+              ? () => onClaimMilestone(milestone.id)
+              : null,
+          behavior: HitTestBehavior.opaque,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Align(
+              widthFactor: 1,
+              heightFactor: 1,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: color.withValues(alpha: 0.45)),
+                ),
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 4,
+                  children: [
+                    Icon(
+                      claimed
+                          ? Icons.check_circle_rounded
+                          : reached
+                          ? reward.icon
+                          : Icons.lock_rounded,
+                      size: 15,
+                      color: color,
+                    ),
+                    Text(
+                      claimed
+                          ? 'Claimed'
+                          : '${fmtNum(milestone.requiredContribution)}: ${reward.label}',
+                      style: TextStyle(
+                        color: reached ? NeonTheme.ink : NeonTheme.inkSoft,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    if (!claimed && reached)
+                      Text(
+                        reward.amountLabel ?? '',
+                        style: TextStyle(
+                          color: NeonTheme.gold,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-          ],
+            ),
+          ),
         ),
       ),
     );
@@ -281,14 +296,27 @@ class GuildContributionCard extends StatelessWidget {
         style: TextStyle(color: NeonTheme.red, fontWeight: FontWeight.w700),
       ),
       if (onRetry != null)
-        GestureDetector(
-          key: const ValueKey('guildContributionRetry'),
-          onTap: onRetry,
-          child: Text(
-            'Retry',
-            style: TextStyle(
-              color: NeonTheme.cyan,
-              fontWeight: FontWeight.w900,
+        MergeSemantics(
+          child: Semantics(
+            button: true,
+            child: GestureDetector(
+              key: const ValueKey('guildContributionRetry'),
+              onTap: onRetry,
+              behavior: HitTestBehavior.opaque,
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(minWidth: 48, minHeight: 48),
+                child: Align(
+                  widthFactor: 1,
+                  heightFactor: 1,
+                  child: Text(
+                    'Retry',
+                    style: TextStyle(
+                      color: NeonTheme.cyan,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),

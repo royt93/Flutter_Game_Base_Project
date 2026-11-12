@@ -197,15 +197,31 @@ class FriendInviteProgressCard extends StatelessWidget {
                     ),
                   ),
                   if (onCopyInvite != null)
-                    GestureDetector(
-                      key: const ValueKey('friendInviteCopyBtn'),
-                      onTap: onCopyInvite,
-                      child: Text(
-                        copyLabel,
-                        style: TextStyle(
-                          color: NeonTheme.cyan,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w900,
+                    MergeSemantics(
+                      child: Semantics(
+                        button: true,
+                        child: GestureDetector(
+                          key: const ValueKey('friendInviteCopyBtn'),
+                          onTap: onCopyInvite,
+                          behavior: HitTestBehavior.opaque,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(
+                              minWidth: 48,
+                              minHeight: 48,
+                            ),
+                            child: Align(
+                              widthFactor: 1,
+                              heightFactor: 1,
+                              child: Text(
+                                copyLabel,
+                                style: TextStyle(
+                                  color: NeonTheme.cyan,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w900,
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ),
@@ -237,49 +253,64 @@ class FriendInviteProgressCard extends StatelessWidget {
     final reached = milestone.isReached(completedInvites);
     final claimed = milestone.isClaimed;
     final color = reached ? NeonTheme.gold : NeonTheme.muted;
-    return GestureDetector(
-      key: ValueKey('friendInviteMilestone_${milestone.id}'),
-      onTap: reached && !claimed ? () => onClaimReward(milestone.id) : null,
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(9),
-          border: Border.all(color: color.withValues(alpha: 0.45)),
-        ),
-        child: Wrap(
-          crossAxisAlignment: WrapCrossAlignment.center,
-          spacing: 4,
-          children: [
-            Icon(
-              claimed
-                  ? Icons.check_circle_rounded
-                  : reached
-                  ? milestone.reward.icon
-                  : Icons.lock_rounded,
-              size: 15,
-              color: color,
-            ),
-            Text(
-              claimed
-                  ? 'Claimed'
-                  : '${milestone.requiredInvites}: ${milestone.reward.label}',
-              style: TextStyle(
-                color: reached ? NeonTheme.ink : NeonTheme.inkSoft,
-                fontSize: 10,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            if (!claimed && reached && milestone.reward.amountLabel != null)
-              Text(
-                milestone.reward.amountLabel!,
-                style: TextStyle(
-                  color: NeonTheme.gold,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
+    return MergeSemantics(
+      child: Semantics(
+        button: reached && !claimed,
+        child: GestureDetector(
+          key: ValueKey('friendInviteMilestone_${milestone.id}'),
+          onTap: reached && !claimed ? () => onClaimReward(milestone.id) : null,
+          behavior: HitTestBehavior.opaque,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: 48),
+            child: Align(
+              widthFactor: 1,
+              heightFactor: 1,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 5),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(9),
+                  border: Border.all(color: color.withValues(alpha: 0.45)),
+                ),
+                child: Wrap(
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 4,
+                  children: [
+                    Icon(
+                      claimed
+                          ? Icons.check_circle_rounded
+                          : reached
+                          ? milestone.reward.icon
+                          : Icons.lock_rounded,
+                      size: 15,
+                      color: color,
+                    ),
+                    Text(
+                      claimed
+                          ? 'Claimed'
+                          : '${milestone.requiredInvites}: ${milestone.reward.label}',
+                      style: TextStyle(
+                        color: reached ? NeonTheme.ink : NeonTheme.inkSoft,
+                        fontSize: 10,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    if (!claimed &&
+                        reached &&
+                        milestone.reward.amountLabel != null)
+                      Text(
+                        milestone.reward.amountLabel!,
+                        style: TextStyle(
+                          color: NeonTheme.gold,
+                          fontSize: 10,
+                          fontWeight: FontWeight.w900,
+                        ),
+                      ),
+                  ],
                 ),
               ),
-          ],
+            ),
+          ),
         ),
       ),
     );

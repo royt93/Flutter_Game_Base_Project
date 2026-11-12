@@ -115,9 +115,20 @@ void main() {
       expect(find.text('Collect 10 items'), findsOneWidget);
       expect(find.text('10/10'), findsNothing);
       expect(find.text('Complete'), findsOneWidget);
-      await tester.tap(
-        find.byKey(const ValueKey('achievementClaim_collector_10')),
+      final claim = find.byKey(const ValueKey('achievementClaim_collector_10'));
+      // ENH-107: link-style Claim needs a >= 48dp target and button role.
+      expect(tester.getSize(claim).height, greaterThanOrEqualTo(48));
+      expect(tester.getSize(claim).width, greaterThanOrEqualTo(48));
+      expect(
+        find.ancestor(
+          of: claim,
+          matching: find.byWidgetPredicate(
+            (w) => w is Semantics && w.properties.button == true,
+          ),
+        ),
+        findsOneWidget,
       );
+      await tester.tap(claim);
       expect(claimed, ['collector_10']);
     });
 

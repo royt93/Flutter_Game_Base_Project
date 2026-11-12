@@ -120,7 +120,20 @@ void main() {
       expect(find.text('1 / 3 invited'), findsOneWidget);
       expect(find.text('Code: ABC123'), findsOneWidget);
       await tester.tap(find.byKey(const ValueKey('friendInviteActionBtn')));
-      await tester.tap(find.byKey(const ValueKey('friendInviteCopyBtn')));
+      final copy = find.byKey(const ValueKey('friendInviteCopyBtn'));
+      // ENH-107: link-style copy needs a >= 48dp target and button role.
+      expect(tester.getSize(copy).height, greaterThanOrEqualTo(48));
+      expect(tester.getSize(copy).width, greaterThanOrEqualTo(48));
+      expect(
+        find.ancestor(
+          of: copy,
+          matching: find.byWidgetPredicate(
+            (w) => w is Semantics && w.properties.button == true,
+          ),
+        ),
+        findsOneWidget,
+      );
+      await tester.tap(copy);
       expect(invites, 1);
       expect(copied, 1);
     });
