@@ -1,5 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/core/economy_certificate.dart';
+import 'package:roy_casual_kit/core/replay_recorder.dart';
+import 'package:roy_casual_kit/core/utils/remote_schema_compiler.dart';
 import 'package:roy_casual_kit/core/save_integrity.dart';
+import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 
 void main() {
   group('save_integrity', () {
@@ -66,6 +70,31 @@ void main() {
       expect(() => signExport({'a': 1}, ''), throwsArgumentError);
       final signed = signExport({'a': 1}, 'k');
       expect(() => verifyAndStrip(signed, ''), throwsArgumentError);
+    });
+
+    test('BUG-112: verify paths documented as never-throws survive an empty '
+        'secret', () {
+      final signed = signExport({'a': 1}, 'k');
+      expect(
+        EconomyCertificate.verify(signed, '').status,
+        EconomyCertificateStatus.tampered,
+      );
+      expect(ReplayCapsule.importSigned(signed, ''), isNull);
+      final schema = RemoteSchemaDef(
+        packName: 'pack',
+        versions: const [
+          RemoteSchemaVersion(
+            version: 1,
+            fields: [
+              RemoteSchemaField(
+                name: 'title',
+                type: RemoteSchemaFieldType.string,
+              ),
+            ],
+          ),
+        ],
+      );
+      expect(verifySignedFixture(schema, signed, ''), isA<SdkFailure>());
     });
 
     test('a normal round trip still works', () {

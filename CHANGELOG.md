@@ -1,5 +1,7 @@
 ## 0.6.10
 
+- Fixed `RemoteContentPack` ignoring `migrate` for a cached entry written under an older `schemaVersion`: after an app upgrade the stale cache was handed straight to `fromJson`, failed, and silently fell back to the bundled asset, discarding newer live-ops content until the next successful fetch. The cache now goes through the same schema validation as the asset and a fetched envelope (a cache older than the pack with no `migrate` still falls back to the asset).
+- Fixed `EconomyCertificate.verify`, `ReplayCapsule.importSigned` and `verifySignedFixture` throwing `ArgumentError` for an empty secret after the 0.6.9 `verifyAndStrip` change: they are documented never to throw and now report `tampered` / `null` / `SdkFailure` as before.
 - Fixed `VersionedJsonStore.syncWith`/`load` losing the `syncedAtMs` timestamp and `schemaVersion` when a consumer's `migrate` step rebuilt the map from scratch: a cloud save from an older schema was read as timestamp -1, lost last-write-wins to an empty local save and was never restored on a new device, and a stored copy without `schemaVersion` was migrated a second time on the next load. Both envelope keys are now restored after migration (a `migrate` that sets its own `syncedAtMs` keeps it).
 - **Behavior change:** `DisasterRecoverySaveExport.previewRestore` now rejects a bundle whose slot id is not of the form `slot_<digits>` (the only form `SaveSlotManager` generates). A restored id such as `a` next to `a_b` made `deleteSlot('a')` erase the data of slot `a_b` through the `slot_a_` key prefix.
 

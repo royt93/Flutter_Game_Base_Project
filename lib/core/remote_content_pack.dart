@@ -383,13 +383,15 @@ class RemoteContentPack<T> {
       final decoded = jsonDecode(raw);
       if (decoded is! Map) return false;
       final json = decoded.cast<String, Object?>();
-      final storedVersion = asIntOr(json['schemaVersion'], 0);
-      // A cache entry is always written at exactly the pack's CURRENT
-      // schemaVersion (see `_writeCache`) — a newer value here only means
-      // the app was downgraded after a newer version wrote this cache.
-      // Same "never hand a future shape to fromJson" rule as a fetched
-      // envelope.
-      if (storedVersion > schemaVersion) return false;
+      // A cache entry is written at the pack's schemaVersion of THAT app run
+      // (see `_writeCache`). After an app upgrade it can be OLDER than this
+      // run's schemaVersion (BUG-113): `_validateSchema` migrates it, or
+      // rejects it when there is no `migrate`. A NEWER one only means the app
+      // was downgraded after a newer version wrote this cache, and is
+      // rejected too — same "never hand a foreign shape to fromJson" rule as a
+      // fetched envelope.
+      final migrated = _validateSchema(json);
+      if (migrated == null) return false;
       final maxAge = maxCacheAge;
       if (maxAge != null) {
         final cachedAtMs = asIntOr(json['cachedAtMs'], 0);
@@ -397,7 +399,7 @@ class RemoteContentPack<T> {
           return false;
         }
       }
-      _current = fromJson(json);
+      _current = fromJson(migrated);
       return true;
     } catch (_) {
       return false;

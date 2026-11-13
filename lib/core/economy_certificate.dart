@@ -124,6 +124,12 @@ class EconomyCertificate {
       return const EconomyCertificateVerification(
         status: EconomyCertificateStatus.tampered,
       );
+    } on ArgumentError {
+      // BUG-112: verifyAndStrip rejects an empty secret with ArgumentError; keep
+      // this method's "never throws" contract and report it like a bad signature.
+      return const EconomyCertificateVerification(
+        status: EconomyCertificateStatus.tampered,
+      );
     }
 
     ClockJudgement? judgement;

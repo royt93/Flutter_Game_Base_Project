@@ -496,6 +496,38 @@ void main() {
       expect(restarted.current!.name, 'Verified Remote');
     });
 
+    test('BUG-113: cache ghi ở schema cũ được migrate khi app nâng schema, '
+        'không bị bỏ qua', () async {
+      // Cache written by an older app version (schema 1, old field name).
+      await storage.setString(
+        cacheKey,
+        jsonEncode({
+          'id': 2,
+          'title': 'Cached Remote',
+          'schemaVersion': 1,
+          'cachedAtMs': 1,
+        }),
+      );
+      var migrateCalls = 0;
+      final upgraded = RemoteContentPack<_Level>.withCache(
+        assetPath: _assetPath,
+        schemaVersion: 2,
+        fromJson: _Level.fromJson,
+        migrate: (from, json) {
+          migrateCalls++;
+          return {...json, 'name': json['title']};
+        },
+        storage: storage,
+        cacheKey: cacheKey,
+        bundle: _asset('Bundled Asset v2'),
+      );
+
+      final level = await upgraded.load();
+
+      expect(migrateCalls, 1);
+      expect(level!.name, 'Cached Remote');
+    });
+
     test('tampered envelope sau cache hợp lệ -> cache cũ giữ nguyên, không bị '
         'ghi đè', () async {
       await seedVerifiedCache('Last Known Good');

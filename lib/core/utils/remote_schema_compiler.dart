@@ -343,6 +343,12 @@ SdkResult<Map<String, Object?>> verifySignedFixture(
       kind: SdkErrorKind.validation,
       message: 'signature invalid: ${e.message}',
     );
+  } on ArgumentError catch (e) {
+    // BUG-112: an empty secret must not break the "never throws" contract.
+    return SdkFailure(
+      kind: SdkErrorKind.validation,
+      message: 'signature invalid: ${e.message}',
+    );
   }
   final storedVersion = asIntOr(verified['schemaVersion'], 0);
   if (storedVersion > schema.current.version) {

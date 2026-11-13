@@ -138,6 +138,9 @@ class ReplayCapsule {
       json = verifyAndStrip(signedJson, secret);
     } on FormatException {
       return null;
+    } on ArgumentError {
+      // BUG-112: an empty secret must not break the "never throws" contract.
+      return null;
     }
     return fromJsonUnsigned(json);
   }
