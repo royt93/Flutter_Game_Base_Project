@@ -306,5 +306,98 @@ void main() {
         });
       }
     });
+
+    group('FEAT-200 phase 2c: shop, status and banner widgets', () {
+      final cases = <String, Widget Function()>{
+        'ShopItemCard': () => ShopItemCard(
+          icon: Icons.diamond_rounded,
+          title: 'Mega Gem Pack with a rather long title',
+          priceLabel: '\$19.99',
+          ribbonText: '-60%',
+          onBuy: () {},
+        ),
+        'EnergyBar': () => const EnergyBar(
+          currentEnergy: 3,
+          maxEnergy: 5,
+          timeUntilNextEnergy: Duration(minutes: 12, seconds: 5),
+        ),
+        'OfflineEarningsPopup': () => OfflineEarningsPopup(
+          coins: 123456,
+          elapsed: const Duration(hours: 7, minutes: 30),
+          onCollect: () {},
+          onDoubleTap: () {},
+        ),
+        'PrestigeReadinessCard': () => PrestigeReadinessCard(
+          current: 40,
+          threshold: 50,
+          multiplierText: 'x1.5',
+          onPrestige: () {},
+        ),
+        'SeasonEventBanner': () => SeasonEventBanner(
+          title: 'Winter Festival with a long event name',
+          endsAt: DateTime.now().add(const Duration(days: 3)),
+          progress: 0.4,
+          subtitle: 'Collect snowflakes',
+          onTap: () {},
+        ),
+        'TieredLeaderboardRow': () => TieredLeaderboardRow(
+          rank: 12,
+          playerName: 'A very long player name that must truncate',
+          score: '1,234,567',
+          tier: LeaderboardTier.gold,
+        ),
+        'VipPerkProgressRow': () => VipPerkProgressRow(
+          currentTier: 2,
+          currentPoints: 300,
+          nextTierPoints: 500,
+          perks: const [
+            VipPerk(icon: Icons.card_giftcard, label: 'Daily bonus'),
+            VipPerk(icon: Icons.palette, label: 'Exclusive skins'),
+          ],
+          onAction: () {},
+        ),
+        'InboxMessageCard': () => InboxMessageCard(
+          title: 'Weekend reward',
+          body: 'Thanks for playing! Here is a gift for you, valid this week.',
+          receivedLabel: '2h ago',
+          onOpen: () {},
+        ),
+        'RewardedAdResultCard': () => RewardedAdResultCard(
+          status: RewardedAdStatus.rewarded,
+          rewardText: '+50 coins',
+          onWatch: () async {},
+        ),
+        'SyncStatusCard': () => SyncStatusCard(
+          status: SyncStatus.failed,
+          lastSyncedText: '5 minutes ago',
+          onSync: () async {},
+        ),
+        'PlayerDataRightsPanel': () =>
+            PlayerDataRightsPanel(onExport: () async {}, onErase: () async {}),
+        'ToastBanner': () =>
+            const ToastBanner(message: 'Saved to the cloud successfully'),
+      };
+      for (final e in cases.entries) {
+        testWidgets(e.key, (tester) async {
+          await runViewportSweep(
+            tester,
+            () => SingleChildScrollView(child: e.value()),
+          );
+        });
+        testWidgets('${e.key} at 2.0x text, 320dp and landscape', (
+          tester,
+        ) async {
+          await runViewportSweep(
+            tester,
+            () => SingleChildScrollView(child: e.value()),
+            viewports: const [
+              ViewportCase('320x480', Size(320, 480)),
+              ViewportCase('568x320-landscape', Size(568, 320)),
+            ],
+            textScale: 2.0,
+          );
+        });
+      }
+    });
   });
 }

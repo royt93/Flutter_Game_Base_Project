@@ -246,26 +246,31 @@ class _OfflineEarningsPopupState extends State<OfflineEarningsPopup>
               behavior: HitTestBehavior.opaque,
               onTap: skipToEnd,
               child: RepaintBoundary(
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      Icons.monetization_on_rounded,
-                      color: NeonTheme.gold,
-                      size: 38,
-                    ),
-                    const SizedBox(width: NeonTheme.s8),
-                    Text(
-                      fmtNum(_displayedCoins),
-                      key: const ValueKey('offlineEarningsCoinCount'),
-                      style: TextStyle(
+                // FittedBox keeps the pair at full size when it fits and scales
+                // it down on a narrow screen or large text scale (BUG-114).
+                child: FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.monetization_on_rounded,
                         color: NeonTheme.gold,
-                        fontSize: 34,
-                        fontWeight: FontWeight.w900,
-                        shadows: NeonTheme.glow(NeonTheme.gold, blur: 10),
+                        size: 38,
                       ),
-                    ),
-                  ],
+                      const SizedBox(width: NeonTheme.s8),
+                      Text(
+                        fmtNum(_displayedCoins),
+                        key: const ValueKey('offlineEarningsCoinCount'),
+                        style: TextStyle(
+                          color: NeonTheme.gold,
+                          fontSize: 34,
+                          fontWeight: FontWeight.w900,
+                          shadows: NeonTheme.glow(NeonTheme.gold, blur: 10),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),

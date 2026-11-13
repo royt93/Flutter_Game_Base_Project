@@ -272,20 +272,30 @@ class _TieredLeaderboardRowState extends State<TieredLeaderboardRow> {
                     ),
                   ),
                   const SizedBox(width: NeonTheme.s8),
-                  AnimatedSwitcher(
-                    duration: NeonTheme.motionDuration(
-                      context,
-                      const Duration(milliseconds: 250),
-                    ),
-                    switchInCurve: Curves.easeOut,
-                    switchOutCurve: Curves.easeIn,
-                    child: Text(
-                      _visibleScore,
-                      key: ValueKey('score_$_visibleScore'),
-                      style: TextStyle(
-                        color: NeonTheme.inkSoft,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w900,
+                  // The score is the one non-flexible child: bound its width and
+                  // scale it down so a large text scale cannot squeeze the name
+                  // column to nothing and overflow the row (BUG-114).
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 120),
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      alignment: AlignmentDirectional.centerEnd,
+                      child: AnimatedSwitcher(
+                        duration: NeonTheme.motionDuration(
+                          context,
+                          const Duration(milliseconds: 250),
+                        ),
+                        switchInCurve: Curves.easeOut,
+                        switchOutCurve: Curves.easeIn,
+                        child: Text(
+                          _visibleScore,
+                          key: ValueKey('score_$_visibleScore'),
+                          style: TextStyle(
+                            color: NeonTheme.inkSoft,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w900,
+                          ),
+                        ),
                       ),
                     ),
                   ),

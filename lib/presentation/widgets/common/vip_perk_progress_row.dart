@@ -287,12 +287,17 @@ class VipPerkProgressRow extends StatelessWidget {
             color: perk.isUnlocked ? NeonTheme.purple : NeonTheme.inkSoft,
           ),
           const SizedBox(width: 4),
-          Text(
-            perk.label,
-            style: TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.w700,
-              color: perk.isUnlocked ? NeonTheme.ink : NeonTheme.inkSoft,
+          // Flexible so a long label ellipsizes inside the Wrap's width
+          // instead of overflowing the chip (BUG-114).
+          Flexible(
+            child: Text(
+              perk.label,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                color: perk.isUnlocked ? NeonTheme.ink : NeonTheme.inkSoft,
+              ),
             ),
           ),
         ],
