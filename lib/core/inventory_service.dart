@@ -146,6 +146,19 @@ class InventoryService extends GetxService {
     // onInit() alone.
     _hydrate();
     _recompute();
+    // BUG-117: reload after a restore or erase (see EconomyWallet).
+    storage.replaceEpoch.addListener(_onStorageReplaced);
+  }
+
+  void _onStorageReplaced() {
+    _hydrate();
+    _recompute();
+  }
+
+  @override
+  void onClose() {
+    storage.replaceEpoch.removeListener(_onStorageReplaced);
+    super.onClose();
   }
 
   final StorageService storage;
@@ -174,7 +187,12 @@ class InventoryService extends GetxService {
 
   void _hydrate() {
     final raw = storage.getString(_key);
-    if (raw == null) return;
+    if (raw == null) {
+      _slots.clear();
+      _nextSlotId = 1;
+      _transactions.clear();
+      return;
+    }
     try {
       final decoded = jsonDecode(raw);
       if (decoded is! Map) return;

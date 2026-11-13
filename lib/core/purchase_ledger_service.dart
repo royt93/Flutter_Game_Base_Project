@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import 'storage_service.dart';
+import 'utils/storage_replace_watch.dart';
 import 'versioned_json_store.dart';
 
 class _LedgerState {
@@ -33,7 +34,7 @@ class _LedgerState {
 /// way to detect a fabricated grant call, same trust-boundary framing as
 /// `save_integrity.dart`'s "best-effort local cache, not a substitute for
 /// server-side validation" doc.
-class PurchaseLedgerService extends GetxService {
+class PurchaseLedgerService extends GetxService with StorageReplaceWatch {
   PurchaseLedgerService({String? storageKey})
     : _storageKey = storageKey ?? StorageKeys.purchaseLedgerV1;
 
@@ -99,6 +100,7 @@ class PurchaseLedgerService extends GetxService {
   // constructed.
   _LedgerState get _state {
     if (_cached != null) return _cached!;
+    watchStorageReplace(StorageService.to, () => _cached = null);
     try {
       _cached = _store.load() ?? _LedgerState.initial();
     } catch (_) {

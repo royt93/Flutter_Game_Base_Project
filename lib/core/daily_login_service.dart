@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import 'storage_service.dart';
+import 'utils/storage_replace_watch.dart';
 import 'utils/clamped_clock.dart';
 import 'versioned_json_store.dart';
 
@@ -77,7 +78,7 @@ class _DailyLoginState {
 /// (`utils/clamped_clock.dart`) — this service never calls `DateTime.now()`
 /// directly, so winding the device clock back can't be used to claim the
 /// same day twice or dodge the streak-reset penalty for a skipped day.
-class DailyLoginService extends GetxService {
+class DailyLoginService extends GetxService with StorageReplaceWatch {
   DailyLoginService({String? storageKey})
     : _storageKey = storageKey ?? StorageKeys.dailyLoginStateV1;
 
@@ -109,6 +110,7 @@ class DailyLoginService extends GetxService {
 
   _DailyLoginState get _state {
     if (_cached != null) return _cached!;
+    watchStorageReplace(StorageService.to, () => _cached = null);
     try {
       _cached = _store.load() ?? _DailyLoginState.initial;
     } catch (_) {

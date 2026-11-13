@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 
 import '../presentation/widgets/common/leaderboard_list.dart';
 import 'storage_service.dart';
+import 'utils/storage_replace_watch.dart';
 import 'utils/format.dart';
 import 'versioned_json_store.dart';
 
@@ -41,7 +42,7 @@ class _ScoreEntry {
 /// [topN] returns [LeaderboardEntry] directly — rank assigned from sorted
 /// position, `score` formatted via [fmtNum] — so a caller can feed it
 /// straight into [LeaderboardList] with no further transform.
-class LocalScoreboardService extends GetxService {
+class LocalScoreboardService extends GetxService with StorageReplaceWatch {
   LocalScoreboardService({this.capacity = 50, String? storageKey})
     : _storageKey = storageKey ?? StorageKeys.localScoreboardV1 {
     // ENH-85: was `assert(capacity > 0, ...)` — stripped entirely in
@@ -121,6 +122,7 @@ class LocalScoreboardService extends GetxService {
   // constructed.
   List<_ScoreEntry> get _entries {
     if (_cached != null) return _cached!;
+    watchStorageReplace(StorageService.to, () => _cached = null);
     try {
       _cached = _store.load() ?? <_ScoreEntry>[];
     } catch (_) {

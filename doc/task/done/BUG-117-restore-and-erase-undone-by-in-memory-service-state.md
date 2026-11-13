@@ -25,5 +25,16 @@ Các service nạp dữ liệu từ `StorageService` MỘT lần (`onInit`/`_hyd
 ## Khuyến nghị
 Phương án 1 cho các service tiền tệ/xoá dữ liệu trước (wallet, ledger, inventory, progression, energy), vì GDPR và tiền là hậu quả nặng nhất; phương án 2 như lớp bảo vệ ngay cho `requestErasure`.
 
+## Đã sửa (2026-11-14), phương án 1: hook làm mới
+`StorageService.replaceEpoch` (`ValueNotifier<int>`) tăng sau `importAll` (và vì vậy `eraseAll`), `importWithPrefix`, `removeAllWithPrefix` thành công (một lần `importAll` lỗi và rollback thì không tăng). Mọi service giữ bản sao trong bộ nhớ lắng nghe:
+- Hydrate lại bằng `_hydrate()` kèm dọn sạch khi key không còn: `EconomyWallet`, `InventoryService`, `PlayerProgressionService` (cũng gắn trong constructor vì chúng hydrate ở đó, BUG-40; thêm `onClose` để gỡ listener). Trước đây `_hydrate` thoát sớm khi `raw == null` mà không dọn bản sao.
+- Bỏ bản sao lazy bằng mixin `StorageReplaceWatch` (`lib/core/utils/storage_replace_watch.dart`), gắn lúc lần đầu nạp: `PurchaseLedgerService`, `DailyLoginService`, `DailyQuestService`, `SeasonEventService`, `LocalScoreboardService`, `AchievementService`, `EnergyService` (bỏ `_latestState`).
+Test: `test/core/storage_replace_reload_test.dart` (8 test: ledger restore/erase, energy, inventory, progression, scoreboard, achievement, wallet) và 3 test BUG-117 trong `economy_wallet_test.dart`; **8/8 đỏ khi hoàn nguyên lib, xanh khi có**. `test/core` 2048 test, 1603 test widget, 442 test example, API gate (`unchanged` sau regenerate snapshot) và các quality gate đều xanh.
+
+## Giới hạn đã biết (chưa xử lý)
+- Ghi đang chờ (`_scheduleSave` đã xếp hàng) lúc `eraseAll` chạy vẫn có thể ghi xuống sau khi erase; hàng đợi ghi của từng service không bị huỷ. Cửa sổ rất hẹp nhưng chưa được kiểm.
+- Chỉ phủ các service giữ bản sao nạp từ storage. Service khác của consumer tự giữ state vẫn phải nghe `StorageService.replaceEpoch` (API công khai mới, ghi trong CHANGELOG).
+- `SaveSlotManager` (metadata slot) chưa kiểm.
+
 ## Tiêu chí xong
 Test: sau `eraseAll()`/`importAll(backup)`, một lần ghi tiếp theo KHÔNG làm sống lại dữ liệu cũ (ví, ledger, energy, inventory, progression). Cần người dùng chọn phương án trước khi sửa.

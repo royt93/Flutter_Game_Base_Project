@@ -1,5 +1,5 @@
 {
-  "version": "0.6.9",
+  "version": "0.6.11",
   "entrypoint": "lib/roy_casual_kit.dart",
   "exports": [
     "core/achievement_service.dart",
@@ -993,6 +993,7 @@
     "core/economy_wallet.dart:EconomyWallet.batchTransaction({ required Map<String, int> deltas, required String transactionId, }): Future<SdkResult<void>>",
     "core/economy_wallet.dart:EconomyWallet.earn({ required String currency, required int amount, required String transactionId, }): Future<SdkResult<int>>",
     "core/economy_wallet.dart:EconomyWallet.new({ required this.storage, AsyncActionGuard? guard, String? storageKey, })",
+    "core/economy_wallet.dart:EconomyWallet.onClose(): void",
     "core/economy_wallet.dart:EconomyWallet.onInit(): void",
     "core/economy_wallet.dart:EconomyWallet.trySpend({ required String currency, required int amount, required String transactionId, }): Future<SdkResult<int>>",
     "core/energy_service.dart:EnergyService.consumeEnergy([int amount = 1]): bool",
@@ -1055,6 +1056,7 @@
     "core/inventory_service.dart:InventoryService.grant({ required List<InventoryLine> lines, required String transactionId, }): Future<SdkResult<InventorySnapshot>>",
     "core/inventory_service.dart:InventoryService.moveSlot({ required int fromSlotId, required int toSlotId, }): Future<SdkResult<InventorySnapshot>>",
     "core/inventory_service.dart:InventoryService.new({ required this.storage, required Map<String, ItemDefinition> itemCatalog, this.capacity = 40, AsyncActionGuard? guard, String? storageKey, this.transactionCapacity = 200, })",
+    "core/inventory_service.dart:InventoryService.onClose(): void",
     "core/inventory_service.dart:InventoryService.onInit(): void",
     "core/inventory_service.dart:InventoryService.previewGrant({ required List<InventoryLine> lines, }): SdkResult<InventorySnapshot>",
     "core/inventory_service.dart:InventoryService.setEquipped({ required int slotId, required bool equipped, }): Future<SdkResult<InventorySnapshot>>",
@@ -1165,6 +1167,7 @@
     "core/player_progression_service.dart:LevelUpEvent.new({required this.level, required this.rewardLines})",
     "core/player_progression_service.dart:PlayerProgressionService.grantXp({ required int amount, required String transactionId, }): Future<SdkResult<PlayerProgressionSnapshot>>",
     "core/player_progression_service.dart:PlayerProgressionService.new({ required this.storage, required List<LevelDefinition> levelCurve, this.pipeline, AsyncActionGuard? guard, String? storageKey, this.capacity = 200, })",
+    "core/player_progression_service.dart:PlayerProgressionService.onClose(): void",
     "core/player_progression_service.dart:PlayerProgressionService.onInit(): void",
     "core/player_progression_service.dart:PlayerProgressionSnapshot.new({ required this.level, required this.xpIntoLevel, required this.xpToNextLevel, required this.totalXpEarned, })",
     "core/plugin_adapter_conformance_suite.dart:ConformanceReport.new({required this.adapterName, required this.checks})",

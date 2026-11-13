@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import 'storage_service.dart';
+import 'utils/storage_replace_watch.dart';
 import 'utils/clamped_clock.dart';
 import 'versioned_json_store.dart';
 
@@ -43,7 +44,7 @@ class SeasonEventWindow {
 /// package) — winding the device clock back can't roll a window back to
 /// an earlier, already-elapsed cycle, since the clamp never lets the
 /// clock this service reads go backward.
-class SeasonEventService extends GetxService {
+class SeasonEventService extends GetxService with StorageReplaceWatch {
   SeasonEventService({String? storageKey})
     : _storageKey = storageKey ?? StorageKeys.seasonEventAnchorsV1;
 
@@ -90,6 +91,7 @@ class SeasonEventService extends GetxService {
   // constructed.
   Map<String, int> get _anchors {
     if (_cached != null) return _cached!;
+    watchStorageReplace(StorageService.to, () => _cached = null);
     try {
       _cached = _store.load() ?? <String, int>{};
     } catch (_) {

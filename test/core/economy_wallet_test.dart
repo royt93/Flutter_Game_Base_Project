@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/currency_counter.dart';
 
@@ -469,6 +470,52 @@ void main() {
         transactionId: 'same',
       );
       expect(ok, isA<SdkSuccess<int>>());
+      expect(wallet.balanceOf('coin'), 5);
+    });
+  });
+
+  group('BUG-117: a restore or erase is not undone by the next write', () {
+    Future<StorageService> boot() async {
+      SharedPreferences.setMockInitialValues({});
+      return StorageService(await SharedPreferences.getInstance());
+    }
+
+    test('erase then earn does not resurrect the erased balance', () async {
+      final storage = await boot();
+      final wallet = EconomyWallet(storage: storage)..onInit();
+      await wallet.earn(currency: 'coin', amount: 777, transactionId: 'seed');
+
+      await storage.eraseAll();
+      expect(wallet.balanceOf('coin'), 0);
+
+      await wallet.earn(currency: 'gem', amount: 1, transactionId: 'after');
+      final fresh = EconomyWallet(storage: storage)..onInit();
+      expect(fresh.balanceOf('coin'), 0);
+      expect(fresh.balanceOf('gem'), 1);
+    });
+
+    test('restoring a backup then earning continues from the backup', () async {
+      final storage = await boot();
+      final wallet = EconomyWallet(storage: storage)..onInit();
+      await wallet.earn(currency: 'coin', amount: 100, transactionId: 'a');
+      final backup = storage.exportAll();
+      await wallet.earn(currency: 'coin', amount: 900, transactionId: 'b');
+
+      await storage.importAll(backup);
+      expect(wallet.balanceOf('coin'), 100);
+
+      await wallet.earn(currency: 'coin', amount: 1, transactionId: 'c');
+      final fresh = EconomyWallet(storage: storage)..onInit();
+      expect(fresh.balanceOf('coin'), 101);
+    });
+
+    test('a transaction applied before the restore can be applied again '
+        'because its id was part of the discarded state', () async {
+      final storage = await boot();
+      final wallet = EconomyWallet(storage: storage)..onInit();
+      await wallet.earn(currency: 'coin', amount: 5, transactionId: 'dup');
+      await storage.eraseAll();
+      await wallet.earn(currency: 'coin', amount: 5, transactionId: 'dup');
       expect(wallet.balanceOf('coin'), 5);
     });
   });

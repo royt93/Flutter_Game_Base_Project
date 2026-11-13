@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import 'storage_service.dart';
+import 'utils/storage_replace_watch.dart';
 import 'utils/clamped_clock.dart';
 import 'versioned_json_store.dart';
 
@@ -57,7 +58,7 @@ class _QuestRecord {
 /// Reset is driven entirely by [todayEpochDayClamped] (see
 /// `utils/clamped_clock.dart`) so winding the device clock back can't be
 /// used to re-claim an already-claimed quest early.
-class DailyQuestService extends GetxService {
+class DailyQuestService extends GetxService with StorageReplaceWatch {
   DailyQuestService({String? storageKey})
     : _storageKey = storageKey ?? StorageKeys.dailyQuestProgressV1;
 
@@ -124,6 +125,7 @@ class DailyQuestService extends GetxService {
   // Get.put'd before this service is constructed.
   Map<String, _QuestRecord> get _records {
     if (_cached != null) return _cached!;
+    watchStorageReplace(StorageService.to, () => _cached = null);
     try {
       _cached = _store.load() ?? <String, _QuestRecord>{};
     } catch (_) {

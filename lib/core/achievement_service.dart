@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'debug_log.dart';
 import 'storage_service.dart';
 import 'utils/sdk_result.dart';
+import 'utils/storage_replace_watch.dart';
 import 'versioned_json_store.dart';
 
 /// Local achievement/badge progress tracker (no Game Center/Play Games
@@ -26,7 +27,7 @@ import 'versioned_json_store.dart';
 /// `StorageService` key per achievement. Thresholds themselves are **not**
 /// persisted — they're cheap in-memory data the caller re-declares every
 /// run via [register], same as the rest of the game's achievement list.
-class AchievementService extends GetxService {
+class AchievementService extends GetxService with StorageReplaceWatch {
   /// [storage] (BUG-90) lets a caller inject its own [StorageService]
   /// instance instead of relying on the ambient `StorageService.to`
   /// (`Get.find`) — useful for an isolated test/slot instance, or any
@@ -110,6 +111,10 @@ class AchievementService extends GetxService {
   // service is constructed.
   Map<String, int> get _progressMap {
     if (_progress != null) return _progress!;
+    final resolved = _resolvedStorage;
+    if (resolved != null) {
+      watchStorageReplace(resolved, () => _progress = null);
+    }
     try {
       _progress = _store?.load() ?? <String, int>{};
     } catch (_) {

@@ -19,6 +19,9 @@ class EconomyWallet extends GetxService {
     // that doesn't go through RoyCasualKit.initialize) would otherwise see
     // an empty wallet even when storage already has a saved balance.
     _hydrate();
+    // BUG-117: also here, for the same reason: a directly constructed wallet
+    // never gets onInit(), but a restore or erase must still reach it.
+    storage.replaceEpoch.addListener(_onStorageReplaced);
   }
   final StorageService storage;
   final AsyncActionGuard _guard;
@@ -51,9 +54,23 @@ class EconomyWallet extends GetxService {
     _hydrate();
   }
 
+  @override
+  void onClose() {
+    storage.replaceEpoch.removeListener(_onStorageReplaced);
+    super.onClose();
+  }
+
+  // BUG-117: a restore or erase rewrote storage behind this service's back;
+  // reload so the next earn/spend does not write the stale copy back.
+  void _onStorageReplaced() => _hydrate();
+
   void _hydrate() {
     final raw = storage.getString(_key);
-    if (raw == null) return;
+    if (raw == null) {
+      balances.clear();
+      _transactions.clear();
+      return;
+    }
     try {
       final decoded = jsonDecode(raw);
       if (decoded is! Map) return;

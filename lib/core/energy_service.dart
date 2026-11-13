@@ -7,6 +7,7 @@ import 'package:get/get.dart';
 import 'storage_service.dart';
 import 'utils/clamped_clock.dart';
 import 'utils/economy_math.dart';
+import 'utils/storage_replace_watch.dart';
 
 /// Energy/lives system that refills over time (Candy Crush-style "hearts").
 ///
@@ -17,7 +18,7 @@ import 'utils/economy_math.dart';
 /// back can't farm free refills (see that file's doc comment for exactly
 /// what the clamp does and doesn't defend against — a one-way forward jump
 /// still isn't prevented, same as everywhere else that uses it).
-class EnergyService extends GetxService {
+class EnergyService extends GetxService with StorageReplaceWatch {
   final int maxEnergy;
   final Duration refillInterval;
 
@@ -249,7 +250,12 @@ class EnergyService extends GetxService {
   @visibleForTesting
   Future<void> get debugPendingSaves => _saveChain;
 
-  _EnergyState _currentState() => _latestState ?? _readState();
+  _EnergyState _currentState() {
+    // BUG-117: once a restore or erase replaces storage, drop the in-memory
+    // "latest" copy so the next read and write start from what is on disk.
+    watchStorageReplace(StorageService.to, () => _latestState = null);
+    return _latestState ?? _readState();
+  }
 
   void _scheduleSave(_EnergyState state) {
     _latestState = state;

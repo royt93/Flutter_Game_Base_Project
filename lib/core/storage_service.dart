@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:flutter/foundation.dart' show ValueNotifier;
 import 'package:get/get.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -155,6 +156,17 @@ class StorageService extends GetxService {
   }
 
   StorageService(this._prefs);
+
+  /// Bumped after every bulk replace that can make a service's in-memory copy
+  /// stale: a successful [importAll] (and so [eraseAll]), [importWithPrefix]
+  /// and [removeAllWithPrefix]. A stateful service that hydrates from storage
+  /// once (wallet, ledger, inventory, ...) listens and re-reads, otherwise its
+  /// next write would put the old copy back over a restore or an erase
+  /// (BUG-117). Plain `setX`/`remove` do not bump it: services write those
+  /// keys themselves and already hold the newest value.
+  final ValueNotifier<int> replaceEpoch = ValueNotifier<int>(0);
+
+  void _notifyReplaced() => replaceEpoch.value++;
 
   static StorageService get to => Get.find<StorageService>();
 
@@ -422,6 +434,7 @@ class StorageService extends GetxService {
     _buffer.clear();
     try {
       await _replaceAll(normalized);
+      _notifyReplaced();
     } catch (error) {
       // SharedPreferences has no transaction primitive. Re-apply the
       // snapshot so a partial write cannot leave a half-restored profile.
@@ -478,6 +491,7 @@ class StorageService extends GetxService {
     } else {
       _fallback.removeWhere((key, _) => key.startsWith(prefix));
     }
+    _notifyReplaced();
   }
 
   /// Every key currently in storage that starts with [prefix] — e.g.
@@ -581,6 +595,7 @@ class StorageService extends GetxService {
       for (final key in _staleKeysUnder(prefix, normalized)) {
         await remove(key);
       }
+      _notifyReplaced();
     } catch (error, stack) {
       try {
         await _restorePrefixSnapshot(prefix, previous);
