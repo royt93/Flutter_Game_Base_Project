@@ -1,5 +1,6 @@
 ## 0.6.11
 
+- **Behavior change:** `EconomyWallet.earn` and `trySpend` now reject a zero or negative `amount` with `SdkFailure(validation)`. Before, `earn(-30)` subtracted 30 and `trySpend(-500)` added 500 through the spend API. Callers passing positive amounts (including `RewardTransactionPipeline`, which already filtered non-positive lines) are unaffected.
 - Fixed `CollectionAlbumPanel` grid cells overflowing vertically by up to 22px at 320dp wide with 2.0x text scale: the cell content now scales down when it does not fit (unchanged at normal size).
 - Fixed `OfflineEarningsPopup`, `TieredLeaderboardRow` and `VipPerkProgressRow` overflowing horizontally at 320dp wide with 2.0x text scale: the coin count, the leaderboard score and the perk chip label now scale down or ellipsize when space is tight (unchanged at normal size).
 

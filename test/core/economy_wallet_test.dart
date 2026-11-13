@@ -435,6 +435,43 @@ void main() {
       expect(wallet.balanceOf('gem'), 0);
     });
   });
+
+  group('BUG-116: non-positive amounts are rejected', () {
+    test('earn/trySpend with 0 or a negative amount fail and leave the balance',
+        () async {
+      final wallet = EconomyWallet(storage: StorageService(null));
+      await wallet.earn(currency: 'coin', amount: 100, transactionId: 'seed');
+      var n = 0;
+      for (final amount in [0, -1, -30, -500]) {
+        final earn = await wallet.earn(
+          currency: 'coin',
+          amount: amount,
+          transactionId: 'e${n++}',
+        );
+        final spend = await wallet.trySpend(
+          currency: 'coin',
+          amount: amount,
+          transactionId: 's${n++}',
+        );
+        expect(earn, isA<SdkFailure<int>>(), reason: 'earn $amount');
+        expect(spend, isA<SdkFailure<int>>(), reason: 'trySpend $amount');
+        expect((earn as SdkFailure).kind, SdkErrorKind.validation);
+      }
+      expect(wallet.balanceOf('coin'), 100);
+    });
+
+    test('a failed non-positive call does not burn its transactionId', () async {
+      final wallet = EconomyWallet(storage: StorageService(null));
+      await wallet.earn(currency: 'coin', amount: -5, transactionId: 'same');
+      final ok = await wallet.earn(
+        currency: 'coin',
+        amount: 5,
+        transactionId: 'same',
+      );
+      expect(ok, isA<SdkSuccess<int>>());
+      expect(wallet.balanceOf('coin'), 5);
+    });
+  });
 }
 
 class _FailOnceWalletStorage extends StorageService {

@@ -94,17 +94,32 @@ class EconomyWallet extends GetxService {
 
   int balanceOf(String currency) => balances[currency] ?? 0;
 
+  /// Adds [amount] (must be > 0) of [currency]. A zero or negative amount is
+  /// rejected with [SdkFailure] (validation) instead of flipping the direction
+  /// of the transaction (BUG-116).
   Future<SdkResult<int>> earn({
     required String currency,
     required int amount,
     required String transactionId,
-  }) => _apply(currency, amount, transactionId);
+  }) => amount <= 0
+      ? Future.value(_invalidAmount)
+      : _apply(currency, amount, transactionId);
 
+  /// Spends [amount] (must be > 0) of [currency] if the balance allows it. A
+  /// zero or negative amount is rejected with [SdkFailure] (validation): a
+  /// negative one used to ADD that many units through the spend API (BUG-116).
   Future<SdkResult<int>> trySpend({
     required String currency,
     required int amount,
     required String transactionId,
-  }) => _apply(currency, -amount, transactionId);
+  }) => amount <= 0
+      ? Future.value(_invalidAmount)
+      : _apply(currency, -amount, transactionId);
+
+  static const SdkResult<int> _invalidAmount = SdkFailure(
+    kind: SdkErrorKind.validation,
+    message: 'Invalid wallet transaction: amount must be greater than 0',
+  );
 
   Future<SdkResult<int>> _apply(
     String currency,
