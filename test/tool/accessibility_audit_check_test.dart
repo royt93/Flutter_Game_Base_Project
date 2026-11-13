@@ -22,7 +22,7 @@ void main() {
         );
         expect(
           result.stdout as String,
-          contains('No accessibility issues found.'),
+          contains('No accessibility issues found'),
         );
       },
       timeout: const Timeout(Duration(seconds: 30)),
@@ -150,8 +150,14 @@ void main() {
           0,
           reason: '${result.stdout}\n${result.stderr}',
         );
-        // per-file tapTargetSemantics + per-site tapTargetSite, both warnings.
-        expect(result.stdout as String, contains('2 issue(s) found'));
+        // Below --minSeverity=error nothing is listed, only counted: the
+        // per-file tapTargetSemantics and per-site tapTargetSite warnings (2)
+        // plus the info-level hardcodedString finding (Text('x') is too short
+        // to match, so it is not among them).
+        expect(
+          result.stdout as String,
+          contains('2 lower-severity finding(s) not shown'),
+        );
       },
       timeout: const Timeout(Duration(seconds: 30)),
     );

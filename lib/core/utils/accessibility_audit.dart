@@ -21,6 +21,7 @@ enum AuditRuleId {
   rtlDirectionalSafety,
   hardcodedColor,
   tapTargetSite,
+  hardcodedString,
 }
 
 /// One heuristic: if [triggerPattern] matches a file's source, the file
@@ -44,7 +45,7 @@ class AuditRule {
   final RegExp? requiredPattern;
 }
 
-/// The 5 rules this audit actually runs — see this file's doc comment for
+/// The 6 rules this audit actually runs — see this file's doc comment for
 /// why only these (contrast/text-scale need real pixels, not source text).
 final List<AuditRule> defaultAuditRules = [
   AuditRule(
@@ -70,6 +71,13 @@ final List<AuditRule> defaultAuditRules = [
         'GestureDetector/InkWell không có Semantics/MergeSemantics/semanticLabel trong vùng lân cận (8 dòng trước, 30 dòng sau): nút thiếu role/nhãn cho screen reader (ENH-106)',
     // Unused: _violatesRule evaluates this rule per site, not per file.
     triggerPattern: RegExp(r'GestureDetector\(|InkWell\('),
+  ),
+  AuditRule(
+    id: AuditRuleId.hardcodedString,
+    severity: AuditSeverity.info,
+    description:
+        'File có chuỗi tiếng Anh hiển thị cố định (Text(\'...\')/label:/title:/message:...) không qua tham số override hay .tr: consumer tiếng Việt thấy tiếng Anh (FEAT-203, mức info: nhiều chuỗi là mặc định hợp lệ của tham số có thể ghi đè)',
+    triggerPattern: _hardcodedStringTrigger,
   ),
   AuditRule(
     id: AuditRuleId.hardcodedColor,
@@ -118,6 +126,17 @@ int _countUnlabeledTapSites(String content) {
   }
   return count;
 }
+
+/// User-visible English literal in widget code (FEAT-203): `Text('...')` or a
+/// `label:`/`title:`/`message:`/`hintText:`/`semanticLabel:`/`tooltip:` argument
+/// holding a plain string with at least 3 letters and no interpolation. A
+/// bare lower-case identifier such as `level_up_skip` is a translation key
+/// (resolved by `.tr`), not display text, and is skipped. Info
+/// level only: many hits are legitimate English defaults of an overridable
+/// parameter, so this counts and lists, it does not fail CI.
+final RegExp _hardcodedStringTrigger = RegExp(
+  r'''(?:Text\(\s*|label:\s*|title:\s*|message:\s*|hintText:\s*|semanticLabel:\s*|tooltip:\s*)(['"])(?![a-z0-9]+(?:_[a-z0-9]+)+\1)(?![a-z0-9_.]+\1)[^'"$\\]*[A-Za-z]{3,}[^'"$\\]*\1''',
+);
 
 /// Strips `//` line comments before matching — a doc comment showing
 /// example code (`/// ...BadgeDot(top: -2, right: -2)`) is not itself a

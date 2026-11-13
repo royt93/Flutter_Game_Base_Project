@@ -134,6 +134,43 @@ Widget build(BuildContext context) {
     });
   });
 
+  group('scanAccessibility: hardcodedString (FEAT-203)', () {
+    List<AuditViolation> scan(String src) => scanAccessibility(
+      rules: _only(AuditRuleId.hardcodedString),
+      fileContents: {'w.dart': src},
+    );
+
+    test(
+      'Text, label:, title:, message: với chuỗi tiếng Anh bị báo (info)',
+      () {
+        for (final src in [
+          "Text('Claim reward')",
+          "label: 'Retry now',",
+          "title: 'Welcome back',",
+          "message: 'No items yet',",
+          "semanticLabel: 'Close dialog',",
+        ]) {
+          final v = scan(src);
+          expect(v, hasLength(1), reason: src);
+          expect(v.single.severity, AuditSeverity.info);
+        }
+      },
+    );
+
+    test('chuỗi nội suy, ký hiệu, token, .tr và comment không bị báo', () {
+      for (final src in [
+        r"Text('Level $level')",
+        "Text('42')",
+        "Text('x')",
+        "Text('level_up_skip'.tr)",
+        "// Text('Hidden comment text')",
+        "child: Icon(Icons.close)",
+      ]) {
+        expect(scan(src), isEmpty, reason: src);
+      }
+    });
+  });
+
   group('scanAccessibility: tapTargetSite (FEAT-202)', () {
     List<AuditViolation> scan(String src) => scanAccessibility(
       rules: _only(AuditRuleId.tapTargetSite),
@@ -375,6 +412,7 @@ AnimationController(vsync: this);
 GestureDetector(onTap: () {}, child: Text('x'));
 EdgeInsets.only(left: 4);
 Colors.orange;
+Text('Claim reward');
 ''',
         },
       );

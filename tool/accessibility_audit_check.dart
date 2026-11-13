@@ -80,8 +80,23 @@ void main(List<String> args) {
     exit(0);
   }
 
+  // Below-threshold findings (e.g. info-level hardcodedString, FEAT-203) are
+  // counted, not listed, so the default output stays actionable; pass
+  // --minSeverity=info to list them.
+  final hidden = violations.length - reportable.length;
+  if (reportable.isEmpty) {
+    stdout.writeln(
+      'No accessibility issues found at/above ${minSeverity.name}.',
+    );
+    stdout.writeln(
+      '$hidden lower-severity finding(s) not shown; '
+      'run with --minSeverity=info to list them.',
+    );
+    exit(0);
+  }
+
   stdout.writeln('=' * 60);
-  for (final v in violations) {
+  for (final v in reportable) {
     stdout.writeln(v);
   }
   stdout.writeln('=' * 60);
