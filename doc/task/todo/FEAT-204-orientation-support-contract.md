@@ -16,7 +16,14 @@ Example khoá portrait (`example/lib/main.dart:56`), nên cả bộ widget khôn
 2. Dùng `runViewportSweep` (FEAT-200) cho 568x320 và 640x320 làm bằng chứng; danh sách ngoại lệ nằm cạnh sweep.
 3. Example: thêm công tắc dev (trong `DebugQaOverlay` hoặc Settings) bật xoay tự do để kiểm tay, mặc định vẫn portrait.
 
-## Câu hỏi cần quyết định
+## Quyết định (2026-11-13, người dùng)
+SDK cam kết landscape cho TOÀN BỘ widget trong `common/`, ngoại lệ phải ghi kèm lý do. Hệ quả cần nhìn thẳng: sweep hiện phủ 16 widget trên khoảng 165, nên lời cam kết CHƯA có bằng chứng cho phần còn lại. Không công bố cam kết này trong `INTEGRATION_GUIDE` hay `CLAUDE.md` cho tới khi FEAT-200 phủ hết (hoặc phần chưa phủ được liệt kê rõ là "chưa kiểm"), để tài liệu không hứa nhiều hơn những gì đã đo.
+
+## Câu hỏi đã trả lời / còn lại
+- Đã trả lời: cam kết toàn bộ widget `common/`.
+- Còn lại: công tắc xoay đặt ở `DebugQaOverlay` (dev-only) hay Settings.
+
+## (giữ nguyên) Câu hỏi ban đầu
 - SDK cam kết landscape cho toàn bộ widget hay chỉ nhóm dialog/overlay/HUD?
 - Công tắc xoay đặt ở `DebugQaOverlay` (dev-only) hay Settings (người dùng thấy)?
 

@@ -92,27 +92,27 @@
   {
     "file": "lib/presentation/widgets/common/currency_counter.dart",
     "rule": "tapTargetSite",
-    "reason": "Cử chỉ chạm-để-bỏ-qua animation trên chính nội dung (HitTestBehavior.translucent), không phải nút độc lập; cần quyết định có cần Semantics hay không, theo dõi ở ENH-107. Dòng 204."
+    "reason": "Quyết định thiết kế (ENH-108, 2026-11-13): chạm-để-bỏ-qua animation là cử chỉ phụ trang trí, không cần Semantics; animation tự kết thúc và tôn trọng reducedMotion. Dòng 204."
   },
   {
     "file": "lib/presentation/widgets/common/offline_earnings_popup.dart",
     "rule": "tapTargetSite",
-    "reason": "Cử chỉ chạm-để-bỏ-qua animation đếm trên nội dung (HitTestBehavior.opaque), không phải nút độc lập; cần quyết định riêng, theo dõi ở ENH-107. Dòng 244."
+    "reason": "Quyết định thiết kế (ENH-108, 2026-11-13): chạm-để-bỏ-qua animation đếm là cử chỉ phụ trang trí, không cần Semantics. Dòng 244."
   },
   {
     "file": "lib/presentation/widgets/common/reward_sequence_coordinator.dart",
     "rule": "tapTargetSite",
-    "reason": "Cử chỉ chạm-để-bỏ-qua phân đoạn thưởng bọc cả Stack, không phải nút độc lập; cần quyết định riêng, theo dõi ở ENH-107. Dòng 277."
+    "reason": "Quyết định thiết kế (ENH-108, 2026-11-13): chạm-để-bỏ-qua phân đoạn thưởng là cử chỉ phụ trang trí, không cần Semantics. Dòng 277."
   },
   {
     "file": "lib/presentation/widgets/common/spotlight_overlay.dart",
     "rule": "tapTargetSite",
-    "reason": "Dòng 115 là lớp chắn toàn màn hình chặn tương tác bên dưới (nhấn để đóng); nút Skip đã được sửa ở ENH-106. Barrier dismiss chưa có semantics, theo dõi ở ENH-107."
+    "reason": "Quyết định thiết kế (ENH-108, 2026-11-13): barrier dùng cử chỉ back của hệ điều hành để đóng, không cần Semantics riêng. Nút Skip đã sửa ở ENH-106. Dòng 115."
   },
   {
     "file": "lib/presentation/widgets/neon_dialog.dart",
     "rule": "tapTargetSite",
-    "reason": "Dòng 179 và 238 là barrier tối mờ phía sau dialog (nhấn ra ngoài để đóng), không phải nút; nút của dialog có semantics riêng. Barrier chưa có nhãn, theo dõi ở ENH-107."
+    "reason": "Quyết định thiết kế (ENH-108, 2026-11-13): barrier tối mờ phía sau dialog dùng cử chỉ back của hệ điều hành, không cần Semantics riêng; nút của dialog có semantics riêng. Dòng 179 và 238."
   },
   {
     "file": "lib/presentation/widgets/common/squash_stretch.dart",
