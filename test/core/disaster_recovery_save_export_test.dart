@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/disaster_recovery_save_export.dart';
@@ -121,6 +123,43 @@ void main() {
       expect(entries, hasLength(1));
       expect(entries.single.meta.displayName, 'Alice');
     });
+
+    test(
+      'BUG-110: id không đúng định dạng slot_<số> bị previewRestore từ chối, '
+      'không để lọt tới bước ghi',
+      () async {
+        await boot();
+        final slot = slotManager.createSlot('Alice');
+        await storage.setString(slotManager.keyFor(slot.id, 'coins'), '100');
+        final export = DisasterRecoverySaveExport(
+          storage: storage,
+          slotManager: slotManager,
+        );
+        final built =
+            (export.buildExport(slotIds: [slot.id], appVersion: '1.0')
+                    as SdkSuccess)
+                .value;
+
+        SdkResult<RestorePreview> previewWithId(String id) {
+          final copy = jsonDecode(jsonEncode(built)) as Map<String, Object?>;
+          final slots = (copy['slots']! as List).cast<Map<String, Object?>>();
+          (slots.single['meta']! as Map<String, Object?>)['id'] = id;
+          return export.previewRestore(export.sign(copy, 'secret'), 'secret');
+        }
+
+        for (final bad in ['a', 'a_b', 'slot_a', 'slot_1_2', '1', '']) {
+          expect(
+            previewWithId(bad),
+            isA<SdkFailure<RestorePreview>>(),
+            reason: 'id=$bad',
+          );
+        }
+        expect(
+          previewWithId('slot_1700000000000'),
+          isA<SdkSuccess<RestorePreview>>(),
+        );
+      },
+    );
 
     test('sai secret -> SdkFailure validation, không throw ra ngoài', () async {
       await boot();

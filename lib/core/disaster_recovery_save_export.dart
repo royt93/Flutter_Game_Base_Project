@@ -37,8 +37,11 @@ class SlotExportEntry {
     final displayName = rawMeta['displayName'];
     final createdAtMs = rawMeta['createdAtMs'];
     final lastPlayedAtMs = rawMeta['lastPlayedAtMs'];
+    // BUG-110: ids SaveSlotManager generates are `slot_<digits>`. Anything
+    // else (notably one containing `_`, e.g. `a` next to `a_b`) can make
+    // `deleteSlot`'s `slot_<id>_` prefix delete another restored slot's data.
     if (id is! String ||
-        id.trim().isEmpty ||
+        !RegExp(r'^slot_\d+$').hasMatch(id) ||
         displayName is! String ||
         createdAtMs is! int ||
         lastPlayedAtMs is! int) {

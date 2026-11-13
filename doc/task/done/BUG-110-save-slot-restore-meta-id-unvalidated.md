@@ -21,5 +21,8 @@ Id do class tự sinh luôn là `slot_<chữ số>` nên an toàn (xem `_generat
 ## Hướng sửa
 Kiểm `meta.id` trong `restoreSlotMeta` theo định dạng tự sinh `^slot_\d+$`, hoặc ít nhất không chứa `_`. `previewRestore` (validate bundle trước khi áp dụng) cũng nên từ chối id sai định dạng với `SdkFailure.validation` thay vì để lỗi chạm tới bước ghi. Chưa quyết: từ chối thẳng hay chuẩn hoá id (chuẩn hoá làm đổi khoá lưu, nên ưu tiên từ chối).
 
+## Kết quả (2026-11-12)
+Validate `^slot_\\d+$` trong `SlotExportEntry.fromJson` (nên `previewRestore` trả `SdkFailure.validation` trước khi chạm tới bước ghi). Test `BUG-110` ở `disaster_recovery_save_export_test.dart` (6 id sai bị từ chối, 1 id đúng qua); đã chứng minh test đỏ khi bỏ validate. `test/core`, `test/tool` và `cookbook_screen_more_test` giữ xanh. API gate không đổi. CHANGELOG ghi mục Behavior change. Không đổi `restoreSlotMeta` (nó chỉ được gọi từ `applyRestore` sau `previewRestore`); nếu có consumer tự gọi `restoreSlotMeta` thì chưa được bảo vệ.
+
 ## Tiêu chí xong
 Test hai id `a`/`a_b` đỏ trước sửa, xanh sau; bundle chứa id sai định dạng bị `previewRestore` từ chối; CHANGELOG ghi behavior change (restore từ chối id lạ).
