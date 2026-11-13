@@ -153,5 +153,158 @@ void main() {
         targetFinder: find.byType(MilestoneCelebrationDialog),
       );
     });
+
+    testWidgets('CloudSaveStatusCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => SingleChildScrollView(
+          child: CloudSaveStatusCard(status: CloudSaveStatus.error),
+        ),
+        targetFinder: find.byType(CloudSaveStatusCard),
+      );
+    });
+
+    testWidgets('ConnectivityStatusCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => SingleChildScrollView(
+          child: ConnectivityStatusCard(
+            state: ConnectivityCardState.degraded,
+            queuedCount: 12,
+          ),
+        ),
+        targetFinder: find.byType(ConnectivityStatusCard),
+      );
+    });
+
+    testWidgets('OutboxQueueStatusCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => SingleChildScrollView(
+          child: OutboxQueueStatusCard(
+            pendingCount: 12,
+            manualReviewCount: 3,
+            status: OutboxQueueStatus.draining,
+          ),
+        ),
+        targetFinder: find.byType(OutboxQueueStatusCard),
+      );
+    });
+
+    testWidgets('AnnouncementPreviewCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => SingleChildScrollView(
+          child: AnnouncementPreviewCard(
+            messageText: 'Maintenance tonight from 02:00 to 04:00 UTC',
+            localeLabel: 'English',
+          ),
+        ),
+        targetFinder: find.byType(AnnouncementPreviewCard),
+      );
+    });
+
+    testWidgets('FlashSaleOfferCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => SingleChildScrollView(
+          child: FlashSaleOfferCard(
+            title: 'Starter pack',
+            priceLabel: '\$1.99',
+            discountPercent: 60,
+            expiresAt: DateTime.now().add(const Duration(hours: 5)),
+            onBuyTap: () {},
+          ),
+        ),
+        targetFinder: find.byType(FlashSaleOfferCard),
+      );
+    });
+
+    testWidgets('ComebackBundleCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => SingleChildScrollView(
+          child: ComebackBundleCard(
+            title: 'Welcome back!',
+            body: 'We saved a gift for you while you were away.',
+            absenceLabel: '7 days away',
+            rewards: [
+              MilestoneReward(
+                icon: Icons.diamond_rounded,
+                label: 'Gems',
+                amountLabel: '+100',
+              ),
+            ],
+            onClaim: () {},
+          ),
+        ),
+        targetFinder: find.byType(ComebackBundleCard),
+      );
+    });
+
+    testWidgets('RankPromotionDialog', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => SingleChildScrollView(
+          child: RankPromotionDialog(
+            fromTier: LeaderboardTier.silver,
+            toTier: LeaderboardTier.gold,
+            onContinue: () {},
+          ),
+        ),
+        targetFinder: find.byType(RankPromotionDialog),
+      );
+    });
+
+    // 2.0x text is the harshest common accessibility setting: every widget
+    // that fits at 1.0x must still not overflow at 320dp.
+    group('2.0x text scale at 320dp and landscape', () {
+      const tight = [
+        ViewportCase('320x480', Size(320, 480)),
+        ViewportCase('568x320-landscape', Size(568, 320)),
+      ];
+      final cases = <String, Widget Function()>{
+        'CloudSaveStatusCard': () =>
+            CloudSaveStatusCard(status: CloudSaveStatus.error),
+        'ConnectivityStatusCard': () => ConnectivityStatusCard(
+          state: ConnectivityCardState.degraded,
+          queuedCount: 12,
+        ),
+        'OutboxQueueStatusCard': () => OutboxQueueStatusCard(
+          pendingCount: 12,
+          manualReviewCount: 3,
+          status: OutboxQueueStatus.draining,
+        ),
+        'AnnouncementPreviewCard': () => AnnouncementPreviewCard(
+          messageText: 'Maintenance tonight from 02:00 to 04:00 UTC',
+          localeLabel: 'English',
+        ),
+        'GameOverCardTemplate': () => GameOverCardTemplate(
+          title: 'Game Over',
+          statLines: const ['Score 12,340', 'Best 20,000'],
+          primaryActionLabel: 'Retry',
+          onPrimaryAction: () {},
+          secondaryActionLabel: 'Home',
+          onSecondaryAction: () {},
+        ),
+        'StreakShieldCard': () => StreakShieldCard(
+          streakDays: 14,
+          shieldCount: 2,
+          onUseShield: () {},
+          onRepair: () {},
+          onDismiss: () {},
+        ),
+      };
+      for (final e in cases.entries) {
+        testWidgets(e.key, (tester) async {
+          await runViewportSweep(
+            tester,
+            () => SingleChildScrollView(child: e.value()),
+            viewports: tight,
+            textScale: 2.0,
+          );
+        });
+      }
+    });
   });
 }
