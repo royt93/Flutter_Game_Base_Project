@@ -1,3 +1,7 @@
+## 0.6.10
+
+- **Behavior change:** `DisasterRecoverySaveExport.previewRestore` now rejects a bundle whose slot id is not of the form `slot_<digits>` (the only form `SaveSlotManager` generates). A restored id such as `a` next to `a_b` made `deleteSlot('a')` erase the data of slot `a_b` through the `slot_a_` key prefix.
+
 ## 0.6.9
 
 - Fixed `RoyCasualKit.resetForTesting()` leaving palette colors set by `NeonTheme.importPalette` (or direct assignment such as `NeonTheme.cyan = ...`) in place, which leaked colors between consumer tests. It now also calls the new `NeonTheme.resetPalette()`, which restores every palette color to its built-in default and leaves `dark` / `colorBlindSafe` untouched.
@@ -5,7 +9,6 @@
 - `NeonTheme.red` replaces the fixed `Colors.redAccent` on the `TeamRosterList` kick button, and a disabled boxed `NeonIcon` uses `NeonTheme.muted` instead of `Colors.grey`, so both follow dark mode and reskins.
 - Fixed `StreakShieldCard` overflowing its metric row by 32px at 320dp wide.
 - **Behavior change:** `signExport` now throws `ArgumentError` when the data already contains the reserved `_checksum` key (such a payload used to be "signed" but could never be verified again) or when `secret` is empty (an empty HMAC key protects nothing). `verifyAndStrip` also rejects an empty `secret`. Callers passing a non-empty secret and data without `_checksum` are unaffected.
-- **Behavior change:** `DisasterRecoverySaveExport.previewRestore` now rejects a bundle whose slot id is not of the form `slot_<digits>` (the only form `SaveSlotManager` generates). A restored id such as `a` next to `a_b` made `deleteSlot('a')` erase the data of slot `a_b` through the `slot_a_` key prefix.
 - Ten link-style tappable labels now have button semantics and 48dp touch targets: the Claim links of `AchievementRoadmapCard` and `RewardTrackRoad`, the `CollectionAlbumPanel` View Reward link, `FriendInviteProgressCard` copy link and milestone chips, `GuildContributionCard` milestone chips and Retry, the `LevelUpOverlay` skip link, and `CraftingRecipeCard` ingredient chips; the `CharacterCollectionGrid` Select button gained button semantics. The `RewardTrackRoad` reward row grows from 230 to 240 (times the text scale) to fit the larger Claim target.
 - Added a read-only `dart run tool/release_readiness_check.dart` pre-tag checklist, a `hardcodedColor` rule in `tool/accessibility_audit_check.dart`, and a viewport sweep test harness (repo tooling, no package API change).
 
