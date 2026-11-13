@@ -456,7 +456,11 @@ import 'package:$appName/screens/widget_showcase_screen.dart';
 import 'package:$appName/screens/game_demo_screen.dart';
 
 void main() {
+  // DISC-02: stamped before the binding exists, so a hung CI run shows whether
+  // the app's main() ran at all and when, relative to flutter test's connect.
+  debugPrint('[consumer-smoke] main-entered \${DateTime.now().toUtc().toIso8601String()}');
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
+  debugPrint('[consumer-smoke] binding-initialized \${DateTime.now().toUtc().toIso8601String()}');
 
   void checkpoint(String name) {
     debugPrint('[consumer-smoke] \$name \${DateTime.now().toIso8601String()}');

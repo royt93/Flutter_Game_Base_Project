@@ -92,14 +92,20 @@ void main() {
   });
 
   group('patchPubspecWithIntegrationTest', () {
-    test('chèn SDK dependency dưới dev_dependencies, không đụng dependencies', () {
-      const source = 'dependencies:\n  flutter:\n    sdk: flutter\n'
-          'dev_dependencies:\n  flutter_test:\n    sdk: flutter\n';
-      expect(
-        patchPubspecWithIntegrationTest(source),
-        contains('dev_dependencies:\n  integration_test:\n    sdk: flutter\n'),
-      );
-    });
+    test(
+      'chèn SDK dependency dưới dev_dependencies, không đụng dependencies',
+      () {
+        const source =
+            'dependencies:\n  flutter:\n    sdk: flutter\n'
+            'dev_dependencies:\n  flutter_test:\n    sdk: flutter\n';
+        expect(
+          patchPubspecWithIntegrationTest(source),
+          contains(
+            'dev_dependencies:\n  integration_test:\n    sdk: flutter\n',
+          ),
+        );
+      },
+    );
 
     test('không có dev_dependencies -> throw ArgumentError', () {
       expect(
@@ -183,13 +189,16 @@ android {
       );
     });
 
-    test('consumerRegressionTestTemplate: giữ assert font + lỗi sync conflict', () {
-      final content = consumerRegressionTestTemplate();
-      expect(content, contains("'packages/roy_casual_kit/Baloo2'"));
-      expect(content, contains('FontManifest.json'));
-      expect(content, contains('SdkErrorKind.network'));
-      expect(content, contains('syncWithResult'));
-    });
+    test(
+      'consumerRegressionTestTemplate: giữ assert font + lỗi sync conflict',
+      () {
+        final content = consumerRegressionTestTemplate();
+        expect(content, contains("'packages/roy_casual_kit/Baloo2'"));
+        expect(content, contains('FontManifest.json'));
+        expect(content, contains('SdkErrorKind.network'));
+        expect(content, contains('syncWithResult'));
+      },
+    );
 
     test('integrationBootTestTemplate: bounded pump, không pumpAndSettle', () {
       final content = integrationBootTestTemplate(appName: 'my_cool_game');
@@ -210,6 +219,15 @@ android {
       ]) {
         expect(content, contains("checkpoint('$name')"));
       }
+      // DISC-02: stamped before/after the binding exists.
+      expect(content, contains('[consumer-smoke] main-entered'));
+      expect(content, contains('[consumer-smoke] binding-initialized'));
+      expect(
+        content.indexOf('main-entered'),
+        lessThan(
+          content.indexOf('IntegrationTestWidgetsFlutterBinding.ensure'),
+        ),
+      );
     });
 
     test('gameDemoScreenTemplate: dùng đúng RoyGame/GameWidget của kit', () {
