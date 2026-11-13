@@ -1,0 +1,85 @@
+# DISC-02 experiment (manual only): the same generated-consumer emulator
+# smoke test as ci.yml's `consumer-smoke`, with ONE change: `flutter test` runs
+# with `--no-dds`, which removes the Dart Development Service hop between the
+# app's VM service and flutter_tools. Four parallel runs per dispatch because
+# the stall is intermittent (a single green run proves nothing). This does NOT
+# change ci.yml, timeouts, the AVD or the Flutter version. Compare hang rates
+# against ci.yml's runs; delete this file once DISC-02 is closed.
+name: DISC-02 --no-dds experiment
+'on':
+  workflow_dispatch: {}
+concurrency:
+  group: disc02-nodds
+  cancel-in-progress: false
+jobs:
+  consumer-smoke-no-dds:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+    - uses: actions/checkout@v7
+    - uses: subosito/flutter-action@v2
+      with:
+        flutter-version: 3.41.9
+        channel: stable
+        cache: true
+    - uses: actions/setup-java@v6
+      with:
+        distribution: temurin
+        java-version: 17
+    - name: Generate consumer app (path dependency on this checkout)
+      run: 'flutter pub get
+
+        dart run tool/create_consumer_app.dart --name=ci_smoke --output="$RUNNER_TEMP" --kitPath="$GITHUB_WORKSPACE"
+
+        '
+    - name: Analyze + test generated app
+      working-directory: ${{ runner.temp }}/ci_smoke
+      run: 'flutter pub get
+
+        flutter analyze
+
+        flutter test
+
+        '
+    - name: Pre-install NDK
+      timeout-minutes: 12
+      run: 'sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
+
+        timeout 300 "$sdkmanager" --install "ndk;27.0.12077973" || timeout 300 "$sdkmanager" --install "ndk;27.0.12077973"
+
+        grep -Eq ''^Pkg.Revision[[:space:]]*=[[:space:]]*27\.0\.12077973[[:space:]]*$'' "$ANDROID_HOME/ndk/27.0.12077973/source.properties"
+
+        test -x "$ANDROID_HOME/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
+
+        '
+    - name: Build debug APK
+      working-directory: ${{ runner.temp }}/ci_smoke
+      run: flutter build apk --debug
+    - name: Enable KVM
+      run: 'echo ''KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"'' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+
+        sudo udevadm control --reload-rules
+
+        sudo udevadm trigger --name-match=kvm
+
+        '
+    - name: Integration test on emulator (--no-dds experiment)
+      timeout-minutes: 20
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: 34
+        arch: x86_64
+        target: google_apis
+        working-directory: ${{ runner.temp }}/ci_smoke
+        script: 'bash -c ''capture_emulator_diagnostics() { echo "--- adb devices ---"; timeout 20 adb devices -l || true; echo "--- boot properties ---"; timeout 20 adb shell getprop sys.boot_completed || true; timeout 20 adb shell getprop init.svc.bootanim || true; echo "--- emulator/adb processes ---"; ps -eo pid,comm,args | awk ''\''''$2 ~ /^(emulator|qemu-system|adb)$/ { print }''\'''' || true; echo "--- emulator log files ---"; find "$ANDROID_USER_HOME" -type f \( -name "emulator*.log" -o -name "adb*.log" \) -print 2>/dev/null | head -20 || true; echo "--- recent emulator logcat ---"; timeout 20 adb logcat -d -t 300 2>&1 | tail -300 || true; }; monitor_emulator() { n=0; while true; do sleep 60; n=$((n+1)); echo "--- emulator watcher $(date -u +%FT%TZ) ---"; if [ -f /tmp/vm_trace.log ]; then echo "--- vm trace (last 15) ---"; tail -15 /tmp/vm_trace.log; fi; if [ "$n" -eq 6 ] || [ "$n" -eq 12 ]; then echo "--- host flutter test state ---"; ps -eo pid,etime,stat,args | grep -E "flutter_tools|flutter test|dartvm|dds" | grep -v grep | cut -c1-200 || true; timeout 10 ss -tnp 2>/dev/null | grep "127.0.0.1" | head -20 || true; timeout 10 adb forward --list || true; echo "--- vm service probe ---"; uri=$(timeout 10 adb logcat -d -s flutter:V 2>&1 | grep -o "http://127.0.0.1:[0-9]*/[^ ]*" | tail -1); echo "device vm service: ${uri:-none}"; if [ -n "$uri" ]; then port=${uri#http://127.0.0.1:}; port=${port%%/*}; path=/${uri#http://127.0.0.1:*/}; hostport=$(timeout 10 adb forward tcp:0 tcp:$port); echo "forwarded host port: $hostport"; timeout 60 dart "$GITHUB_WORKSPACE/.github/scripts/vm_probe.dart" "http://127.0.0.1:$hostport$path" || true; fi; fi; timeout 10 adb devices -l || true; timeout 10 adb shell getprop sys.boot_completed || true; timeout 10 adb shell ps -A | grep -E "flutter|ci_smoke|instrumentation" || true; timeout 10 adb logcat -d -t 200 2>&1 | grep -Ei "fatal exception|AndroidRuntime|flutter|vm service|instrumentation" | tail -30 || true; echo "--- app flutter logcat ---"; timeout 10 adb logcat -d -s flutter:V 2>&1 | tail -20 || true; done; }; attach_tracer() { i=0; while [ "$i" -lt 240 ]; do i=$((i+1)); turi=$(adb logcat -d -s flutter:V 2>/dev/null | grep -o "http://127.0.0.1:[0-9]*/[^ ]*" | tail -1); if [ -n "$turi" ]; then tport=${turi#http://127.0.0.1:}; tport=${tport%%/*}; tpath=/${turi#http://127.0.0.1:*/}; thost=$(adb forward tcp:0 tcp:$tport); if [ -n "$thost" ]; then echo "vm tracer attach $(date -u +%FT%TZ) after ${i} polls, host port $thost"; dart "$GITHUB_WORKSPACE/.github/scripts/vm_trace.dart" "http://127.0.0.1:$thost$tpath" 1500 > /tmp/vm_trace.log 2>&1; return; fi; fi; sleep 2; done; }; attach_tracer & tracer=$!; monitor_emulator & watcher=$!; cleanup() { kill "$watcher" "$tracer" 2>/dev/null || true; wait "$watcher" 2>/dev/null || true; capture_emulator_diagnostics; }; trap cleanup EXIT; flutter test --verbose --no-dds integration_test/app_boot_test.dart''
+
+          '
+    strategy:
+      fail-fast: false
+      matrix:
+        run:
+        - 1
+        - 2
+        - 3
+        - 4
+    name: consumer-smoke --no-dds (run ${{ matrix.run }})
