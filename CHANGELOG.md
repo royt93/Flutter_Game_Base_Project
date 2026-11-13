@@ -1,5 +1,6 @@
 ## 0.6.10
 
+- Fixed `VersionedJsonStore.syncWith`/`load` losing the `syncedAtMs` timestamp and `schemaVersion` when a consumer's `migrate` step rebuilt the map from scratch: a cloud save from an older schema was read as timestamp -1, lost last-write-wins to an empty local save and was never restored on a new device, and a stored copy without `schemaVersion` was migrated a second time on the next load. Both envelope keys are now restored after migration (a `migrate` that sets its own `syncedAtMs` keeps it).
 - **Behavior change:** `DisasterRecoverySaveExport.previewRestore` now rejects a bundle whose slot id is not of the form `slot_<digits>` (the only form `SaveSlotManager` generates). A restored id such as `a` next to `a_b` made `deleteSlot('a')` erase the data of slot `a_b` through the `slot_a_` key prefix.
 
 ## 0.6.9

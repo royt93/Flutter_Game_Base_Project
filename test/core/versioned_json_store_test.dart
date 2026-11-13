@@ -106,81 +106,123 @@ void main() {
     );
   }
 
-  test('migration registry supersedes legacy callback and applies every hop', () async {
-    await store.setString('profile', '{"schemaVersion":0,"name":"Before"}');
-    final registry = SaveMigrationRegistry(
-      currentVersion: 2,
-      steps: [
-        SaveMigrationStep(fromVersion: 0, toVersion: 1, migrate: (json) => {...json, 'level': 4}),
-        SaveMigrationStep(fromVersion: 1, toVersion: 2, migrate: (json) => {...json, 'name': 'After'}),
-      ],
-    );
-    final s = VersionedJsonStore<_Profile>(
-      storage: store,
-      key: 'profile',
-      schemaVersion: 2,
-      toJson: (p) => {'name': p.name, 'level': p.level},
-      fromJson: (json) => _Profile(name: json['name'] as String, level: json['level'] as int),
-      migrate: (_, json) => throw StateError('legacy callback must not run'),
-      migrationRegistry: registry,
-    );
-    expect(s.load()!.name, 'After');
-    expect(s.load()!.level, 4);
-  });
+  test(
+    'migration registry supersedes legacy callback and applies every hop',
+    () async {
+      await store.setString('profile', '{"schemaVersion":0,"name":"Before"}');
+      final registry = SaveMigrationRegistry(
+        currentVersion: 2,
+        steps: [
+          SaveMigrationStep(
+            fromVersion: 0,
+            toVersion: 1,
+            migrate: (json) => {...json, 'level': 4},
+          ),
+          SaveMigrationStep(
+            fromVersion: 1,
+            toVersion: 2,
+            migrate: (json) => {...json, 'name': 'After'},
+          ),
+        ],
+      );
+      final s = VersionedJsonStore<_Profile>(
+        storage: store,
+        key: 'profile',
+        schemaVersion: 2,
+        toJson: (p) => {'name': p.name, 'level': p.level},
+        fromJson: (json) =>
+            _Profile(name: json['name'] as String, level: json['level'] as int),
+        migrate: (_, json) => throw StateError('legacy callback must not run'),
+        migrationRegistry: registry,
+      );
+      expect(s.load()!.name, 'After');
+      expect(s.load()!.level, 4);
+    },
+  );
 
-  test('loadResult returns success or typed storage failure retaining parse cause', () async {
-    final s = makeStore();
-    await s.save(const _Profile(name: 'Valid', level: 2));
-    expect(s.loadResult(), isA<SdkSuccess<_Profile>>());
-    await store.setString('profile', '{"schemaVersion":2,"name":"MissingLevel"}');
-    final result = s.loadResult();
-    expect(result, isA<SdkFailure<_Profile>>());
-    final failure = result as SdkFailure<_Profile>;
-    expect(failure.kind, SdkErrorKind.storage);
-    expect(failure.cause, isA<TypeError>());
-    expect(failure.stackTrace, isNotNull);
-  });
+  test(
+    'loadResult returns success or typed storage failure retaining parse cause',
+    () async {
+      final s = makeStore();
+      await s.save(const _Profile(name: 'Valid', level: 2));
+      expect(s.loadResult(), isA<SdkSuccess<_Profile>>());
+      await store.setString(
+        'profile',
+        '{"schemaVersion":2,"name":"MissingLevel"}',
+      );
+      final result = s.loadResult();
+      expect(result, isA<SdkFailure<_Profile>>());
+      final failure = result as SdkFailure<_Profile>;
+      expect(failure.kind, SdkErrorKind.storage);
+      expect(failure.cause, isA<TypeError>());
+      expect(failure.stackTrace, isNotNull);
+    },
+  );
 
-  test('nested list content controls conflict detection, not map key order', () async {
-    final s = VersionedJsonStore<List<Object?>>(
-      storage: store,
-      key: 'nested',
-      schemaVersion: 1,
-      toJson: (items) => {'items': items},
-      fromJson: (json) => (json['items'] as List).cast<Object?>(),
-      migrate: (_, json) => json,
-    );
-    await s.save([{'a': 1, 'b': [2, 3]}]);
-    final provider = _FakeCloudSaveProvider()
-      ..cloudData = {
+  test(
+    'nested list content controls conflict detection, not map key order',
+    () async {
+      final s = VersionedJsonStore<List<Object?>>(
+        storage: store,
+        key: 'nested',
+        schemaVersion: 1,
+        toJson: (items) => {'items': items},
+        fromJson: (json) => (json['items'] as List).cast<Object?>(),
+        migrate: (_, json) => json,
+      );
+      await s.save([
+        {
+          'a': 1,
+          'b': [2, 3],
+        },
+      ]);
+      final provider = _FakeCloudSaveProvider()
+        ..cloudData = {
+          'schemaVersion': 1,
+          'syncedAtMs': 1,
+          'items': [
+            {
+              'b': [2, 3],
+              'a': 1,
+            },
+          ],
+        };
+      var conflicts = 0;
+      VersionedSyncConflictResolution<List<Object?>> resolve(
+        VersionedSyncConflict<List<Object?>> conflict,
+      ) {
+        conflicts++;
+        return const VersionedSyncConflictResolution.preferLocal();
+      }
+
+      await s.syncWithResult(provider, onConflict: resolve);
+      expect(conflicts, 0);
+      provider.cloudData = {
         'schemaVersion': 1,
         'syncedAtMs': 1,
-        'items': [{'b': [2, 3], 'a': 1}],
+        'items': [
+          {
+            'b': [2, 4],
+            'a': 1,
+          },
+        ],
       };
-    var conflicts = 0;
-    VersionedSyncConflictResolution<List<Object?>> resolve(
-      VersionedSyncConflict<List<Object?>> conflict,
-    ) {
-      conflicts++;
-      return const VersionedSyncConflictResolution.preferLocal();
-    }
-    await s.syncWithResult(provider, onConflict: resolve);
-    expect(conflicts, 0);
-    provider.cloudData = {
-      'schemaVersion': 1,
-      'syncedAtMs': 1,
-      'items': [{'b': [2, 4], 'a': 1}],
-    };
-    await s.syncWithResult(provider, onConflict: resolve);
-    expect(conflicts, 1);
-    provider.cloudData = {
-      'schemaVersion': 1,
-      'syncedAtMs': 1,
-      'items': [{'b': [2], 'a': 1}],
-    };
-    await s.syncWithResult(provider, onConflict: resolve);
-    expect(conflicts, 2);
-  });
+      await s.syncWithResult(provider, onConflict: resolve);
+      expect(conflicts, 1);
+      provider.cloudData = {
+        'schemaVersion': 1,
+        'syncedAtMs': 1,
+        'items': [
+          {
+            'b': [2],
+            'a': 1,
+          },
+        ],
+      };
+      await s.syncWithResult(provider, onConflict: resolve);
+      expect(conflicts, 2);
+    },
+  );
 
   test('chưa từng lưu → load() trả về null', () {
     expect(makeStore().load(), isNull);
@@ -765,7 +807,8 @@ void main() {
         await expectLater(
           s.syncWith(
             provider,
-            onConflict: (_) => const VersionedSyncConflictResolution.preferLocal(),
+            onConflict: (_) =>
+                const VersionedSyncConflictResolution.preferLocal(),
           ),
           completes,
         );
@@ -823,6 +866,52 @@ void main() {
       final result = await s.syncWithResult(provider);
 
       expect(result, isA<SdkSuccess<void>>());
+    });
+  });
+
+  group('BUG-111: migrate that rebuilds the map keeps syncedAtMs', () {
+    Future<VersionedJsonStore<int>> make({required bool keepKeys}) async {
+      return VersionedJsonStore<int>(
+        storage: store,
+        key: 'p',
+        schemaVersion: 1,
+        toJson: (n) => {'n': n},
+        fromJson: (j) => j['n'] as int,
+        migrate: (from, m) =>
+            keepKeys ? {...m, 'n': m['old']} : {'n': m['old']},
+      );
+    }
+
+    test('an old-schema cloud save restores onto a fresh device', () async {
+      final s = await make(keepKeys: false);
+      final cloud = _FakeCloudSaveProvider()
+        ..cloudData = {'schemaVersion': 0, 'old': 7, 'syncedAtMs': 5000};
+      await s.syncWithResult(cloud);
+      expect(s.load(), 7);
+    });
+
+    test('a migrate that already keeps the timestamp is unchanged', () async {
+      final s = await make(keepKeys: true);
+      final cloud = _FakeCloudSaveProvider()
+        ..cloudData = {'schemaVersion': 0, 'old': 7, 'syncedAtMs': 5000};
+      await s.syncWithResult(cloud);
+      expect(s.load(), 7);
+    });
+
+    test('a migrate that sets its own syncedAtMs is not overwritten', () async {
+      final s = VersionedJsonStore<int>(
+        storage: store,
+        key: 'p',
+        schemaVersion: 1,
+        toJson: (n) => {'n': n},
+        fromJson: (j) => j['n'] as int,
+        migrate: (from, m) => {'n': m['old'], 'syncedAtMs': 9999},
+      );
+      final cloud = _FakeCloudSaveProvider()
+        ..cloudData = {'schemaVersion': 0, 'old': 7, 'syncedAtMs': 5000};
+      await s.syncWithResult(cloud);
+      final raw = jsonDecode(store.getString('p')!) as Map<String, Object?>;
+      expect(raw['syncedAtMs'], 9999);
     });
   });
 }

@@ -183,9 +183,22 @@ class VersionedJsonStore<T> {
     if (storedVersion > schemaVersion) return null;
     if (storedVersion < schemaVersion) {
       final registry = migrationRegistry;
-      return registry == null
+      final migrated = registry == null
           ? migrate(storedVersion, decoded)
           : registry.migrate(storedVersion, decoded);
+      // BUG-111: a migrate step is free to rebuild the map from scratch, which
+      // used to drop the envelope keys. Losing `syncedAtMs` made the cloud copy
+      // read as timestamp -1, so it lost last-write-wins to an empty local save
+      // and was never restored; losing `schemaVersion` made the stored copy
+      // read as version 0 on the next load and get migrated a second time.
+      // Restore both from the source (schemaVersion becomes the current one).
+      final synced = decoded['syncedAtMs'];
+      return {
+        ...migrated,
+        if (synced != null && !migrated.containsKey('syncedAtMs'))
+          'syncedAtMs': synced,
+        'schemaVersion': schemaVersion,
+      };
     }
     return decoded;
   }
