@@ -1,5 +1,6 @@
 ## 0.6.11
 
+- Fixed `CollectionAlbumPanel` grid cells overflowing vertically by up to 22px at 320dp wide with 2.0x text scale: the cell content now scales down when it does not fit (unchanged at normal size).
 - Fixed `OfflineEarningsPopup`, `TieredLeaderboardRow` and `VipPerkProgressRow` overflowing horizontally at 320dp wide with 2.0x text scale: the coin count, the leaderboard score and the perk chip label now scale down or ellipsize when space is tight (unchanged at normal size).
 
 ## 0.6.10

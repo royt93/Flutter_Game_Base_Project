@@ -323,35 +323,42 @@ class _CollectionCell extends StatelessWidget {
               width: owned ? 2 : 1,
             ),
           ),
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Icon(
-                owned ? item.icon : Icons.help_outline_rounded,
-                size: 30,
-                color: _rarityColor,
-              ),
-              const SizedBox(height: 4),
-              Text(
-                item.name,
-                maxLines: 2,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: NeonTheme.ink,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              Text(
-                '${item.ownedCount}/${item.requiredCount}',
-                style: TextStyle(
+          // The grid cell has a fixed aspect ratio, so a large text scale used
+          // to overflow it vertically; scaleDown keeps the normal-size look and
+          // shrinks the content only when it does not fit (BUG-115).
+          child: FittedBox(
+            fit: BoxFit.scaleDown,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(
+                  owned ? item.icon : Icons.help_outline_rounded,
+                  size: 30,
                   color: _rarityColor,
-                  fontSize: 10,
-                  fontWeight: FontWeight.w900,
                 ),
-              ),
-            ],
+                const SizedBox(height: 4),
+                Text(
+                  item.name,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: NeonTheme.ink,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                Text(
+                  '${item.ownedCount}/${item.requiredCount}',
+                  style: TextStyle(
+                    color: _rarityColor,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
       ),

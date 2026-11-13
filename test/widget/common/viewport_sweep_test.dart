@@ -2,6 +2,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 
+import 'package:roy_casual_kit/core/consent_state_service.dart'
+    show ConsentStatus;
+import 'package:roy_casual_kit/core/inventory_service.dart' show ItemRarity;
+
 import '../../support/viewport_sweep.dart';
 
 /// FEAT-200 pha 1: each entry is a widget that must survive every default
@@ -376,6 +380,156 @@ void main() {
             PlayerDataRightsPanel(onExport: () async {}, onErase: () async {}),
         'ToastBanner': () =>
             const ToastBanner(message: 'Saved to the cloud successfully'),
+      };
+      for (final e in cases.entries) {
+        testWidgets(e.key, (tester) async {
+          await runViewportSweep(
+            tester,
+            () => SingleChildScrollView(child: e.value()),
+          );
+        });
+        testWidgets('${e.key} at 2.0x text, 320dp and landscape', (
+          tester,
+        ) async {
+          await runViewportSweep(
+            tester,
+            () => SingleChildScrollView(child: e.value()),
+            viewports: const [
+              ViewportCase('320x480', Size(320, 480)),
+              ViewportCase('568x320-landscape', Size(568, 320)),
+            ],
+            textScale: 2.0,
+          );
+        });
+      }
+    });
+
+    group('FEAT-200 phase 2d: panels and lists', () {
+      final cases = <String, Widget Function()>{
+        'QuestBoardPanel': () => QuestBoardPanel(
+          quests: const [
+            QuestViewModel(
+              id: 'q1',
+              label: 'Win three matches in a row without using any boosters',
+              progress: 2,
+              target: 3,
+              claimed: false,
+            ),
+            QuestViewModel(
+              id: 'q2',
+              label: 'Collect 500 coins',
+              progress: 500,
+              target: 500,
+              claimed: false,
+            ),
+          ],
+          onClaim: (_) {},
+        ),
+        'RewardChoicePanel': () => RewardChoicePanel(
+          options: const [
+            RewardChoiceOption(id: 'a', label: 'Mega gem pack of one hundred'),
+            RewardChoiceOption(id: 'b', label: 'Energy refill'),
+          ],
+          onConfirm: (_) async {},
+        ),
+        'ProfileStatsCard': () => ProfileStatsCard(
+          name: 'A player with a quite long display name',
+          avatar: const CircleAvatar(child: Text('AP')),
+          level: ProfileLevel(level: 42, currentXp: 120, xpForNextLevel: 300),
+          stats: [
+            ProfileStat(label: 'Wins', valueText: '1,234'),
+            ProfileStat(label: 'Best streak', valueText: '27'),
+            ProfileStat(label: 'Playtime', valueText: '120h 30m'),
+          ],
+          onTap: () {},
+        ),
+        'CheckpointResumeCard': () => CheckpointResumeCard(
+          checkpoint: CheckpointSummary(
+            revision: 'r1',
+            savedAtText: 'Today 10:30',
+            progressText: 'Level 12, 3 stars',
+          ),
+          onResume: (_) async {},
+          onStartNew: (_) async {},
+        ),
+        'EventCalendarCard': () => EventCalendarCard(
+          events: const [
+            EventCalendarItem(
+              id: 'e1',
+              dayLabel: 'Fri',
+              title: 'Double rewards weekend with a long event title',
+              timeLabel: '10:00 - 22:00',
+              status: EventCalendarStatus.active,
+            ),
+          ],
+          onOpen: (_) {},
+        ),
+        'GiftLivesRequestCard': () => GiftLivesRequestCard(
+          request: const GiftLivesRequest(
+            requestId: 'r1',
+            senderName: 'A friend with a very long display name',
+          ),
+          onSendLife: (_) {},
+        ),
+        'TeamRosterList': () => TeamRosterList(
+          members: const [
+            TeamMemberItem(
+              id: 'm1',
+              name: 'A very long team member display name',
+              role: TeamRole.leader,
+            ),
+            TeamMemberItem(id: 'm2', name: 'Bob', role: TeamRole.member),
+          ],
+          onMemberTap: (_) {},
+          onPromote: (_) {},
+          onKick: (_) {},
+        ),
+        'CollectionAlbumPanel': () => CollectionAlbumPanel(
+          title: 'Mythic album with a long title',
+          items: const [
+            CollectionAlbumItem(
+              id: 'c1',
+              name: 'Moon crown',
+              rarity: ItemRarity.legendary,
+              ownedCount: 1,
+              requiredCount: 1,
+            ),
+            CollectionAlbumItem(
+              id: 'c2',
+              name: 'Sun amulet',
+              rarity: ItemRarity.rare,
+              ownedCount: 0,
+              requiredCount: 2,
+            ),
+          ],
+          onItemTap: (_) {},
+        ),
+        'BackupRestorePanel': () => BackupRestorePanel(
+          secret: 'k',
+          onExport: (_) async {},
+          onImport: () async => null,
+        ),
+        'ReminderPreferencesPanel': () => ReminderPreferencesPanel(
+          intervalOptions: [
+            ReminderIntervalOption(id: '1', label: 'Every day'),
+            ReminderIntervalOption(id: '2', label: 'Every two days'),
+          ],
+          enabled: true,
+          selectedId: '1',
+          onChanged: (_, _) async {},
+        ),
+        'ConsentPreferencesPanel': () => ConsentPreferencesPanel(
+          items: [
+            ConsentPreferenceItem(
+              id: 'analytics',
+              label: 'Analytics',
+              description:
+                  'Help us improve the game by sharing anonymous usage data.',
+              status: ConsentStatus.unknown,
+            ),
+          ],
+          onChanged: (_, _) async {},
+        ),
       };
       for (final e in cases.entries) {
         testWidgets(e.key, (tester) async {
