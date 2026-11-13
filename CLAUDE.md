@@ -231,6 +231,19 @@ where the bad value actually originates, not by default. Not every existing
 governs new code and any constructor touched going forward, not a mandate
 to retrofit the whole file tree in one pass.
 
+### Adding a throw/validation to shared code (BUG-112)
+Before making a function that has several call sites start throwing (a new
+`ArgumentError`, a stricter parse), grep every caller and read the doc comment
+above each one. A caller documented as "never throws" (e.g.
+`EconomyCertificate.verify`, `ReplayCapsule.importSigned`,
+`verifySignedFixture`) must catch the new error and report it in its own
+result type, because the `ArgumentError` added to `verifyAndStrip` for an empty
+secret (BUG-109) escaped three of them. Add the bad-input case to
+`test/core/never_throws_contracts_test.dart`, which lists those contracts.
+Likewise, when an older persisted shape can reach code that "assumes the
+current schema" (a cache, a restored backup, a cloud copy), route it through the
+same migrate/validation path as every other entry point (BUG-111, BUG-113).
+
 ### Unified save security story (IDEA-66)
 `save_integrity.dart` (HMAC sign/verify), `utils/save_migration_registry.dart`
 (multi-hop schema migration), `versioned_json_store.dart` (the store
