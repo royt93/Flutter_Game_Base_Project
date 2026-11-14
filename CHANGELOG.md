@@ -1,6 +1,8 @@
 ## 0.6.12
 
-- _(in progress)_
+- **Behavior change:** `StorageService.eraseAll`, `importAll`, `importWithPrefix` and `removeAllWithPrefix` now wait for writes that were already in flight before they run. Before, a service write issued just before an erase could finish after it and bring the erased data back (the erase receipt said "done" but the data returned). Writes issued while the replace runs are not waited for.
+- `SaveSlotManager`, `OfflineOutboxService`, `RewardTransactionPipeline` and `OnboardingCoordinatorService` now reload after a restore or erase (the 0.6.11 reload covered the wallet, ledger, inventory, progression, energy, daily login/quest, season, scoreboard and achievement services only). Before, an erased outbox item could still be re-sent by the next `drain()`, and an erased slot list came back when a new slot was created.
+- Adds the public `StorageService.prefixReplace` (`ValueNotifier<PrefixReplace?>`) and `PrefixReplace`: `importWithPrefix` / `removeAllWithPrefix` no longer bump `replaceEpoch` (that now means a whole-store replace only), because they touch keys under one prefix and `SaveSlotManager.deleteSlot` itself runs one while its own in-memory list is still correct. A consumer service whose storage key lives under a slot prefix should listen to `prefixReplace` and reload when `change.covers(myKey)`.
 
 ## 0.6.11
 

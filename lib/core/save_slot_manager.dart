@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import 'storage_service.dart';
+import 'utils/storage_replace_watch.dart';
 import 'utils/clamped_clock.dart';
 import 'versioned_json_store.dart';
 
@@ -44,7 +45,7 @@ class SaveSlotMeta {
 /// It never defines that schema itself — every game's profile shape is
 /// different, and this doesn't replace `VersionedJsonStore` (FEAT-05), it
 /// composes with it.
-class SaveSlotManager extends GetxService {
+class SaveSlotManager extends GetxService with StorageReplaceWatch {
   SaveSlotManager({this.maxSlots}) {
     if (maxSlots != null && maxSlots! <= 0) {
       throw ArgumentError.value(maxSlots, 'maxSlots', 'must be greater than 0');
@@ -92,6 +93,11 @@ class SaveSlotManager extends GetxService {
   // service is constructed (same reason as every other service here).
   List<SaveSlotMeta> get _slotList {
     if (_slots != null) return _slots!;
+    watchStorageReplace(
+      StorageService.to,
+      _metaStorageKey,
+      () => _slots = null,
+    );
     try {
       _slots = _store.load() ?? <SaveSlotMeta>[];
     } catch (_) {

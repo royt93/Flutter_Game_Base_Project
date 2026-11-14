@@ -228,6 +228,10 @@ class OfflineOutboxService extends GetxService {
     // onInit() alone. The connectivity-subscription setup stays in onInit()
     // only — that's a GetX-lifecycle-bound side effect, not state hydration.
     _hydrate();
+    // BUG-117: also here (see EconomyWallet): a directly constructed service
+    // never gets onInit(), but a restore or erase must still reach it, or a
+    // drain would re-send data the player had erased.
+    storage.replaceEpoch.addListener(_hydrate);
   }
 
   final StorageService storage;
@@ -274,7 +278,10 @@ class OfflineOutboxService extends GetxService {
 
   void _hydrate() {
     final raw = storage.getString(_key);
-    if (raw == null) return;
+    if (raw == null) {
+      items.clear();
+      return;
+    }
     try {
       final decoded = jsonDecode(raw);
       if (decoded is! List) return;
@@ -517,6 +524,7 @@ class OfflineOutboxService extends GetxService {
 
   @override
   void onClose() {
+    storage.replaceEpoch.removeListener(_hydrate);
     unawaited(_connectivitySub?.cancel());
     super.onClose();
   }

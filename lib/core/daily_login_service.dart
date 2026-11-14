@@ -110,7 +110,7 @@ class DailyLoginService extends GetxService with StorageReplaceWatch {
 
   _DailyLoginState get _state {
     if (_cached != null) return _cached!;
-    watchStorageReplace(StorageService.to, () => _cached = null);
+    watchStorageReplace(StorageService.to, _storageKey, () => _cached = null);
     try {
       _cached = _store.load() ?? _DailyLoginState.initial;
     } catch (_) {

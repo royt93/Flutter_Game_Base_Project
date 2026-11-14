@@ -253,7 +253,11 @@ class EnergyService extends GetxService with StorageReplaceWatch {
   _EnergyState _currentState() {
     // BUG-117: once a restore or erase replaces storage, drop the in-memory
     // "latest" copy so the next read and write start from what is on disk.
-    watchStorageReplace(StorageService.to, () => _latestState = null);
+    watchStorageReplace(
+      StorageService.to,
+      StorageKeys.energyStateV1,
+      () => _latestState = null,
+    );
     return _latestState ?? _readState();
   }
 

@@ -21,5 +21,10 @@ Cửa sổ thật nhưng hẹp: cần một lần ghi service đang dang dở đ
 1. `importAll` / `eraseAll` / `removeAllWithPrefix` / `importWithPrefix` chờ `_pendingWrite` (và các ghi đã được phát) xong trước khi bắt đầu, và chặn ghi mới trong lúc chạy (hàng đợi hai chiều). Ưu: sửa tận gốc ở một chỗ. Nhược: chạm lõi lưu trữ; cần test với ghi đệm (`flush`), và quyết định ghi đến trong lúc erase bị xếp sau hay bị loại.
 2. Ngăn ở tầng service: `replaceEpoch` kèm một "thế hệ" (generation); ghi của service so sánh thế hệ trước/sau `await setString` và hoàn tác nếu đã đổi. Ưu: không đổi StorageService. Nhược: phải làm lại ở từng service.
 
-## Việc chưa làm
-Chưa sửa. Cần chọn hướng 1 hay 2 (người dùng). Test đã dựng sẵn ở trên có thể chuyển thành test hồi quy.
+## Đã sửa (2026-11-14), hướng 1
+`StorageService` theo dõi mọi lần ghi đã giao cho nền tảng (`_inFlight`, gồm cả đường nhanh lúc rảnh, thứ trước đây không để lại dấu vết nào, cộng `_pendingWrite` của hàng đợi) và `importAll`/`eraseAll`/`removeAllWithPrefix`/`importWithPrefix` gọi `_drainPendingWrites()` trước khi chạy: chờ **ảnh chụp** các ghi đã phát hành trước đó (không vòng lặp, nên ghi đến sau không thể làm đói thao tác thay thế). Đường nhanh của BUG-83 giữ nguyên: không thêm `await`, nên đọc lại đồng bộ vẫn đúng.
+Lần thử đầu của tôi sai: chỉ chờ `_pendingWrite`, nhưng ghi lúc rảnh không vào hàng đợi nên vẫn bị vượt mặt; dấu vết sự kiện (`remove` chạy trước `write RESUMED`) chỉ ra điều đó trước khi tôi sửa lại.
+Test `BUG-118` trong `storage_replace_reload_test.dart` dùng một `SharedPreferences` giả ở tầng nền tảng để *thật sự* giữ một lần ghi trong `_guardedWrite` (stub ghi đè `StorageService.setString` sẽ không thử được đường này): đỏ khi hoàn nguyên lib, xanh khi có.
+
+## Còn lại
+Ghi đệm (`setStringBuffered`/`flush`) vẫn có cửa sổ riêng: `importAll` xoá `_buffer` nhưng một `flush()` đang chạy giữa chừng đã lấy ảnh chụp trước đó; chưa kiểm.

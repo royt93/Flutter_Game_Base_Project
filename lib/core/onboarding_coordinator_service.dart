@@ -4,6 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:get/get.dart';
 
 import 'storage_service.dart';
+import 'utils/storage_replace_watch.dart';
 import 'versioned_json_store.dart';
 
 /// Decides WHICH onboarding/tutorial flow should run next and WHETHER a
@@ -21,7 +22,8 @@ import 'versioned_json_store.dart';
 /// priority, every screen re-invents its own flag and 2 flows can end up
 /// racing to show at once, or a flow the caller forgot to mark seen
 /// replays every session.
-class OnboardingCoordinatorService extends GetxService {
+class OnboardingCoordinatorService extends GetxService
+    with StorageReplaceWatch {
   OnboardingCoordinatorService({String? storageKey})
     : _storageKey = storageKey ?? StorageKeys.onboardingSeenV1;
 
@@ -61,6 +63,7 @@ class OnboardingCoordinatorService extends GetxService {
   // service is constructed (same reason as AchievementService/EnergyService).
   Map<String, int> get _seenMap {
     if (_seen != null) return _seen!;
+    watchStorageReplace(StorageService.to, _storageKey, () => _seen = null);
     try {
       _seen = _store.load() ?? <String, int>{};
     } catch (_) {

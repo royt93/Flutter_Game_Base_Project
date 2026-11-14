@@ -125,7 +125,7 @@ class DailyQuestService extends GetxService with StorageReplaceWatch {
   // Get.put'd before this service is constructed.
   Map<String, _QuestRecord> get _records {
     if (_cached != null) return _cached!;
-    watchStorageReplace(StorageService.to, () => _cached = null);
+    watchStorageReplace(StorageService.to, _storageKey, () => _cached = null);
     try {
       _cached = _store.load() ?? <String, _QuestRecord>{};
     } catch (_) {

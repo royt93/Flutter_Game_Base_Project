@@ -138,7 +138,9 @@ class StorageService extends GetxService {
   }) {
     final previous = _pendingWrite;
     if (previous == null && !queueWhenIdle) {
-      return Future<void>.sync(write);
+      // Fast path: no queue entry (see the BUG-83 note above), but the write is
+      // still tracked so a bulk replace can wait for it (BUG-118).
+      return _trackInFlight(Future<void>.sync(write));
     }
     final future = previous == null
         ? Future<void>.sync(write)
@@ -155,18 +157,66 @@ class StorageService extends GetxService {
     return future;
   }
 
+  // Writes handed to the platform that have not finished yet, whether they went
+  // through the queue or the idle fast path. Only ever used by
+  // [_drainPendingWrites]; it does not affect ordering or the synchronous
+  // read-back guarantee of the fast path.
+  final Set<Future<void>> _inFlight = <Future<void>>{};
+
+  Future<void> _trackInFlight(Future<void> future) {
+    _inFlight.add(future);
+    void done() => _inFlight.remove(future);
+    future.then<void>((_) => done(), onError: (_, _) => done());
+    return future;
+  }
+
+  /// Waits for every write already handed to the platform to finish. A bulk replace or erase calls this FIRST so a write issued
+  /// before it cannot land after it and bring erased data back (BUG-118).
+  /// Writes issued while the replace is running still chain onto the queue
+  /// as before; this only orders the replace after the ones in flight.
+  Future<void> _drainPendingWrites() async {
+    // Snapshot, not a loop: only writes issued BEFORE this call are waited
+    // for. A write issued while we wait belongs to a later operation and must
+    // not be able to starve the replace.
+    final waiting = <Future<void>>[..._inFlight, ?_pendingWrite];
+    for (final w in waiting) {
+      try {
+        await w;
+      } catch (_) {
+        // The failing write's own caller already got the error.
+      }
+    }
+  }
+
   StorageService(this._prefs);
 
-  /// Bumped after every bulk replace that can make a service's in-memory copy
-  /// stale: a successful [importAll] (and so [eraseAll]), [importWithPrefix]
-  /// and [removeAllWithPrefix]. A stateful service that hydrates from storage
-  /// once (wallet, ledger, inventory, ...) listens and re-reads, otherwise its
-  /// next write would put the old copy back over a restore or an erase
-  /// (BUG-117). Plain `setX`/`remove` do not bump it: services write those
-  /// keys themselves and already hold the newest value.
+  /// Bumped after every WHOLE-store replace that can make a service's
+  /// in-memory copy stale: a successful [importAll] (and so [eraseAll]). A
+  /// stateful service that hydrates from storage once (wallet, ledger,
+  /// inventory, ...) listens and re-reads, otherwise its next write would put
+  /// the old copy back over a restore or an erase (BUG-117). Plain
+  /// `setX`/`remove` do not bump it: services write those keys themselves and
+  /// already hold the newest value.
   final ValueNotifier<int> replaceEpoch = ValueNotifier<int>(0);
 
+  /// The key prefix of the latest [importWithPrefix] / [removeAllWithPrefix],
+  /// as a value that changes on every such call (the pair is replaced, so
+  /// listeners always fire). Kept separate from [replaceEpoch] on purpose: a
+  /// prefix operation only touches keys under that prefix (BUG-81), so a
+  /// service whose key is NOT under it must not drop its cache, and
+  /// `SaveSlotManager.deleteSlot` itself triggers one while it holds
+  /// in-memory metadata that is still correct. A service whose storage key
+  /// lives under a slot prefix listens here and checks [PrefixReplace.prefix].
+  final ValueNotifier<PrefixReplace?> prefixReplace =
+      ValueNotifier<PrefixReplace?>(null);
+
+  int _prefixReplaceSeq = 0;
+
   void _notifyReplaced() => replaceEpoch.value++;
+
+  void _notifyPrefixReplaced(String prefix) {
+    prefixReplace.value = PrefixReplace(prefix, ++_prefixReplaceSeq);
+  }
 
   static StorageService get to => Get.find<StorageService>();
 
@@ -428,6 +478,7 @@ class StorageService extends GetxService {
     final normalized = <String, Object>{
       for (final entry in data.entries) entry.key: entry.value!,
     };
+    await _drainPendingWrites();
     final previous = exportAll();
     // Import ghi đè toàn bộ profile — mọi giá trị đang đệm không còn ý
     // nghĩa và sẽ ghi đè ngược lên dữ liệu vừa khôi phục nếu flush sau đó.
@@ -481,6 +532,7 @@ class StorageService extends GetxService {
     if (prefix.isEmpty) {
       throw ArgumentError.value(prefix, 'prefix', 'must not be empty');
     }
+    await _drainPendingWrites();
     _buffer.removeWhere((key, _) => key.startsWith(prefix));
     final prefs = _prefs;
     if (prefs != null) {
@@ -491,7 +543,7 @@ class StorageService extends GetxService {
     } else {
       _fallback.removeWhere((key, _) => key.startsWith(prefix));
     }
-    _notifyReplaced();
+    _notifyPrefixReplaced(prefix);
   }
 
   /// Every key currently in storage that starts with [prefix] — e.g.
@@ -580,6 +632,7 @@ class StorageService extends GetxService {
     // already promises callers. Scoped to `prefix`, not the whole store —
     // BUG-81's whole point was narrowing the blast radius, rollback must
     // stay narrow too.
+    await _drainPendingWrites();
     final previous = exportWithPrefix(prefix);
     try {
       // SET every key in `data` first — if a kill/crash happens mid-loop,
@@ -595,7 +648,7 @@ class StorageService extends GetxService {
       for (final key in _staleKeysUnder(prefix, normalized)) {
         await remove(key);
       }
-      _notifyReplaced();
+      _notifyPrefixReplaced(prefix);
     } catch (error, stack) {
       try {
         await _restorePrefixSnapshot(prefix, previous);
@@ -676,4 +729,17 @@ class StorageService extends GetxService {
       await _writeTyped(entry.key, entry.value);
     }
   }
+}
+
+/// One [StorageService.importWithPrefix] / [StorageService.removeAllWithPrefix]
+/// call: the [prefix] it touched and a [sequence] number that makes every
+/// notification a distinct value.
+class PrefixReplace {
+  const PrefixReplace(this.prefix, this.sequence);
+
+  final String prefix;
+  final int sequence;
+
+  /// Whether [key] lives under the replaced prefix.
+  bool covers(String key) => key.startsWith(prefix);
 }

@@ -1,5 +1,5 @@
 {
-  "version": "0.6.11",
+  "version": "0.6.12",
   "entrypoint": "lib/roy_casual_kit.dart",
   "exports": [
     "core/achievement_service.dart",
@@ -346,6 +346,7 @@
     "core/share_helper.dart:shareJourneyCard",
     "core/share_helper.dart:shareScoreCard",
     "core/share_helper.dart:shareText",
+    "core/storage_service.dart:PrefixReplace",
     "core/storage_service.dart:StorageKeys",
     "core/storage_service.dart:StorageService",
     "core/utils/accessibility_audit.dart:AuditBaseline",
@@ -1279,6 +1280,7 @@
     "core/reward_transaction_pipeline.dart:RewardTransactionPipeline.grantFromPurchase({ required String receiptId, required List<RewardLine> lines, Map<String, Object?>? receiptMeta, }): Future<SdkResult<RewardTransactionRecord>>",
     "core/reward_transaction_pipeline.dart:RewardTransactionPipeline.grantWithItems({ required RewardSource source, required String transactionId, List<RewardLine> lines = const [], required List<InventoryLine> itemLines, Map<String, Object?>? receiptMeta, }): Future<SdkResult<RewardTransactionRecord>>",
     "core/reward_transaction_pipeline.dart:RewardTransactionPipeline.new({ required this.wallet, this.onAnalytics, AsyncActionGuard? guard, String? storageKey, this.capacity = 200, // BUG-81: injectable seam so tests can fake createdAtMs without // depending on real wall-clock; defaults to DateTime.now() in prod. int Function()? nowMs, })",
+    "core/reward_transaction_pipeline.dart:RewardTransactionPipeline.onClose(): void",
     "core/reward_transaction_pipeline.dart:RewardTransactionPipeline.onInit(): void",
     "core/reward_transaction_pipeline.dart:RewardTransactionPipeline.preview({ required RewardSource source, required String transactionId, List<RewardLine> currencyLines = const [], List<InventoryLine> itemLines = const [], Map<String, Object?>? receiptMeta, }): SdkResult<RewardPlan>",
     "core/reward_transaction_pipeline.dart:RewardTransactionPipeline.resumePending(): Future<void>",
@@ -1346,6 +1348,8 @@
     "core/shadow_activation_controller.dart:ShadowActivationController.new({required this.killSwitch})",
     "core/shadow_activation_controller.dart:ShadowActivationController.registerGuardrail(String featureId, GuardrailDefinition guardrail): void",
     "core/shadow_activation_controller.dart:ShadowActivationController.reportMetric(String featureId, String metricName, double value): void",
+    "core/storage_service.dart:PrefixReplace.covers(String key): bool",
+    "core/storage_service.dart:PrefixReplace.new(this.prefix, this.sequence)",
     "core/storage_service.dart:StorageService.allKeys(): Set<String>",
     "core/storage_service.dart:StorageService.eraseAll(): Future<void>",
     "core/storage_service.dart:StorageService.exportAll(): Map<String, Object>",

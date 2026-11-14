@@ -31,10 +31,10 @@ Phương án 1 cho các service tiền tệ/xoá dữ liệu trước (wallet, l
 - Bỏ bản sao lazy bằng mixin `StorageReplaceWatch` (`lib/core/utils/storage_replace_watch.dart`), gắn lúc lần đầu nạp: `PurchaseLedgerService`, `DailyLoginService`, `DailyQuestService`, `SeasonEventService`, `LocalScoreboardService`, `AchievementService`, `EnergyService` (bỏ `_latestState`).
 Test: `test/core/storage_replace_reload_test.dart` (8 test: ledger restore/erase, energy, inventory, progression, scoreboard, achievement, wallet) và 3 test BUG-117 trong `economy_wallet_test.dart`; **8/8 đỏ khi hoàn nguyên lib, xanh khi có**. `test/core` 2048 test, 1603 test widget, 442 test example, API gate (`unchanged` sau regenerate snapshot) và các quality gate đều xanh.
 
-## Giới hạn đã biết (chưa xử lý)
-- Ghi đang chờ (`_scheduleSave` đã xếp hàng) lúc `eraseAll` chạy vẫn có thể ghi xuống sau khi erase; hàng đợi ghi của từng service không bị huỷ. Cửa sổ rất hẹp nhưng chưa được kiểm.
-- Chỉ phủ các service giữ bản sao nạp từ storage. Service khác của consumer tự giữ state vẫn phải nghe `StorageService.replaceEpoch` (API công khai mới, ghi trong CHANGELOG).
-- `SaveSlotManager` (metadata slot) chưa kiểm.
+## Giới hạn đã biết, cập nhật 2026-11-14
+- Ghi đang chờ lúc erase: lỗi thật, đã tái hiện và sửa ở BUG-118.
+- `SaveSlotManager`: sau `eraseAll` danh sách slot trong bộ nhớ còn nguyên và slot cũ sống lại khi tạo slot mới. Đã nối `StorageReplaceWatch` (cùng `OfflineOutboxService`, `RewardTransactionPipeline`, `OnboardingCoordinatorService` do đợt quét thứ 6 tìm ra), kèm 4 test. Sửa lần đầu làm hai test `save_slot_manager` đỏ: `removeAllWithPrefix` (do `deleteSlot` gọi) cũng bump `replaceEpoch` và xoá bản sao metadata đang đúng. Tách tín hiệu: `replaceEpoch` chỉ cho thay thế toàn bộ store; `StorageService.prefixReplace` (`PrefixReplace`) mang tiền tố và chỉ làm service có khoá dưới tiền tố đó tải lại.
+- Service tự viết của consumer giữ state vẫn phải nghe `replaceEpoch` / `prefixReplace` (API công khai, ghi trong CHANGELOG).
 
 ## Tiêu chí xong
 Test: sau `eraseAll()`/`importAll(backup)`, một lần ghi tiếp theo KHÔNG làm sống lại dữ liệu cũ (ví, ledger, energy, inventory, progression). Cần người dùng chọn phương án trước khi sửa.

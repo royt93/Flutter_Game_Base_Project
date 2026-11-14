@@ -113,7 +113,7 @@ class AchievementService extends GetxService with StorageReplaceWatch {
     if (_progress != null) return _progress!;
     final resolved = _resolvedStorage;
     if (resolved != null) {
-      watchStorageReplace(resolved, () => _progress = null);
+      watchStorageReplace(resolved, _storageKey, () => _progress = null);
     }
     try {
       _progress = _store?.load() ?? <String, int>{};

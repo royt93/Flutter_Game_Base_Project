@@ -122,7 +122,7 @@ class LocalScoreboardService extends GetxService with StorageReplaceWatch {
   // constructed.
   List<_ScoreEntry> get _entries {
     if (_cached != null) return _cached!;
-    watchStorageReplace(StorageService.to, () => _cached = null);
+    watchStorageReplace(StorageService.to, _storageKey, () => _cached = null);
     try {
       _cached = _store.load() ?? <_ScoreEntry>[];
     } catch (_) {

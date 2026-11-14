@@ -285,6 +285,14 @@ class RewardTransactionPipeline extends GetxService {
     // BUG-40: see EconomyWallet's constructor for why this can't wait for
     // onInit() alone.
     _hydrate();
+    // BUG-117: reload after a restore or erase (see EconomyWallet).
+    storage.replaceEpoch.addListener(_hydrate);
+  }
+
+  @override
+  void onClose() {
+    storage.replaceEpoch.removeListener(_hydrate);
+    super.onClose();
   }
 
   final EconomyWallet wallet;
@@ -334,7 +342,10 @@ class RewardTransactionPipeline extends GetxService {
 
   void _hydrate() {
     final raw = storage.getString(_key);
-    if (raw == null) return;
+    if (raw == null) {
+      _records.clear();
+      return;
+    }
     try {
       final decoded = jsonDecode(raw);
       if (decoded is! List) return;
