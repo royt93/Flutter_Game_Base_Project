@@ -17,7 +17,7 @@ Raise privacy-note contrast to at least 4.5:1 in both themes without changing gl
 ## Progress (2026-11-14)
 - [x] Changed privacy note to `NeonTheme.ink`; rendered-text assertions pass in light/dark.
 - [x] Existing `support_diagnostics_card_test.dart` passes.
-- [ ] Goldens fail against old baselines on macOS. Regenerate only through Linux `regenerate-goldens.yml`; do not copy unrelated PNGs.
+- [x] Replaced 21 support diagnostics PNGs from Linux `regenerate-goldens.yml` artifact. Local macOS golden comparison still fails from platform rendering differences; Linux CI is authoritative.
 
 ## Acceptance
 - [x] Add a rendered-contrast regression test for the privacy note in light/dark modes.

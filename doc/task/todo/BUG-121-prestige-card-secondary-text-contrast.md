@@ -17,7 +17,7 @@ Raise contrast only for the confirmed message and multiplier labels; do not chan
 ## Progress (2026-11-14)
 - [x] Changed message and multiplier labels to local `NeonTheme.ink`; value colors remain unchanged.
 - [x] Rendered-text assertions pass in light/dark; affected widget tests pass.
-- [ ] Prestige goldens fail against old baselines on macOS. Regenerate only through Linux `regenerate-goldens.yml`; do not copy unrelated PNGs.
+- [x] Replaced 14 prestige PNGs from Linux `regenerate-goldens.yml` artifact. Prestige golden suite passes locally against those baselines.
 
 ## Acceptance
 - [x] Add rendered-contrast assertions for the message and both multiplier labels in light/dark modes.
