@@ -75,7 +75,9 @@ class FriendRequestTile extends StatelessWidget {
     final mutual =
         mutualFriendsText ??
         '${request.mutualFriendsCount} mutual ${request.mutualFriendsCount == 1 ? 'friend' : 'friends'}';
-    final stackActions = MediaQuery.textScalerOf(context).scale(19) > 25;
+    final media = MediaQuery.of(context);
+    final stackActions =
+        media.textScaler.scale(19) > 25 && media.size.width < 480;
     Widget button(FriendRequestAction action) {
       final accepting = action == FriendRequestAction.accept;
       final label = accepting ? acceptLabel : declineLabel;

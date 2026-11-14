@@ -60,6 +60,125 @@ void main() {
     }
   });
 
+  group('FEAT-200 phase 2m: lists and goal indicators', () {
+    testWidgets('FriendRequestTile', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => FriendRequestTile(
+          request: FriendRequestItem(
+            requestId: 'req-1',
+            name: 'Maya Rose',
+            subtitle: 'Level 42 · 3 mutual friends',
+            mutualFriendsCount: 3,
+            avatar: const Icon(Icons.face),
+          ),
+          onAccept: (_) {},
+          onDecline: (_) {},
+        ),
+      );
+    });
+
+    testWidgets('FriendRequestTile at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => FriendRequestTile(
+          request: FriendRequestItem(
+            requestId: 'req-1',
+            name: 'Maya Rose',
+            subtitle: 'Level 42 · 3 mutual friends',
+            mutualFriendsCount: 3,
+            avatar: const Icon(Icons.face),
+          ),
+          onAccept: (_) {},
+          onDecline: (_) {},
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('LevelGoalTracker', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => LevelGoalTracker(
+          goals: [
+            GoalItem(
+              id: 'g1',
+              label: 'Collect every coin in this level',
+              icon: const Icon(Icons.monetization_on),
+              current: 7,
+              target: 10,
+            ),
+            GoalItem(
+              id: 'g2',
+              label: 'Finish without taking damage',
+              icon: const Icon(Icons.shield),
+              current: 1,
+              target: 1,
+            ),
+          ],
+        ),
+      );
+    });
+
+    testWidgets('LevelGoalTracker at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => LevelGoalTracker(
+          goals: [
+            GoalItem(
+              id: 'g1',
+              label: 'Collect every coin in this level',
+              icon: const Icon(Icons.monetization_on),
+              current: 7,
+              target: 10,
+            ),
+            GoalItem(
+              id: 'g2',
+              label: 'Finish without taking damage',
+              icon: const Icon(Icons.shield),
+              current: 1,
+              target: 1,
+            ),
+          ],
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('QuestProgressPill', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => QuestProgressPill(completed: 4, total: 12, claimableCount: 2, onTap: () {}),
+      );
+    });
+
+    testWidgets('QuestProgressPill at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => QuestProgressPill(completed: 4, total: 12, claimableCount: 2, onTap: () {}),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2l: calendar and avatar selection', () {
     testWidgets('DailyLoginCalendarWidget', (tester) async {
       await runViewportSweep(
