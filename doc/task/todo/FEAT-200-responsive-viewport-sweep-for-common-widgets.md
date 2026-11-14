@@ -33,7 +33,8 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 - [x] Pha 2g (2026-11-14): thêm `BatterySaverIndicator` và `StackedAvatarGroup` với sweep mặc định và 320dp/landscape ở text scale 2.0. Full sweep 94 tests pass; tổng coverage 53/170 widget.
 - [x] Pha 2h (2026-11-14): thêm `ContentPackStatusCard`, `DeepLinkResultCard`, `EconomyCertificateStatusCard` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 100 tests pass; tổng coverage 56/170 widget.
 - [x] Pha 2i (2026-11-14): thêm `ContrastPreviewCard`, `AvatarFrame`, `PanelCard` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 106 tests pass; tổng coverage 59/170 widget.
-- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 111 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- [x] Pha 2j (2026-11-14): thêm `TooltipBubble`, `CommonListTile`, `SoundToggleFab` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 112 tests pass; tổng coverage 62/170 widget.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 108 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 
 ## Tiêu chí xong

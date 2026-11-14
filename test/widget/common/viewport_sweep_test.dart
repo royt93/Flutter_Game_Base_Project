@@ -60,6 +60,38 @@ void main() {
     }
   });
 
+  group('FEAT-200 phase 2j: simple controls and layout', () {
+    final cases = <String, Widget Function()>{
+      'TooltipBubble': () => TooltipBubble.text('Tap here'),
+      'CommonListTile': () => const CommonListTile(
+        title: 'Daily reward',
+        subtitle: 'Claim your free coins',
+        leading: Icon(Icons.card_giftcard),
+      ),
+      'SoundToggleFab': () => const SoundToggleFab(),
+    };
+
+    for (final entry in cases.entries) {
+      testWidgets(entry.key, (tester) async {
+        await runViewportSweep(tester, entry.value);
+      });
+
+      testWidgets('${entry.key} at 2.0x text, 320dp and landscape', (
+        tester,
+      ) async {
+        await runViewportSweep(
+          tester,
+          entry.value,
+          viewports: const [
+            ViewportCase('320x480', Size(320, 480)),
+            ViewportCase('568x320-landscape', Size(568, 320)),
+          ],
+          textScale: 2.0,
+        );
+      });
+    }
+  });
+
   group('FEAT-200 phase 2i: static display components', () {
     testWidgets('ContrastPreviewCard', (tester) async {
       await runViewportSweep(
