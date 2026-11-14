@@ -1,3 +1,7 @@
+## 0.6.12
+
+- _(in progress)_
+
 ## 0.6.11
 
 - **Behavior change:** `StorageService.importAll`, `eraseAll`, `importWithPrefix` and `removeAllWithPrefix` are no longer undone by services that cache state in memory. Before, a restore or a "delete my data" erase wrote to storage but the wallet, ledger, inventory, progression, energy, daily login/quest, season, scoreboard and achievement services kept their old in-memory copy and wrote it back on the next change (an erased balance could come back; a restored backup was overwritten). They now reload when storage is replaced. Adds the public `StorageService.replaceEpoch` (`ValueNotifier<int>`, bumped after each successful bulk replace) and `EconomyWallet`/`InventoryService`/`PlayerProgressionService.onClose()`; a consumer service that caches storage state should listen to `replaceEpoch` too.
