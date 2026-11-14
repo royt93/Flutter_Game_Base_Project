@@ -60,6 +60,66 @@ void main() {
     }
   });
 
+  group('FEAT-200 phase 2g: display widgets', () {
+    testWidgets('BatterySaverIndicator', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => BatterySaverIndicator(active: true, batteryPercent: 17),
+      );
+    });
+
+    testWidgets('BatterySaverIndicator at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => BatterySaverIndicator(active: true, batteryPercent: 17),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('StackedAvatarGroup', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => StackedAvatarGroup(
+          items: const [
+            StackedAvatarItem.widget(Text('A')),
+            StackedAvatarItem.widget(Text('B')),
+            StackedAvatarItem.widget(Text('C')),
+            StackedAvatarItem.widget(Text('D')),
+            StackedAvatarItem.widget(Text('E')),
+          ],
+        ),
+      );
+    });
+
+    testWidgets('StackedAvatarGroup at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => StackedAvatarGroup(
+          items: const [
+            StackedAvatarItem.widget(Text('A')),
+            StackedAvatarItem.widget(Text('B')),
+            StackedAvatarItem.widget(Text('C')),
+            StackedAvatarItem.widget(Text('D')),
+            StackedAvatarItem.widget(Text('E')),
+          ],
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2f: static display panels', () {
     testWidgets('EmptyStatePlaceholder', (tester) async {
       await runViewportSweep(
