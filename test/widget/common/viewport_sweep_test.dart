@@ -60,6 +60,78 @@ void main() {
     }
   });
 
+  group('FEAT-200 phase 2l: calendar and avatar selection', () {
+    testWidgets('DailyLoginCalendarWidget', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => DailyLoginCalendarWidget(
+          currentStreakDay: 4,
+          claimedDaysInCycle: const {1, 2, 3},
+          canClaimToday: true,
+          onClaim: () {},
+        ),
+      );
+    });
+
+    testWidgets('DailyLoginCalendarWidget at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => DailyLoginCalendarWidget(
+          currentStreakDay: 4,
+          claimedDaysInCycle: const {1, 2, 3},
+          canClaimToday: true,
+          onClaim: () {},
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('AvatarFrameSelector', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => AvatarFrameSelector(
+          options: const [
+            AvatarFrameOption(id: 'cyan', label: 'Classic Cyan', color: Colors.cyan),
+            AvatarFrameOption(id: 'gold', label: 'Golden Legend', color: Colors.amber, locked: true),
+            AvatarFrameOption(id: 'fire', label: 'Fire Streak', color: Colors.deepOrange),
+          ],
+          selectedId: 'cyan',
+          onSelect: (_) {},
+          previewChild: const Icon(Icons.person),
+        ),
+      );
+    });
+
+    testWidgets('AvatarFrameSelector at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => AvatarFrameSelector(
+          options: const [
+            AvatarFrameOption(id: 'cyan', label: 'Classic Cyan', color: Colors.cyan),
+            AvatarFrameOption(id: 'gold', label: 'Golden Legend', color: Colors.amber, locked: true),
+            AvatarFrameOption(id: 'fire', label: 'Fire Streak', color: Colors.deepOrange),
+          ],
+          selectedId: 'cyan',
+          onSelect: (_) {},
+          previewChild: const Icon(Icons.person),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2k: compact controls', () {
     testWidgets('AsyncCommonButton', (tester) async {
       await runViewportSweep(
