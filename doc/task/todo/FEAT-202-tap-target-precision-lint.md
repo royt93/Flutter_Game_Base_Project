@@ -25,5 +25,12 @@ Giới hạn đã biết: heuristic theo cửa sổ dòng (một wrapper cách x
 - Chạy trên repo: các vi phạm đã ghi ở ENH-106 (toggle_switch 30, segmented_tab_bar 36) xuất hiện; baseline cập nhật.
 - Test cho rule: một GestureDetector trần trong file có Semantics khác phải bị báo.
 
+## Pha 2 (2026-11-14): warning-only size heuristic
+- [x] Added `AuditRuleId.tapTargetSize`: inspect a narrow local window (4 source lines before, 8 after each `GestureDetector(`/`InkWell(`) for literal `width:`/`height:` below 48 logical pixels.
+- [x] Same-line `// a11y-ok: <reason>` suppresses a matching literal only when reason is non-empty.
+- [x] Dynamic sizes and dimensions outside the window remain unchecked. This source-text warning does not measure the render tree or effective hit region.
+- [x] Repo scan found one real case: EnergyBar refill target was 28×28. Expanded hit box to 48×48 while keeping visible icon unchanged; widget test asserts size.
+- [x] Unit tests pass; `dart run tool/accessibility_audit_check.dart` reports no issues; targeted analyzer clean.
+
 ## Phụ thuộc
-Nên làm sau FEAT-200 để có widget test thật bổ sung cho phần heuristic.
+- [x] FEAT-200 phase 2f completed; viewport fixtures cover real widgets for heuristic verification.

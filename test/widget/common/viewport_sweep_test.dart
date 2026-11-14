@@ -60,6 +60,33 @@ void main() {
     }
   });
 
+  group('FEAT-200 phase 2f: static display panels', () {
+    testWidgets('EmptyStatePlaceholder', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => EmptyStatePlaceholder(
+          icon: Icons.emoji_events_outlined,
+          title: 'No achievements yet',
+          message: 'Complete a level to earn your first badge.',
+          action: const Text('Play now'),
+        ),
+      );
+    });
+
+    testWidgets('EventSchemaAuditCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => EventSchemaAuditCard(
+          snapshot: EventSchemaAuditSnapshot(
+            totalValidations: 120,
+            rejectedCount: 37,
+            redactedCount: 24,
+          ),
+        ),
+      );
+    });
+  });
+
   group('FEAT-200: viewport sweep', () {
     testWidgets('StreakRepairDialog', (tester) async {
       await runViewportSweep(

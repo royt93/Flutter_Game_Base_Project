@@ -170,17 +170,24 @@ class _EnergyBarState extends State<EnergyBar>
         label: widget.refillLabel,
         child: GestureDetector(
           key: const ValueKey('energyBarRefillBtn'),
+          behavior: HitTestBehavior.opaque,
           onTap: widget.onRefillTap,
-          child: Container(
-            width: 28,
-            height: 28,
-            decoration: BoxDecoration(
-              color: NeonTheme.card,
-              shape: BoxShape.circle,
-              border: Border.all(color: NeonTheme.lime, width: 2),
-              boxShadow: NeonTheme.drop(blur: 4),
+          child: SizedBox(
+            width: 48,
+            height: 48,
+            child: Center(
+              child: Container(
+                width: 28,
+                height: 28,
+                decoration: BoxDecoration(
+                  color: NeonTheme.card,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: NeonTheme.lime, width: 2),
+                  boxShadow: NeonTheme.drop(blur: 4),
+                ),
+                child: Icon(Icons.add_rounded, color: NeonTheme.lime, size: 20),
+              ),
             ),
-            child: Icon(Icons.add_rounded, color: NeonTheme.lime, size: 20),
           ),
         ),
       ),

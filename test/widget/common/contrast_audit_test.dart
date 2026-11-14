@@ -110,6 +110,51 @@ void main() {
     }
   });
 
+  group('FEAT-205 candidate probe: VipPerkProgressRow flat card labels', () {
+    for (final dark in [false, true]) {
+      testWidgets('dark=$dark', (tester) async {
+        NeonTheme.dark = dark;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              backgroundColor: NeonTheme.card,
+              body: Center(
+                child: VipPerkProgressRow(
+                  currentTier: 2,
+                  currentPoints: 740,
+                  nextTierPoints: 1000,
+                  perks: const [
+                    VipPerk(icon: Icons.bolt, label: 'Bonus energy'),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        );
+
+        final issues = auditRenderedTextContrast(
+          tester,
+          find.byType(VipPerkProgressRow),
+          defaultBackground: NeonTheme.card,
+        );
+        final candidates = issues.where(
+          (issue) =>
+              issue.text == 'Next Tier Progress' ||
+              issue.text == 'Perks & Privileges',
+        );
+        expect(find.text('Next Tier Progress'), findsOneWidget);
+        expect(find.text('Perks & Privileges'), findsOneWidget);
+        expect(
+          candidates.map((issue) => issue.text),
+          dark
+              ? isEmpty
+              : containsAll(['Next Tier Progress', 'Perks & Privileges']),
+          reason: '$candidates',
+        );
+      });
+    }
+  });
+
   group('FEAT-205 contrast_audit harness', () {
     testWidgets('phát hiện text độ tương phản thấp trên nền phẳng pha alpha', (
       tester,

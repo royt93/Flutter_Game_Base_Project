@@ -134,6 +134,64 @@ Widget build(BuildContext context) {
     });
   });
 
+  group('scanAccessibility: tapTargetSize (FEAT-202)', () {
+    List<AuditViolation> scan(String src) => scanAccessibility(
+      rules: _only(AuditRuleId.tapTargetSize),
+      fileContents: {'w.dart': src},
+    );
+
+    test('warns on explicit width or height below 48 near a tap recognizer', () {
+      for (final src in [
+        'SizedBox(width: 32, child: GestureDetector(onTap: f))',
+        'SizedBox(height: 47.5, child: InkWell(onTap: f))',
+        'InkWell(onTap: f, child: SizedBox(width: 24))',
+      ]) {
+        final violations = scan(src);
+        expect(violations, hasLength(1), reason: src);
+        expect(violations.single.ruleId, AuditRuleId.tapTargetSize);
+        expect(violations.single.severity, AuditSeverity.warning);
+      }
+    });
+
+    test('ignores 48-or-larger and dynamic dimensions', () {
+      for (final src in [
+        'SizedBox(width: 48, child: GestureDetector(onTap: f))',
+        'SizedBox(height: 56, child: InkWell(onTap: f))',
+        'SizedBox(width: targetSize, child: GestureDetector(onTap: f))',
+        'SizedBox(width: 48, child: GestureDetector(onTap: f)) // width: 24',
+      ]) {
+        expect(scan(src), isEmpty, reason: src);
+      }
+    });
+
+    test('same-line a11y-ok suppression requires a reason', () {
+      expect(
+        scan('SizedBox(width: 32, // a11y-ok: decorative hit region\n'
+            'child: GestureDetector(onTap: f))'),
+        isEmpty,
+      );
+      expect(
+        scan('SizedBox(width: 32, // a11y-ok:\n'
+            'child: GestureDetector(onTap: f))'),
+        hasLength(1),
+      );
+    });
+
+    test('size heuristic remains independent from tap semantics rule', () {
+      final src =
+          'Semantics(button: true, child: SizedBox(width: 32, '
+          'child: GestureDetector(onTap: f)))';
+      expect(
+        scanAccessibility(
+          rules: _only(AuditRuleId.tapTargetSite),
+          fileContents: {'w.dart': src},
+        ),
+        isEmpty,
+      );
+      expect(scan(src), hasLength(1));
+    });
+  });
+
   group('scanAccessibility: hardcodedString (FEAT-203)', () {
     List<AuditViolation> scan(String src) => scanAccessibility(
       rules: _only(AuditRuleId.hardcodedString),
@@ -409,7 +467,7 @@ class Real extends StatelessWidget {}
         fileContents: {
           'multi.dart': '''
 AnimationController(vsync: this);
-GestureDetector(onTap: () {}, child: Text('x'));
+GestureDetector(onTap: () {}, child: SizedBox(width: 32, child: Text('x')));
 EdgeInsets.only(left: 4);
 Colors.orange;
 Text('Claim reward');

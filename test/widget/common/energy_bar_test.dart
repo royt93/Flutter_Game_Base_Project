@@ -130,6 +130,7 @@ void main() {
       final refill = find.byKey(const ValueKey('energyBarRefillBtn'));
       expect(refill, findsOneWidget);
       expect(tester.getSemantics(refill).label, 'Refill lives');
+      expect(tester.getSize(refill), const Size(48, 48));
       await tester.tap(refill);
       expect(calls, 1);
     });

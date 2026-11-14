@@ -21,6 +21,7 @@ enum AuditRuleId {
   rtlDirectionalSafety,
   hardcodedColor,
   tapTargetSite,
+  tapTargetSize,
   hardcodedString,
 }
 
@@ -73,6 +74,13 @@ final List<AuditRule> defaultAuditRules = [
     triggerPattern: RegExp(r'GestureDetector\(|InkWell\('),
   ),
   AuditRule(
+    id: AuditRuleId.tapTargetSize,
+    severity: AuditSeverity.warning,
+    description:
+        'Tap target has an explicit local width/height below 48 logical pixels; source heuristic, not effective hit-area measurement (FEAT-202)',
+    triggerPattern: _siteTrigger,
+  ),
+  AuditRule(
     id: AuditRuleId.hardcodedString,
     severity: AuditSeverity.info,
     description:
@@ -107,7 +115,11 @@ final List<AuditRule> defaultAuditRules = [
 /// provides semantics from further away must be baselined with a reason.
 const int _siteLinesBefore = 8;
 const int _siteLinesAfter = 30;
+const int _sizeSiteLinesBefore = 4;
+const int _sizeSiteLinesAfter = 8;
 final RegExp _siteTrigger = RegExp(r'GestureDetector\(|InkWell\(');
+final RegExp _dimensionLiteral = RegExp(r'\b(width|height):\s*(\d+(?:\.\d+)?)\b');
+final RegExp _sizeSuppression = RegExp(r'//\s*a11y-ok:\s*(\S.*)$');
 final RegExp _siteMarker = RegExp(
   r'Semantics\(|MergeSemantics\(|semanticLabel|ExcludeSemantics\(',
 );
@@ -125,6 +137,35 @@ int _countUnlabeledTapSites(String content) {
     if (!_siteMarker.hasMatch(lines.sublist(from, to).join('\n'))) count++;
   }
   return count;
+}
+
+bool _hasUndersizedTapDimension(String content) {
+  final lines = content.split('\n');
+  for (var i = 0; i < lines.length; i++) {
+    if (!_siteTrigger.hasMatch(lines[i])) continue;
+    final from = i - _sizeSiteLinesBefore < 0 ? 0 : i - _sizeSiteLinesBefore;
+    final to = i + _sizeSiteLinesAfter > lines.length
+        ? lines.length
+        : i + _sizeSiteLinesAfter;
+    for (var j = from; j < to; j++) {
+      final commentStart = lines[j].indexOf('//');
+      final codeLine = commentStart == -1
+          ? lines[j]
+          : lines[j].substring(0, commentStart);
+      final suppression = commentStart == -1
+          ? null
+          : _sizeSuppression.firstMatch(lines[j].substring(commentStart));
+      for (final match in _dimensionLiteral.allMatches(codeLine)) {
+        final value = double.parse(match.group(2)!);
+        if (value >= 48) continue;
+        if (suppression != null && suppression.group(1)!.trim().isNotEmpty) {
+          continue;
+        }
+        return true;
+      }
+    }
+  }
+  return false;
 }
 
 /// User-visible English literal in widget code (FEAT-203): `Text('...')` or a
@@ -157,6 +198,9 @@ String _stripLineComments(String content) {
 bool _violatesRule(AuditRule rule, String content) {
   if (rule.id == AuditRuleId.tapTargetSite) {
     return _countUnlabeledTapSites(content) > 0;
+  }
+  if (rule.id == AuditRuleId.tapTargetSize) {
+    return _hasUndersizedTapDimension(content);
   }
   final code = _stripLineComments(content);
   if (!rule.triggerPattern.hasMatch(code)) return false;
