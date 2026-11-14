@@ -60,6 +60,75 @@ void main() {
     }
   });
 
+  group('FEAT-200 phase 2i: static display components', () {
+    testWidgets('ContrastPreviewCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => ContrastPreviewCard(
+          foreground: Colors.white,
+          background: Colors.black,
+          sampleText: 'Readable sample',
+        ),
+      );
+    });
+
+    testWidgets('ContrastPreviewCard at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => ContrastPreviewCard(
+          foreground: Colors.white,
+          background: Colors.black,
+          sampleText: 'Readable sample',
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('AvatarFrame', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const AvatarFrame(child: Text('AB')),
+      );
+    });
+
+    testWidgets('AvatarFrame at 2.0x text, 320dp and landscape', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const AvatarFrame(child: Text('AB')),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('PanelCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const PanelCard(child: Text('Reusable panel content')),
+      );
+    });
+
+    testWidgets('PanelCard at 2.0x text, 320dp and landscape', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const PanelCard(child: Text('Reusable panel content')),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2h: status cards', () {
     final cases = <String, Widget Function()>{
       'ContentPackStatusCard': () => ContentPackStatusCard(
