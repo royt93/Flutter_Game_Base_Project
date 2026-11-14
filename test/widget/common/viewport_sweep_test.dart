@@ -60,6 +60,60 @@ void main() {
     }
   });
 
+  group('FEAT-200 phase 2k: compact controls', () {
+    testWidgets('AsyncCommonButton', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => AsyncCommonButton(
+          label: 'Save progress',
+          onPressed: () async {},
+        ),
+      );
+    });
+
+    testWidgets('AsyncCommonButton at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => AsyncCommonButton(
+          label: 'Save progress',
+          onPressed: () async {},
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('CandySearchBar', (tester) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+      await runViewportSweep(
+        tester,
+        () => CandySearchBar(controller: controller, onChanged: (_) {}),
+      );
+    });
+
+    testWidgets('CandySearchBar at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+      await runViewportSweep(
+        tester,
+        () => CandySearchBar(controller: controller, onChanged: (_) {}),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2j: simple controls and layout', () {
     final cases = <String, Widget Function()>{
       'TooltipBubble': () => TooltipBubble.text('Tap here'),
