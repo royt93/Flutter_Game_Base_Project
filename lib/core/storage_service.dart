@@ -462,7 +462,9 @@ class StorageService extends GetxService {
     };
   }
 
-  /// Overwrites storage from an exported map. Values can only be
+  /// Overwrites storage from an exported map, except the anti-rewind clock
+  /// watermarks (`maxMsSeen`, `maxEpochDaySeen`), which are never lowered or
+  /// removed (BUG-119). Values can only be
   /// int/bool/double/String (StorageService never sets a List directly on
   /// SharedPreferences — [setStringList] JSON-encodes it to a String itself).
   Future<void> importAll(Map<String, Object?> data) async {
@@ -480,6 +482,7 @@ class StorageService extends GetxService {
     };
     await _drainPendingWrites();
     final previous = exportAll();
+    _keepAntiRewindWatermarks(normalized, previous);
     // Import ghi đè toàn bộ profile — mọi giá trị đang đệm không còn ý
     // nghĩa và sẽ ghi đè ngược lên dữ liệu vừa khôi phục nếu flush sau đó.
     _buffer.clear();
@@ -496,6 +499,28 @@ class StorageService extends GetxService {
         dlog('importAll rollback thất bại: $rollbackError');
       }
       rethrow;
+    }
+  }
+
+  /// BUG-119: `maxMsSeen` / `maxEpochDaySeen` are the anti-rewind clock guard
+  /// (`clamped_clock.dart`) and live in this same store, so replacing the whole
+  /// store with an older backup used to lower them and hand back every
+  /// time-gated reward the guard had burned. A restore or an erase may add or
+  /// raise them, never lower or remove them. Mutates [incoming] in place.
+  static const _antiRewindKeys = [
+    StorageKeys.maxMsSeen,
+    StorageKeys.maxEpochDaySeen,
+  ];
+
+  void _keepAntiRewindWatermarks(
+    Map<String, Object> incoming,
+    Map<String, Object> current,
+  ) {
+    for (final key in _antiRewindKeys) {
+      final now = current[key];
+      if (now is! int) continue;
+      final restored = incoming[key];
+      if (restored is! int || restored < now) incoming[key] = now;
     }
   }
 

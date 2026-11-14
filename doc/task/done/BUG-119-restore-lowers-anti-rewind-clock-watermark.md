@@ -20,5 +20,10 @@ Người chơi restore một backup cũ (họ có sẵn, hoặc tự tạo bằn
 ## Hướng sửa (cần quyết định chính sách)
 `importAll` giữ `max(mốc hiện tại, mốc trong backup)` cho các khoá đồng hồ (`maxMsSeen`, `maxEpochDaySeen`, và nhóm `trusted_clock_*`). Đổi ý nghĩa "restore ghi đè toàn bộ": các khoá này không bao giờ lùi. Câu hỏi: nhóm `trusted_clock_*` (baseline, prevWall, prevMonotonic) là cặp có ý nghĩa cùng nhau, nên chỉ bảo toàn `maxMsSeen`/`maxEpochDaySeen` hay cả nhóm? Cần đọc `trusted_clock.dart` trước khi chọn.
 
+## Đã sửa (2026-11-14), theo lựa chọn "giữ max cho 2 mốc chính"
+`importAll` (và vì vậy `eraseAll`) bảo toàn `max(mốc hiện tại, mốc trong backup)` cho `maxMsSeen` và `maxEpochDaySeen`; không có mốc ở cả hai phía thì không tạo ra gì. Nhóm `trusted_clock_*` giữ nguyên: đọc `trusted_clock.dart` cho thấy `nowMsTrusted()` khi chưa có `prevWallMs` sẽ lấy `max(maxMsSeen, wall)` làm baseline, nên mốc `maxMsSeen` được bảo toàn đã đóng lỗ hổng cho cả đường đó; còn nếu backup mang theo cặp `trusted_clock_*` thấp hơn, `classifyClockSample` sẽ coi lần đọc kế tiếp là một bước nhảy tới (không phải tua lùi) và baseline chỉ tăng. Chưa kiểm sâu tương tác này bằng test riêng.
+Hệ quả đáng chú ý: **`eraseAll` cũng giữ hai mốc** (một yêu cầu "xoá dữ liệu của tôi" không còn đặt lại bộ bảo vệ đồng hồ). Đây là hai số nguyên không định danh người chơi; ghi rõ trong CHANGELOG để consumer đánh giá với chính sách quyền riêng tư của họ.
+Test: 5 test `BUG-119` trong `storage_service_test.dart` (restore backup cũ giữ mốc cao, backup cao hơn vẫn nâng, `eraseAll` giữ mốc, không phát minh mốc, round trip); 2 test đỏ khi bỏ sửa, xanh khi có. `test/core` 2063 test xanh, API gate `unchanged`.
+
 ## Tiêu chí xong
 Test: sau `importAll(backup cũ)` mốc không thấp hơn trước; một restore bình thường (backup mới hơn) vẫn nâng mốc lên; không làm hỏng test hiện có của `StorageService`.

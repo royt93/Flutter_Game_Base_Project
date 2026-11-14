@@ -1000,4 +1000,61 @@ void main() {
       expect(mem.getString('stale'), isNull);
     });
   });
+  group('BUG-119: a restore never lowers the anti-rewind clock watermark', () {
+    late StorageService s;
+
+    setUp(() async {
+      SharedPreferences.setMockInitialValues({});
+      s = StorageService(await SharedPreferences.getInstance());
+    });
+
+    test('importAll of an older backup keeps the higher maxMsSeen and '
+        'maxEpochDaySeen', () async {
+      await s.setInt(StorageKeys.maxMsSeen, 5000);
+      await s.setInt(StorageKeys.maxEpochDaySeen, 40);
+
+      await s.importAll({
+        StorageKeys.maxMsSeen: 1000,
+        StorageKeys.maxEpochDaySeen: 5,
+        'other': 'restored',
+      });
+
+      expect(s.getInt(StorageKeys.maxMsSeen), 5000);
+      expect(s.getInt(StorageKeys.maxEpochDaySeen), 40);
+      expect(s.getString('other'), 'restored');
+    });
+
+    test('a backup with a HIGHER watermark still raises it', () async {
+      await s.setInt(StorageKeys.maxMsSeen, 1000);
+      await s.importAll({StorageKeys.maxMsSeen: 9000});
+      expect(s.getInt(StorageKeys.maxMsSeen), 9000);
+    });
+
+    test('eraseAll keeps the watermark so a "delete my data" cannot be used '
+        'to reset the clock guard', () async {
+      await s.setInt(StorageKeys.maxMsSeen, 5000);
+      await s.setInt(StorageKeys.maxEpochDaySeen, 40);
+      await s.setString('wallet', 'x');
+
+      await s.eraseAll();
+
+      expect(s.getString('wallet'), isNull);
+      expect(s.getInt(StorageKeys.maxMsSeen), 5000);
+      expect(s.getInt(StorageKeys.maxEpochDaySeen), 40);
+    });
+
+    test('with no watermark on either side nothing is invented', () async {
+      await s.importAll({'a': 1});
+      expect(s.allKeys().contains(StorageKeys.maxMsSeen), isFalse);
+      expect(s.allKeys().contains(StorageKeys.maxEpochDaySeen), isFalse);
+    });
+
+    test('the existing export keeps the watermark keys (round trip)', () async {
+      await s.setInt(StorageKeys.maxMsSeen, 7777);
+      final exported = s.exportAll();
+      await s.importAll(exported);
+      expect(s.getInt(StorageKeys.maxMsSeen), 7777);
+    });
+  });
+
 }
