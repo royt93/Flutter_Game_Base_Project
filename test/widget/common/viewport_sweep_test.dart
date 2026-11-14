@@ -60,6 +60,100 @@ void main() {
     }
   });
 
+  group('FEAT-200 phase 2n: filters and content history', () {
+    testWidgets('FilterChipRow', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => FilterChipRow<String>(
+          filters: const [
+            CandyFilter(value: 'rare', label: 'Rare collectibles'),
+            CandyFilter(value: 'fire', label: 'Fire creatures'),
+            CandyFilter(value: 'event', label: 'Event rewards'),
+          ],
+          selectedValues: const {'rare'},
+          onChanged: (_) {},
+        ),
+      );
+    });
+
+    testWidgets('FilterChipRow at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => FilterChipRow<String>(
+          filters: const [
+            CandyFilter(value: 'rare', label: 'Rare collectibles'),
+            CandyFilter(value: 'fire', label: 'Fire creatures'),
+            CandyFilter(value: 'event', label: 'Event rewards'),
+          ],
+          selectedValues: const {'rare'},
+          onChanged: (_) {},
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('ContentRevisionHistoryPanel', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => ContentRevisionHistoryPanel(
+          revisions: [
+            ContentRevisionSummary(
+              revision: 'opaque-revision-v12',
+              label: 'Winter event content update',
+              version: 12,
+              appliedAtText: 'Today, 10:30 UTC',
+            ),
+            ContentRevisionSummary(
+              revision: 'opaque-revision-v11',
+              label: 'New character release notes',
+              version: 11,
+              appliedAtText: 'Yesterday, 18:45 UTC',
+            ),
+          ],
+          currentRevision: 'opaque-revision-v12',
+          onRollback: (_) async {},
+        ),
+      );
+    });
+
+    testWidgets('ContentRevisionHistoryPanel at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => ContentRevisionHistoryPanel(
+          revisions: [
+            ContentRevisionSummary(
+              revision: 'opaque-revision-v12',
+              label: 'Winter event content update',
+              version: 12,
+              appliedAtText: 'Today, 10:30 UTC',
+            ),
+            ContentRevisionSummary(
+              revision: 'opaque-revision-v11',
+              label: 'New character release notes',
+              version: 11,
+              appliedAtText: 'Yesterday, 18:45 UTC',
+            ),
+          ],
+          currentRevision: 'opaque-revision-v12',
+          onRollback: (_) async {},
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2m: lists and goal indicators', () {
     testWidgets('FriendRequestTile', (tester) async {
       await runViewportSweep(
