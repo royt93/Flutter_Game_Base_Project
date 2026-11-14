@@ -17,10 +17,10 @@ Raise subtitle contrast to at least 4.5:1 in both themes without changing global
 ## Progress (2026-11-14)
 - [x] Changed subtitle to `NeonTheme.ink`; rendered-text assertions pass in light/dark.
 - [x] Existing `streak_repair_dialog_test.dart` passes.
-- [ ] Golden gate not present for this widget; do not generate local macOS baselines.
+- [x] Full CI, including Linux golden suite, passes on `3677a300`; no dedicated golden test exists for this widget.
 
 ## Acceptance
 - [x] Add a rendered-contrast regression test for `StreakRepairDialog` in light and dark modes.
 - [x] Light subtitle reaches at least 4.5:1 on its actual opaque card surface.
 - [x] Existing widget and semantics tests pass.
-- [ ] Existing golden tests pass (none found for this widget).
+- [x] No dedicated golden test exists for this widget; full CI passes.

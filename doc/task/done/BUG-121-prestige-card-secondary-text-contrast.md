@@ -23,4 +23,4 @@ Raise contrast only for the confirmed message and multiplier labels; do not chan
 - [x] Add rendered-contrast assertions for the message and both multiplier labels in light/dark modes.
 - [x] Confirmed light-mode text reaches at least 4.5:1 on its actual flat surface.
 - [x] Existing non-golden widget tests pass.
-- [ ] Existing golden tests pass after approved Linux baseline regeneration.
+- [x] Existing prestige golden suite passes locally; full Linux CI passes on `3677a300`.
