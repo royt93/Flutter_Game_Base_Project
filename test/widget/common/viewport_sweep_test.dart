@@ -1,12 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
+import 'package:roy_casual_kit/core/inventory_service.dart' show InventorySlot, InventorySnapshot;
 
 import 'package:roy_casual_kit/core/consent_state_service.dart'
     show ConsentStatus;
 import 'package:roy_casual_kit/core/inventory_service.dart' show ItemRarity;
 
 import '../../support/viewport_sweep.dart';
+
+Widget _defaultSweepInventoryItemBuilder(
+  BuildContext context,
+  InventorySlot slot,
+  bool isSelected,
+) => Center(child: Text('${slot.itemId} x${slot.quantity}'));
 
 /// FEAT-200 pha 1: each entry is a widget that must survive every default
 /// viewport. Add new widgets here; unsupported ones need a reason in
@@ -58,6 +65,94 @@ void main() {
         );
       });
     }
+  });
+
+  group('FEAT-200 phase 2p: inventory and level path', () {
+    testWidgets('InventoryGrid', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => InventoryGrid(
+          snapshot: const InventorySnapshot(
+            slots: [
+              InventorySlot(slotId: 1, itemId: 'potion', quantity: 3),
+              InventorySlot(slotId: 2, itemId: 'sword', quantity: 1),
+            ],
+            capacity: 4,
+          ),
+          itemBuilder: _defaultSweepInventoryItemBuilder,
+          unlockedCapacity: 4,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+        ),
+      );
+    });
+
+    testWidgets('InventoryGrid at 2.0x text, 320dp and landscape', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => InventoryGrid(
+          snapshot: const InventorySnapshot(
+            slots: [
+              InventorySlot(slotId: 1, itemId: 'potion', quantity: 3),
+              InventorySlot(slotId: 2, itemId: 'sword', quantity: 1),
+            ],
+            capacity: 4,
+          ),
+          itemBuilder: _defaultSweepInventoryItemBuilder,
+          unlockedCapacity: 4,
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('LevelPathMapTile', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => Wrap(
+          spacing: 12,
+          children: [
+            LevelPathMapTile(
+              node: LevelPathNode(level: 3, state: LevelState.completed, starsEarned: 2),
+              onTap: () {},
+            ),
+            LevelPathMapTile(
+              node: LevelPathNode(level: 4, state: LevelState.unlocked, isCurrent: true),
+              onTap: () {},
+            ),
+          ],
+        ),
+      );
+    });
+
+    testWidgets('LevelPathMapTile at 2.0x text, 320dp and landscape', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => Wrap(
+          spacing: 12,
+          children: [
+            LevelPathMapTile(
+              node: LevelPathNode(level: 3, state: LevelState.completed, starsEarned: 2),
+              onTap: () {},
+            ),
+            LevelPathMapTile(
+              node: LevelPathNode(level: 4, state: LevelState.unlocked, isCurrent: true),
+              onTap: () {},
+            ),
+          ],
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
   });
 
   group('FEAT-200 phase 2o: slider and daily offers', () {
