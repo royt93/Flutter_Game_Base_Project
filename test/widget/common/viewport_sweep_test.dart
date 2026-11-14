@@ -12,6 +12,54 @@ import '../../support/viewport_sweep.dart';
 /// viewport. Add new widgets here; unsupported ones need a reason in
 /// [_allowlist].
 void main() {
+  group('FEAT-200 phase 2e: general display widgets', () {
+    final cases = <String, Widget Function()>{
+      'BadgeDot': () => const BadgeDot(size: 24),
+      'CircularProgressRing': () => const CircularProgressRing(
+        progress: 0.75,
+        label: '75%',
+      ),
+      'CurrencyCounter': () => const CurrencyCounter(value: 123456),
+      'ProgressBarStars': () => const ProgressBarStars(progress: 0.75),
+      'StarRating': () => const StarRating(earned: 2),
+      'PaginatedDotsIndicator': () => const PaginatedDotsIndicator(
+        count: 8,
+        currentIndex: 4,
+      ),
+      'SectionHeader': () => const SectionHeader(title: 'Daily rewards'),
+      'CooldownCountdownChip': () => const CooldownCountdownChip(
+        remaining: Duration(hours: 2, minutes: 30),
+      ),
+      'CountdownChip': () => CountdownChip(
+        target: DateTime.now().add(const Duration(hours: 2, minutes: 30)),
+      ),
+      'NextRewardTeaserChip': () => NextRewardTeaserChip(
+        rewardLabel: 'Epic chest',
+        remainingText: '2h 30m',
+        progress: 0.72,
+        onTap: () {},
+      ),
+    };
+
+    for (final entry in cases.entries) {
+      testWidgets(entry.key, (tester) async {
+        await runViewportSweep(tester, entry.value);
+      });
+
+      testWidgets('${entry.key} at 2.0x text, 320dp and landscape', (tester) async {
+        await runViewportSweep(
+          tester,
+          entry.value,
+          viewports: const [
+            ViewportCase('320x480', Size(320, 480)),
+            ViewportCase('568x320-landscape', Size(568, 320)),
+          ],
+          textScale: 2.0,
+        );
+      });
+    }
+  });
+
   group('FEAT-200: viewport sweep', () {
     testWidgets('StreakRepairDialog', (tester) async {
       await runViewportSweep(
