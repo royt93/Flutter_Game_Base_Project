@@ -229,7 +229,7 @@ class _SupportDiagnosticsCardState extends State<SupportDiagnosticsCard> {
               ),
             Text(
               widget.privacyNote,
-              style: TextStyle(color: NeonTheme.inkSoft, fontSize: 12),
+              style: TextStyle(color: NeonTheme.ink, fontSize: 12),
             ),
             if (_shareFailed)
               Text(

@@ -14,7 +14,13 @@ The active subtitle uses `NeonTheme.inkSoft` over opaque `NeonTheme.card` in lig
 ## Scope
 Raise subtitle contrast to at least 4.5:1 in both themes without changing global theme tokens or altering the widget's visual hierarchy. Keep dark mode, localization, and caller-provided subtitle behavior intact.
 
+## Progress (2026-11-14)
+- [x] Changed subtitle to `NeonTheme.ink`; rendered-text assertions pass in light/dark.
+- [x] Existing `streak_repair_dialog_test.dart` passes.
+- [ ] Golden gate not present for this widget; do not generate local macOS baselines.
+
 ## Acceptance
-- Add a rendered-contrast regression test for `StreakRepairDialog` in light and dark modes.
-- Light subtitle is at least 4.5:1 on its actual opaque card surface.
-- Existing widget, semantics, and golden tests pass.
+- [x] Add a rendered-contrast regression test for `StreakRepairDialog` in light and dark modes.
+- [x] Light subtitle reaches at least 4.5:1 on its actual opaque card surface.
+- [x] Existing widget and semantics tests pass.
+- [ ] Existing golden tests pass (none found for this widget).

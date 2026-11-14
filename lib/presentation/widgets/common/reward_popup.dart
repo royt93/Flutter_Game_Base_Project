@@ -178,7 +178,7 @@ class _RewardPopupState extends State<RewardPopup>
               widget.message!,
               textAlign: TextAlign.center,
               style: TextStyle(
-                color: NeonTheme.inkSoft,
+                color: NeonTheme.ink,
                 fontSize: 14,
                 height: 1.4,
                 fontWeight: FontWeight.w600,

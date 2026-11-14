@@ -1,12 +1,114 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
-import 'package:roy_casual_kit/presentation/widgets/common/prestige_confirmation_card.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 
 import '../../support/contrast_audit.dart';
 
+void _noop() {}
+
+Future<List<RenderedTextContrastIssue>> _auditWidget(
+  WidgetTester tester,
+  Widget child,
+  Finder scope,
+) async {
+  await tester.pumpWidget(
+    MaterialApp(
+      home: Scaffold(
+        backgroundColor: NeonTheme.card,
+        body: Center(child: SingleChildScrollView(child: child)),
+      ),
+    ),
+  );
+  return auditRenderedTextContrast(
+    tester,
+    scope,
+    defaultBackground: NeonTheme.card,
+  );
+}
+
 void main() {
   tearDown(() => NeonTheme.dark = false);
+
+  group('BUG-120..124: confirmed widget text contrast', () {
+    final cases = <String, (Widget Function() build, List<String> labels)>{
+      'StreakRepairDialog': (
+        () => StreakRepairDialog(
+          streakDays: 14,
+          onRepair: () {},
+          onSkip: () {},
+        ),
+        ['Your 14-day streak is frozen! Repair it to continue where you left off.'],
+      ),
+      'PrestigeConfirmationCard': (
+        () => PrestigeConfirmationCard(
+          currentLevel: 50,
+          requiredPrestigeValue: 'Level 50',
+          currentMultiplier: 1,
+          nextMultiplier: 1.5,
+          rewards: const [
+            PrestigeReward(
+              icon: Icons.flash_on_rounded,
+              label: 'Permanent Speed',
+              amount: '+25%',
+            ),
+          ],
+          onConfirm: () {},
+          onCancel: () {},
+        ),
+        ['Reset your current level to unlock permanent boosts!', 'Current', 'After Prestige'],
+      ),
+      'RewardPopup': (
+        () => const RewardPopup(
+          title: 'Reward',
+          message: 'You earned 100 gems',
+          enableParticles: false,
+        ),
+        ['You earned 100 gems'],
+      ),
+      'SupportDiagnosticsCard': (
+        () => SupportDiagnosticsCard(
+          summary: SupportDiagnosticsSummary(
+            appVersion: '1.2.3',
+            generatedAtText: '10:30 UTC',
+            sections: const ['health', 'logs'],
+          ),
+          onShare: () async {},
+        ),
+        ['Logs and diagnostic details are shared only after confirmation.'],
+      ),
+      'GameOverCardTemplate': (
+        () => const GameOverCardTemplate(
+          title: 'Game Over',
+          message: 'Better luck next time',
+          primaryActionLabel: 'Retry',
+          onPrimaryAction: _noop,
+        ),
+        ['Better luck next time'],
+      ),
+    };
+
+    for (final dark in [false, true]) {
+      for (final entry in cases.entries) {
+        testWidgets('dark=$dark: ${entry.key}', (tester) async {
+          NeonTheme.dark = dark;
+          final issues = await _auditWidget(
+            tester,
+            entry.value.$1(),
+            find.byType(Scaffold),
+          );
+          for (final label in entry.value.$2) {
+            expect(find.text(label), findsOneWidget, reason: entry.key);
+            expect(
+              issues.where((issue) => issue.text == label),
+              isEmpty,
+              reason: '$label $issues',
+            );
+          }
+        });
+      }
+    }
+  });
 
   group('FEAT-205 contrast_audit harness', () {
     testWidgets('phát hiện text độ tương phản thấp trên nền phẳng pha alpha', (
@@ -157,8 +259,13 @@ void main() {
           expect(issues, isEmpty, reason: '$issues');
         } else {
           expect(
-            issues.map((issue) => issue.text),
-            containsAll(['Current', 'After Prestige', '1.5x']),
+            issues.where(
+              (issue) =>
+                  issue.text == 'Current' ||
+                  issue.text == 'After Prestige' ||
+                  issue.text == 'Reset your current level to unlock permanent boosts!',
+            ),
+            isEmpty,
             reason: '$issues',
           );
         }

@@ -187,7 +187,7 @@ class _StreakRepairDialogState extends State<StreakRepairDialog>
                         'Your ${widget.streakDays}-day streak is frozen! Repair it to continue where you left off.',
                     textAlign: TextAlign.center,
                     style: TextStyle(
-                      color: NeonTheme.inkSoft,
+                      color: NeonTheme.ink,
                       fontSize: 14,
                       fontWeight: FontWeight.w600,
                       height: 1.3,

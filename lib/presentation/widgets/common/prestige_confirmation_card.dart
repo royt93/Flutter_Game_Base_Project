@@ -214,7 +214,7 @@ class PrestigeConfirmationCard extends StatelessWidget {
             style: TextStyle(
               fontSize: 13,
               fontWeight: FontWeight.w600,
-              color: NeonTheme.inkSoft,
+              color: NeonTheme.ink,
             ),
           ),
           const SizedBox(height: NeonTheme.s16),
@@ -240,6 +240,7 @@ class PrestigeConfirmationCard extends StatelessWidget {
                     label: currentLabel,
                     value: '${currentMultiplier.toStringAsFixed(1)}x',
                     color: NeonTheme.inkSoft,
+                    labelColor: NeonTheme.ink,
                   ),
                   Icon(
                     Icons.arrow_forward_rounded,
@@ -251,6 +252,7 @@ class PrestigeConfirmationCard extends StatelessWidget {
                     value: '${nextMultiplier.toStringAsFixed(1)}x',
                     diff: diffLabel,
                     color: NeonTheme.gold,
+                    labelColor: NeonTheme.ink,
                   ),
                 ],
               ),
@@ -348,6 +350,7 @@ class PrestigeConfirmationCard extends StatelessWidget {
     required String label,
     required String value,
     required Color color,
+    required Color labelColor,
     String? diff,
   }) {
     return Column(
@@ -358,7 +361,7 @@ class PrestigeConfirmationCard extends StatelessWidget {
           style: TextStyle(
             fontSize: 11,
             fontWeight: FontWeight.w600,
-            color: NeonTheme.inkSoft,
+            color: labelColor,
           ),
         ),
         const SizedBox(height: 2),

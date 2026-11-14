@@ -14,7 +14,13 @@ The active privacy note uses `NeonTheme.inkSoft` at 12sp on opaque `NeonTheme.ca
 ## Scope
 Raise privacy-note contrast to at least 4.5:1 in both themes without changing global theme tokens. Preserve its subordinate visual hierarchy and share-confirmation behavior.
 
+## Progress (2026-11-14)
+- [x] Changed privacy note to `NeonTheme.ink`; rendered-text assertions pass in light/dark.
+- [x] Existing `support_diagnostics_card_test.dart` passes.
+- [ ] Goldens fail against old baselines on macOS. Regenerate only through Linux `regenerate-goldens.yml`; do not copy unrelated PNGs.
+
 ## Acceptance
-- Add a rendered-contrast regression test for the privacy note in light/dark modes.
-- Light-mode note reaches at least 4.5:1 on its actual opaque card surface.
-- Existing widget and golden tests pass.
+- [x] Add a rendered-contrast regression test for the privacy note in light/dark modes.
+- [x] Light-mode note reaches at least 4.5:1 on its actual opaque card surface.
+- [x] Existing non-golden widget tests pass.
+- [ ] Existing golden tests pass after approved Linux baseline regeneration.
