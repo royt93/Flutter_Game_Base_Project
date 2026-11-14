@@ -31,7 +31,8 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 - [x] Pha 2f (2026-11-14): thêm `EmptyStatePlaceholder` và `EventSchemaAuditCard` vào 5 viewport mặc định; full sweep 90 tests pass. Tổng 51/170 widget; không lộ overflow.
 - [x] FEAT-202 reuse case thật: `EnergyBar` refill target mở rộng 28dp → 48dp; existing test checks 48×48, viewport sweep still passes.
 - [x] Pha 2g (2026-11-14): thêm `BatterySaverIndicator` và `StackedAvatarGroup` với sweep mặc định và 320dp/landscape ở text scale 2.0. Full sweep 94 tests pass; tổng coverage 53/170 widget.
-- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 117 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- [x] Pha 2h (2026-11-14): thêm `ContentPackStatusCard`, `DeepLinkResultCard`, `EconomyCertificateStatusCard` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 100 tests pass; tổng coverage 56/170 widget.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 114 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 
 ## Tiêu chí xong

@@ -60,6 +60,44 @@ void main() {
     }
   });
 
+  group('FEAT-200 phase 2h: status cards', () {
+    final cases = <String, Widget Function()>{
+      'ContentPackStatusCard': () => ContentPackStatusCard(
+        status: ContentPackStatus.ready,
+        contentVersion: 12,
+        updatedAtText: 'Today, 10:30 UTC',
+      ),
+      'DeepLinkResultCard': () => DeepLinkResultCard(
+        status: DeepLinkResultStatus.rejected,
+        summaryText: 'This request could not be opened.',
+      ),
+      'EconomyCertificateStatusCard': () => EconomyCertificateStatusCard(
+        status: EconomyCertificateCardStatus.tampered,
+        summaryText: 'Certificate verification failed.',
+      ),
+    };
+
+    for (final entry in cases.entries) {
+      testWidgets(entry.key, (tester) async {
+        await runViewportSweep(tester, entry.value);
+      });
+
+      testWidgets('${entry.key} at 2.0x text, 320dp and landscape', (
+        tester,
+      ) async {
+        await runViewportSweep(
+          tester,
+          entry.value,
+          viewports: const [
+            ViewportCase('320x480', Size(320, 480)),
+            ViewportCase('568x320-landscape', Size(568, 320)),
+          ],
+          textScale: 2.0,
+        );
+      });
+    }
+  });
+
   group('FEAT-200 phase 2g: display widgets', () {
     testWidgets('BatterySaverIndicator', (tester) async {
       await runViewportSweep(
