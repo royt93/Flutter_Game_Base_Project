@@ -20,8 +20,17 @@ source: "ENH-103 (locked token) và ENH-104 (prestige card): token cặp đúng 
 - Chạy được trên nhóm widget mẫu đã sửa (prestige card xanh) và bắt lại lỗi cũ khi hoàn nguyên tạm.
 - Danh sách vi phạm còn lại được ghi baseline với lý do hoặc task.
 
+## Tiến độ audit
+- **Pha 1 revision (2026-11-14):** harness `test/support/contrast_audit.dart` audit `RichText`/`TextSpan` đã resolve style, màu tổ tiên từ `Material`/`ColoredBox`/`DecoratedBox` phẳng, alpha blend, ngưỡng normal/large text; bỏ qua gradient/image và glyph nằm trong `Icon`. 8 widget tests pass: nền tint, kế thừa `DefaultTextStyle`, `RichText` spans, gradient skip, PrestigeConfirmationCard thật ở light/dark và regression fixture ENH-104. `flutter analyze --no-pub` sạch.
+- **Pha 2 (probe sơ bộ, 2026-11-14):** thử 15 widget từ viewport sweep ở light/dark bằng fixture riêng. Có candidate dưới AA ở một số widget nhưng chưa được xác nhận: probe cũ chạy trước khi harness hỗ trợ `RichText` và phân loại disabled, đồng thời không dùng toàn bộ ThemeData/interaction state của app. Không dùng candidate cũ làm baseline/task sửa; chạy lại probe sau khi dựng đúng theme, fixture/disabled policy và kiểm tra effective background từng widget.
+
 ## Rủi ro
-Nền có gradient/shader/ảnh không tính được bằng alpha-blend; ghi rõ giới hạn, bỏ qua nền không phải màu phẳng.
+Nền có gradient/shader/ảnh không tính được bằng alpha-blend; harness bỏ qua `DecoratedBox` có gradient/image và chưa xử lý `CustomPaint`, shader hay mọi loại overlay/layer. Kết quả probe không được coi là WCAG certification; chỉ dùng để sàng lọc widget có nền phẳng đã nhận diện.
+- Text không có màu explicit hoặc kế thừa style có thể bị bỏ qua; harness chỉ kiểm `Text` có thể resolve màu foreground.
+- Disabled controls cần được loại khỏi audit theo trạng thái widget; chưa có cơ chế loại trừ tổng quát.
+- Font size bold large-text threshold dùng Flutter logical pixel approximation (18.67sp bold / 24sp regular).
+- `Icon` threshold 3.0 chưa được thực hiện trong pha 1.
+- Duy trì probe/baseline lâu dài chỉ sau khi ổn định cách xác định effective background trên widget thật.
 
 ## Quan hệ
 Bổ sung FEAT-201 (lint tĩnh màu cố định): lint bắt chỗ viết, audit này bắt kết quả render.

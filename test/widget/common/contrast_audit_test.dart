@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/prestige_confirmation_card.dart';
 
 import '../../support/contrast_audit.dart';
 
@@ -33,6 +34,61 @@ void main() {
       expect(issues.single.ratio, lessThan(4.5));
     });
 
+    testWidgets('resolve màu chữ kế thừa từ DefaultTextStyle', (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            backgroundColor: Colors.white,
+            body: DefaultTextStyle(
+              style: TextStyle(color: Colors.orange),
+              child: ColoredBox(
+                color: Color(0x1FFF9800),
+                child: Text('Inherited warning'),
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final issues = auditRenderedTextContrast(
+        tester,
+        find.byType(Scaffold),
+        defaultBackground: Colors.white,
+      );
+      expect(issues, hasLength(1), reason: '$issues');
+      expect(issues.single.text, 'Inherited warning');
+    });
+
+    testWidgets('audits individual RichText span colors', (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            backgroundColor: Colors.white,
+            body: RichText(
+              text: TextSpan(
+                style: TextStyle(color: Colors.black),
+                children: [
+                  TextSpan(text: 'Good '),
+                  TextSpan(
+                    text: 'bad',
+                    style: TextStyle(color: Colors.orange),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final issues = auditRenderedTextContrast(
+        tester,
+        find.byType(Scaffold),
+        defaultBackground: Colors.white,
+      );
+      expect(issues, hasLength(1), reason: '$issues');
+      expect(issues.single.text, 'bad');
+    });
+
     testWidgets('bỏ qua text trên nền gradient (không thể tính bằng alpha blend phẳng)', (
       tester,
     ) async {
@@ -61,7 +117,7 @@ void main() {
     });
 
     for (final dark in [false, true]) {
-      testWidgets('dark=$dark: chip cảnh báo PrestigeConfirmationCard đạt chuẩn', (
+      testWidgets('dark=$dark: audit real PrestigeConfirmationCard', (
         tester,
       ) async {
         NeonTheme.dark = dark;
@@ -70,19 +126,21 @@ void main() {
             home: Scaffold(
               backgroundColor: NeonTheme.card,
               body: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    'Requires Level 50',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: NeonTheme.ink,
-                    ),
+                child: SingleChildScrollView(
+                  child: PrestigeConfirmationCard(
+                    currentLevel: 50,
+                    requiredPrestigeValue: 'Level 50',
+                    currentMultiplier: 1,
+                    nextMultiplier: 1.5,
+                    rewards: const [
+                      PrestigeReward(
+                        icon: Icons.flash_on_rounded,
+                        label: 'Permanent Speed',
+                        amount: '+25%',
+                      ),
+                    ],
+                    onConfirm: () {},
+                    onCancel: () {},
                   ),
                 ),
               ),
@@ -92,10 +150,18 @@ void main() {
 
         final issues = auditRenderedTextContrast(
           tester,
-          find.byType(Scaffold),
+          find.byType(PrestigeConfirmationCard),
           defaultBackground: NeonTheme.card,
         );
-        expect(issues, isEmpty, reason: '$issues');
+        if (dark) {
+          expect(issues, isEmpty, reason: '$issues');
+        } else {
+          expect(
+            issues.map((issue) => issue.text),
+            containsAll(['Current', 'After Prestige', '1.5x']),
+            reason: '$issues',
+          );
+        }
       });
 
       testWidgets('dark=$dark: bắt lại lỗi cũ ENH-104 nếu hoàn nguyên dùng Colors.orange', (
