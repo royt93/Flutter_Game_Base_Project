@@ -60,6 +60,88 @@ void main() {
     }
   });
 
+  group('FEAT-200 phase 2o: slider and daily offers', () {
+    testWidgets('CandySlider', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => CandySlider(value: 0.55, onChanged: (_) {}),
+      );
+    });
+
+    testWidgets('CandySlider at 2.0x text, 320dp and landscape', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => CandySlider(value: 0.55, onChanged: (_) {}),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('DailyOfferStack', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => SingleChildScrollView(
+          child: DailyOfferStack(
+            offers: const [
+              DailyOffer(
+                id: 'starter',
+                title: 'Starter Pack',
+                priceLabel: r'$1.99',
+                subtitle: 'Great value for new players',
+                badgeLabel: 'BEST VALUE',
+              ),
+              DailyOffer(
+                id: 'coins',
+                title: 'Coin Pouch',
+                priceLabel: r'$0.99',
+                subtitle: 'Limited time',
+                icon: Icons.monetization_on_rounded,
+              ),
+            ],
+            onOpen: (_) {},
+          ),
+        ),
+      );
+    });
+
+    testWidgets('DailyOfferStack at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => SingleChildScrollView(
+          child: DailyOfferStack(
+            offers: const [
+              DailyOffer(
+                id: 'starter',
+                title: 'Starter Pack',
+                priceLabel: r'$1.99',
+                subtitle: 'Great value for new players',
+                badgeLabel: 'BEST VALUE',
+              ),
+              DailyOffer(
+                id: 'coins',
+                title: 'Coin Pouch',
+                priceLabel: r'$0.99',
+                subtitle: 'Limited time',
+                icon: Icons.monetization_on_rounded,
+              ),
+            ],
+            onOpen: (_) {},
+          ),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2n: filters and content history', () {
     testWidgets('FilterChipRow', (tester) async {
       await runViewportSweep(
