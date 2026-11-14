@@ -8,6 +8,7 @@ import 'package:roy_casual_kit/core/offline_outbox_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/retry_policy.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 OfflineOutboxService _service({
   required OutboxUploader uploader,
@@ -444,6 +445,70 @@ void main() {
       expect(second.manualReviewItems.length, 1);
       expect(second.manualReviewItems.first.remotePayload?['server'], 'value');
     });
+  });
+
+  group('OfflineOutboxService: durable offline recovery', () {
+    TestWidgetsFlutterBinding.ensureInitialized();
+
+    test(
+      'pending item survives service recreation, drains once on reconnect, and ack persists',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final storage = StorageService(prefs);
+        final signal = FakeConnectivitySignal();
+        final uploads = <(String, Map<String, Object?>)>[];
+        Timer immediateTimer(Duration delay, void Function() callback) =>
+            Timer(Duration.zero, callback);
+        ConnectivityCoordinator makeConnectivity() => ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => true,
+          createTimer: immediateTimer,
+        );
+        OfflineOutboxService makeOutbox(ConnectivityCoordinator connectivity) =>
+            _service(
+              storage: storage,
+              connectivity: connectivity,
+              uploader: (payload, key) async {
+                uploads.add((key, Map<String, Object?>.from(payload)));
+                return const SyncAck();
+              },
+            );
+
+        var connectivity = Get.put(makeConnectivity());
+        var outbox = Get.put(makeOutbox(connectivity));
+        outbox.enqueue(idempotencyKey: 'resume-k1', payload: const {'score': 42});
+        await pumpEventQueue();
+
+        expect(uploads, isEmpty);
+        expect(outbox.items.map((item) => item.idempotencyKey), ['resume-k1']);
+        expect(prefs.getString(StorageKeys.offlineOutboxV1), contains('resume-k1'));
+
+        Get.delete<OfflineOutboxService>(force: true);
+        Get.delete<ConnectivityCoordinator>(force: true);
+        connectivity = Get.put(makeConnectivity());
+        outbox = Get.put(makeOutbox(connectivity));
+
+        expect(outbox.items.map((item) => item.idempotencyKey), ['resume-k1']);
+        signal.setHasInterface(true);
+        await pumpEventQueue();
+
+        expect(uploads, hasLength(1));
+        expect(uploads.single.$1, 'resume-k1');
+        expect(uploads.single.$2, {'score': 42});
+        expect(outbox.items, isEmpty);
+        expect(prefs.getString(StorageKeys.offlineOutboxV1), contains('[]'));
+
+        Get.delete<OfflineOutboxService>(force: true);
+        Get.delete<ConnectivityCoordinator>(force: true);
+        final afterAck = _service(
+          storage: storage,
+          uploader: (payload, key) async => const SyncAck(),
+        );
+        expect(afterAck.items, isEmpty);
+        signal.dispose();
+      },
+    );
   });
 
   group('OfflineOutboxService: corrupt save', () {
