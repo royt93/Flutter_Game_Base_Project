@@ -145,6 +145,101 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2r: wheel, badges, analytics', () {
+    testWidgets('CoinMultiplierWheel', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => CoinMultiplierWheel(autoStart: false),
+      );
+    });
+
+    testWidgets('CoinMultiplierWheel at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => CoinMultiplierWheel(autoStart: false),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('BadgeShowcaseStrip', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => BadgeShowcaseStrip(
+          slotCount: 4,
+          badges: [
+            BadgeShowcaseItem(id: 'first', label: 'First win'),
+            BadgeShowcaseItem(id: 'streak', label: 'Seven-day streak'),
+          ],
+          onSlotTap: (_) {},
+          readOnly: true,
+        ),
+      );
+    });
+
+    testWidgets('BadgeShowcaseStrip at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => BadgeShowcaseStrip(
+          slotCount: 4,
+          badges: [
+            BadgeShowcaseItem(id: 'first', label: 'First win'),
+            BadgeShowcaseItem(id: 'streak', label: 'Seven-day streak'),
+          ],
+          onSlotTap: (_) {},
+          readOnly: true,
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('AnalyticsQueueStatusCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => AnalyticsQueueStatusCard(
+          snapshot: AnalyticsQueueSnapshot(
+            pendingCount: 123,
+            uploadedCount: 9876,
+            droppedCounts: const {'Rate limited': 12, 'Rejected': 3},
+          ),
+          consentGranted: false,
+        ),
+      );
+    });
+
+    testWidgets('AnalyticsQueueStatusCard at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => AnalyticsQueueStatusCard(
+          snapshot: AnalyticsQueueSnapshot(
+            pendingCount: 123,
+            uploadedCount: 9876,
+            droppedCounts: const {'Rate limited': 12, 'Rejected': 3},
+          ),
+          consentGranted: false,
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2p: inventory and level path', () {
     testWidgets('InventoryGrid', (tester) async {
       await runViewportSweep(
