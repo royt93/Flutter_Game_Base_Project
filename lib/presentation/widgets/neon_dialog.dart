@@ -29,73 +29,83 @@ class NeonDialog {
     Widget? content,
     IconData? icon,
   }) {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 360),
-      margin: const EdgeInsets.symmetric(horizontal: NeonTheme.s24),
-      padding: const EdgeInsets.all(NeonTheme.s24),
-      decoration: BoxDecoration(
-        color: NeonTheme.card,
-        borderRadius: BorderRadius.circular(28),
-        border: Border.all(color: color, width: 4),
-        boxShadow: [
-          ...NeonTheme.glow(color, blur: 26, spread: 2),
-          ...NeonTheme.drop(y: 8, blur: 24),
-        ],
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          if (icon != null) ...[
-            Container(
-              padding: const EdgeInsets.all(NeonTheme.s16),
-              decoration: BoxDecoration(
-                color: color,
-                shape: BoxShape.circle,
-                boxShadow: NeonTheme.drop(y: 3, blur: 8),
-              ),
-              child: Icon(icon, color: Colors.white, size: 40),
-            ),
-            const SizedBox(height: NeonTheme.s16),
+    return LayoutBuilder(
+      builder: (context, constraints) => Container(
+        constraints: BoxConstraints(
+          maxWidth: 360,
+          maxHeight: constraints.maxHeight.isFinite
+              ? constraints.maxHeight - 48
+              : double.infinity,
+        ),
+        margin: const EdgeInsets.symmetric(horizontal: NeonTheme.s24),
+        padding: const EdgeInsets.all(NeonTheme.s24),
+        decoration: BoxDecoration(
+          color: NeonTheme.card,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(color: color, width: 4),
+          boxShadow: [
+            ...NeonTheme.glow(color, blur: 26, spread: 2),
+            ...NeonTheme.drop(y: 8, blur: 24),
           ],
-          Text(
-            title,
-            textAlign: TextAlign.center,
-            style: TextStyle(
-              color: NeonTheme.ink,
-              fontSize: 26,
-              fontWeight: FontWeight.w900,
-              letterSpacing: 1,
-            ),
-          ),
-          if (message != null) ...[
-            const SizedBox(height: NeonTheme.s16),
-            Text(
-              message,
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: NeonTheme.inkSoft,
-                fontSize: 14,
-                height: 1.4,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-          if (content != null) ...[
-            const SizedBox(height: NeonTheme.s16),
-            content,
-          ],
-          if (actions.isNotEmpty) ...[
-            const SizedBox(height: NeonTheme.s24),
-            Row(
-              children: [
-                for (final a in actions) ...[
-                  Expanded(child: NeonDialogButton(action: a)),
-                  if (a != actions.last) const SizedBox(width: NeonTheme.s16),
-                ],
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null) ...[
+                Container(
+                  padding: const EdgeInsets.all(NeonTheme.s16),
+                  decoration: BoxDecoration(
+                    color: color,
+                    shape: BoxShape.circle,
+                    boxShadow: NeonTheme.drop(y: 3, blur: 8),
+                  ),
+                  child: Icon(icon, color: Colors.white, size: 40),
+                ),
+                const SizedBox(height: NeonTheme.s16),
               ],
-            ),
-          ],
-        ],
+              Text(
+                title,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: NeonTheme.ink,
+                  fontSize: 26,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 1,
+                ),
+              ),
+              if (message != null) ...[
+                const SizedBox(height: NeonTheme.s16),
+                Text(
+                  message,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: NeonTheme.inkSoft,
+                    fontSize: 14,
+                    height: 1.4,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              if (content != null) ...[
+                const SizedBox(height: NeonTheme.s16),
+                content,
+              ],
+              if (actions.isNotEmpty) ...[
+                const SizedBox(height: NeonTheme.s24),
+                Row(
+                  children: [
+                    for (final a in actions) ...[
+                      Expanded(child: NeonDialogButton(action: a)),
+                      if (a != actions.last)
+                        const SizedBox(width: NeonTheme.s16),
+                    ],
+                  ],
+                ),
+              ],
+            ],
+          ),
+        ),
       ),
     );
   }

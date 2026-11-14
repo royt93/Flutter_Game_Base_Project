@@ -42,7 +42,8 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 - [x] Pha 2p (2026-11-14): thêm `InventoryGrid`, `LevelPathMapTile` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 138 tests pass; tổng coverage 75/170 widget.
 - [x] Pha 2q (2026-11-14): thêm `BoosterSlotBar`, `StreakCounter`, `WinStreakFlameHud` ở sweep mặc định và 320dp/landscape với text 2.0x. Lộ overflow thật BUG-127 (`WinStreakFlameHud` 320dp ở 2× text), sửa co chữ bằng `FittedBox.scaleDown`. Full sweep 144 tests pass; tổng coverage 80/170 widget.
 - [x] Pha 2r (2026-11-14): thêm `CoinMultiplierWheel` (không auto-start), `BadgeShowcaseStrip` (read-only) và `AnalyticsQueueStatusCard` (không consent) ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 150 tests pass; tổng coverage 83/170 widget.
-- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 87 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- [x] Pha 2s (2026-11-14): thêm `ConsentBanner` với service setup/reset riêng cho từng viewport; full sweep 157 tests pass, `consent_banner_test.dart` và analyzer pass. Sweep lộ BUG-128: dialog tràn ở màn thấp và 2× text. Sửa shared `NeonDialog.panel` bằng max-height theo viewport và scroll content. Tổng coverage 84/170 widget.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 86 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 
 ## Tiêu chí xong

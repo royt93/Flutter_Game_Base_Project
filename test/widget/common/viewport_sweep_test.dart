@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
-import 'package:roy_casual_kit/core/inventory_service.dart' show InventorySlot, InventorySnapshot;
 
+import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/consent_state_service.dart'
-    show ConsentStatus;
-import 'package:roy_casual_kit/core/inventory_service.dart' show ItemRarity;
+    show ConsentStatus, ConsentStateService;
+import 'package:roy_casual_kit/core/inventory_service.dart'
+    show ItemRarity, InventorySlot, InventorySnapshot;
+import 'package:roy_casual_kit/core/onboarding_coordinator_service.dart';
+import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/viewport_sweep.dart';
 
@@ -143,6 +147,71 @@ void main() {
         textScale: 2.0,
       );
     });
+  });
+
+  group('FEAT-200 phase 2s: consent banner', () {
+    for (final viewport in defaultViewports) {
+      testWidgets('ConsentBanner at ${viewport.name}', (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        Get.put(
+          StorageService(await SharedPreferences.getInstance()),
+          permanent: true,
+        );
+        Get.put(ConsentStateService(policyVersion: 1), permanent: true);
+        Get.put(OnboardingCoordinatorService(), permanent: true);
+        addTearDown(Get.reset);
+        tester.view.physicalSize = viewport.size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: viewport.size,
+                textScaler: TextScaler.linear(1),
+              ),
+              child: const Scaffold(body: ConsentBanner(child: Text('Home'))),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: viewport.name);
+      });
+    }
+
+    for (final viewport in const [
+      ViewportCase('320x480', Size(320, 480)),
+      ViewportCase('568x320-landscape', Size(568, 320)),
+    ]) {
+      testWidgets('ConsentBanner at 2.0x text, ${viewport.name}', (tester) async {
+        SharedPreferences.setMockInitialValues({});
+        Get.put(
+          StorageService(await SharedPreferences.getInstance()),
+          permanent: true,
+        );
+        Get.put(ConsentStateService(policyVersion: 1), permanent: true);
+        Get.put(OnboardingCoordinatorService(), permanent: true);
+        addTearDown(Get.reset);
+        tester.view.physicalSize = viewport.size;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        await tester.pumpWidget(
+          MaterialApp(
+            home: MediaQuery(
+              data: MediaQueryData(
+                size: viewport.size,
+                textScaler: TextScaler.linear(2),
+              ),
+              child: const Scaffold(body: ConsentBanner(child: Text('Home'))),
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(tester.takeException(), isNull, reason: viewport.name);
+      });
+    }
   });
 
   group('FEAT-200 phase 2r: wheel, badges, analytics', () {
