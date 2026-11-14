@@ -198,13 +198,18 @@ class _WinStreakFlameHudState extends State<WinStreakFlameHud>
                         ),
                       ),
                       const SizedBox(width: NeonTheme.s8),
-                      Text(
-                        '${widget.streakCount} wins',
-                        key: const ValueKey('winStreakCountText'),
-                        style: TextStyle(
-                          color: NeonTheme.ink,
-                          fontWeight: FontWeight.w900,
-                          fontSize: widget.height * 0.34,
+                      Flexible(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            '${widget.streakCount} wins',
+                            key: const ValueKey('winStreakCountText'),
+                            style: TextStyle(
+                              color: NeonTheme.ink,
+                              fontWeight: FontWeight.w900,
+                              fontSize: widget.height * 0.34,
+                            ),
+                          ),
                         ),
                       ),
                       const SizedBox(width: NeonTheme.s8),
@@ -221,12 +226,15 @@ class _WinStreakFlameHudState extends State<WinStreakFlameHud>
                             color: active ? flameColor : NeonTheme.muted,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Text(
-                            multiplier,
-                            style: TextStyle(
-                              color: NeonTheme.ink,
-                              fontWeight: FontWeight.w900,
-                              fontSize: widget.height * 0.32,
+                          child: FittedBox(
+                            fit: BoxFit.scaleDown,
+                            child: Text(
+                              multiplier,
+                              style: TextStyle(
+                                color: NeonTheme.ink,
+                                fontWeight: FontWeight.w900,
+                                fontSize: widget.height * 0.32,
+                              ),
                             ),
                           ),
                         ),
