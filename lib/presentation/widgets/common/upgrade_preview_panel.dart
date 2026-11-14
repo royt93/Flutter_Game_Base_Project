@@ -58,6 +58,7 @@ class UpgradePreviewPanel extends StatelessWidget {
     this.maxLevelLabel = 'MAX LEVEL',
     this.subtitle,
     this.semanticLabel,
+    this.costHeader = 'Upgrade Cost',
   }) {
     if (title.trim().isEmpty ||
         upgradeLabel.trim().isEmpty ||
@@ -119,6 +120,9 @@ class UpgradePreviewPanel extends StatelessWidget {
   final String maxLevelLabel;
   final String? subtitle;
   final String? semanticLabel;
+
+  /// Header above the upgrade cost.
+  final String costHeader;
 
   bool get isAffordable => costs.every((cost) => cost.isAffordable);
   bool get _canUpgrade => !isMaxLevel && !isUpgrading && isAffordable;
@@ -195,7 +199,7 @@ class UpgradePreviewPanel extends StatelessWidget {
             if (costs.isNotEmpty) ...[
               const SizedBox(height: NeonTheme.s8),
               Text(
-                'Upgrade Cost',
+                costHeader,
                 style: TextStyle(
                   color: NeonTheme.inkSoft,
                   fontSize: 11,

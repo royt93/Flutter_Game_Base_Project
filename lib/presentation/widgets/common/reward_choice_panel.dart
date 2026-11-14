@@ -58,6 +58,8 @@ class RewardChoicePanel extends StatefulWidget {
     this.claimedIds = const {},
     this.confirmLabel,
     this.color,
+    this.emptyMessage = 'No rewards to choose from.',
+    this.claimedLabel = 'Claimed',
   }) : assert(
          options.map((o) => o.id).toSet().length == options.length,
          'RewardChoicePanel: duplicate option id',
@@ -77,6 +79,12 @@ class RewardChoicePanel extends StatefulWidget {
   /// entirely, so a returning player can't re-claim after a restart.
   final Set<String> claimedIds;
   final String? confirmLabel;
+
+  /// Shown when [options] is empty.
+  final String emptyMessage;
+
+  /// Shown next to an option that was already claimed.
+  final String claimedLabel;
   final Color? color;
 
   @override
@@ -119,9 +127,9 @@ class _RewardChoicePanelState extends State<RewardChoicePanel> {
   @override
   Widget build(BuildContext context) {
     if (widget.options.isEmpty) {
-      return const EmptyStatePlaceholder(
+      return EmptyStatePlaceholder(
         icon: Icons.card_giftcard,
-        message: 'No rewards to choose from.',
+        message: widget.emptyMessage,
       );
     }
     final canConfirm = !_isClaimed && _selected.length >= widget.minSelectable;
@@ -133,6 +141,7 @@ class _RewardChoicePanelState extends State<RewardChoicePanel> {
             option: option,
             selected: _selected.contains(option.id),
             claimed: _effectiveClaimed.contains(option.id),
+            claimedLabel: widget.claimedLabel,
             color: widget.color ?? NeonTheme.cyan,
             onTap: () => _toggle(option),
           ),
@@ -155,6 +164,7 @@ class _OptionCard extends StatelessWidget {
     required this.option,
     required this.selected,
     required this.claimed,
+    required this.claimedLabel,
     required this.color,
     required this.onTap,
   });
@@ -162,6 +172,7 @@ class _OptionCard extends StatelessWidget {
   final RewardChoiceOption option;
   final bool selected;
   final bool claimed;
+  final String claimedLabel;
   final Color color;
   final VoidCallback onTap;
 
@@ -245,7 +256,7 @@ class _OptionCard extends StatelessWidget {
                 Icon(Icons.check_circle, color: color),
                 const SizedBox(width: NeonTheme.s8 / 2),
                 Text(
-                  'Claimed',
+                  claimedLabel,
                   style: TextStyle(color: color, fontWeight: FontWeight.w800),
                 ),
               ] else if (selected)

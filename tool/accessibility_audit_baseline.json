@@ -133,5 +133,15 @@
     "file": "lib/presentation/widgets/common/achievement_roadmap_card.dart",
     "rule": "tapTargetSite",
     "reason": "Dòng 193: thẻ đã bọc Semantics(container, label) đầy đủ ngay phía trên, nhưng nhãn nhiều dòng đẩy Semantics( ra ngoài cửa sổ 8 dòng của heuristic (báo nhầm). Link Claim bên trong đã sửa ở ENH-107."
+  },
+  {
+    "file": "lib/presentation/widgets/common/scene_transition_overlay.dart",
+    "rule": "hardcodedString",
+    "reason": "Hai chuỗi là message trong SdkFailure trả về cho lập trình viên (\"controller already disposed\", \"transition superseded\"), không phải chữ hiển thị cho người chơi; UI lỗi thật đi qua RetryErrorState (đã có override). FEAT-203 pha 2."
+  },
+  {
+    "file": "lib/presentation/widgets/debug_qa_overlay.dart",
+    "rule": "hardcodedString",
+    "reason": "DebugQaOverlay chỉ dùng khi phát triển (tab State/Playground/Replay/Health/Time Travel/Network...), không hiển thị cho người chơi; giữ tiếng Anh cố định. FEAT-203 pha 2."
   }
 ]

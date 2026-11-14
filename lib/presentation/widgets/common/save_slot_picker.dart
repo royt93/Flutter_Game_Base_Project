@@ -30,6 +30,13 @@ class SaveSlotPicker extends StatelessWidget {
     this.createLabel = 'Create New Slot',
     this.emptyMessage = 'No save slots yet',
     this.semanticLabel,
+    this.activeLabel = 'ACTIVE',
+    this.selectLabel = 'Select',
+    this.deleteTooltip = 'Delete Slot',
+    this.deleteTitle = 'Delete Save Slot?',
+    this.deleteConfirmLabel = 'Delete',
+    this.deleteCancelLabel = 'Cancel',
+    this.deleteMessageBuilder,
   }) {
     if (maxSlots != null && maxSlots! <= 0) {
       throw ArgumentError.value(maxSlots, 'maxSlots', 'must be greater than 0');
@@ -93,6 +100,22 @@ class SaveSlotPicker extends StatelessWidget {
   final String createLabel;
   final String emptyMessage;
   final String? semanticLabel;
+
+  /// Badge text on the active slot.
+  final String activeLabel;
+
+  /// Label of each slot's select button.
+  final String selectLabel;
+
+  /// Tooltip of each slot's delete button, and the texts of its confirmation.
+  final String deleteTooltip;
+  final String deleteTitle;
+  final String deleteConfirmLabel;
+  final String deleteCancelLabel;
+
+  /// Builds the delete-confirmation message from the slot's display name; null
+  /// keeps the English default.
+  final String Function(String slotName)? deleteMessageBuilder;
 
   bool get _canCreate =>
       onCreate != null && (maxSlots == null || slots.length < maxSlots!);
@@ -283,8 +306,8 @@ class SaveSlotPicker extends StatelessWidget {
                           color: NeonTheme.cyan,
                           borderRadius: BorderRadius.circular(8),
                         ),
-                        child: const Text(
-                          'ACTIVE',
+                        child: Text(
+                          activeLabel,
                           style: TextStyle(
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
@@ -312,7 +335,7 @@ class SaveSlotPicker extends StatelessWidget {
           if (!isActive)
             CommonButton(
               key: ValueKey('saveSlotSelectBtn_${slot.id}'),
-              label: 'Select',
+              label: selectLabel,
               width: 90,
               variant: CommonButtonVariant.secondary,
               color: NeonTheme.cyan,
@@ -327,15 +350,16 @@ class SaveSlotPicker extends StatelessWidget {
                 color: NeonTheme.red,
                 size: 22,
               ),
-              tooltip: 'Delete Slot',
+              tooltip: deleteTooltip,
               onPressed: () async {
                 final confirmed = await showConfirmDialog(
                   context,
-                  title: 'Delete Save Slot?',
+                  title: deleteTitle,
                   message:
+                      deleteMessageBuilder?.call(slot.displayName) ??
                       'Are you sure you want to delete "${slot.displayName}"? All progress in this slot will be permanently lost.',
-                  confirmLabel: 'Delete',
-                  cancelLabel: 'Cancel',
+                  confirmLabel: deleteConfirmLabel,
+                  cancelLabel: deleteCancelLabel,
                   color: NeonTheme.red,
                   icon: Icons.delete_forever_rounded,
                 );

@@ -13,6 +13,7 @@ class CandySearchBar extends StatefulWidget {
     required this.onChanged,
     this.hintText = 'Search',
     this.semanticLabel = 'Search items',
+    this.clearLabel = 'Clear search',
     this.debounce = const Duration(milliseconds: 300),
     this.onSubmitted,
   });
@@ -22,6 +23,9 @@ class CandySearchBar extends StatefulWidget {
   final ValueChanged<String>? onSubmitted;
   final String hintText;
   final String semanticLabel;
+
+  /// Semantics label of the clear button.
+  final String clearLabel;
   final Duration debounce;
 
   @override
@@ -105,7 +109,7 @@ class _CandySearchBarState extends State<CandySearchBar> {
         const SizedBox(width: NeonTheme.s8),
         Semantics(
           button: true,
-          label: 'Clear search',
+          label: widget.clearLabel,
           onTap: _clear,
           child: PressableScale(
             key: const ValueKey('candySearchClear'),

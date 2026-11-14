@@ -61,6 +61,8 @@ class RewardTrackRoad extends StatelessWidget {
     this.premiumLabel = 'PREMIUM',
     this.freeLabel = 'FREE',
     this.semanticLabel,
+    this.claimLabel = 'Claim',
+    this.claimedLabel = 'Claimed',
   }) {
     if (currentXp < 0) {
       throw ArgumentError.value(currentXp, 'currentXp', 'must be non-negative');
@@ -104,6 +106,10 @@ class RewardTrackRoad extends StatelessWidget {
   final String premiumLabel;
   final String freeLabel;
   final String? semanticLabel;
+
+  /// Label of a claimable reward's claim link, and of an already claimed one.
+  final String claimLabel;
+  final String claimedLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -158,6 +164,8 @@ class RewardTrackRoad extends StatelessWidget {
                   claimedPremiumIds: claimedPremiumIds,
                   freeLabel: freeLabel,
                   premiumLabel: premiumLabel,
+                  claimLabel: claimLabel,
+                  claimedLabel: claimedLabel,
                   onClaim: onClaim,
                   isLast: index == tiers.length - 1,
                 );
@@ -180,6 +188,8 @@ class _TierColumn extends StatelessWidget {
     required this.claimedPremiumIds,
     required this.freeLabel,
     required this.premiumLabel,
+    required this.claimLabel,
+    required this.claimedLabel,
     required this.onClaim,
     required this.isLast,
   });
@@ -191,6 +201,8 @@ class _TierColumn extends StatelessWidget {
   final Set<String> claimedPremiumIds;
   final String freeLabel;
   final String premiumLabel;
+  final String claimLabel;
+  final String claimedLabel;
   final void Function(String tierId, RewardTrackLane lane) onClaim;
   final bool isLast;
 
@@ -257,6 +269,8 @@ class _TierColumn extends StatelessWidget {
                       lane: RewardTrackLane.free,
                     ),
                     lane: RewardTrackLane.free,
+                    claimLabel: claimLabel,
+                    claimedLabel: claimedLabel,
                     onClaim: () => onClaim(tier.id, RewardTrackLane.free),
                   ),
                 ),
@@ -275,6 +289,8 @@ class _TierColumn extends StatelessWidget {
                       lane: RewardTrackLane.premium,
                     ),
                     lane: RewardTrackLane.premium,
+                    claimLabel: claimLabel,
+                    claimedLabel: claimedLabel,
                     onClaim: () => onClaim(tier.id, RewardTrackLane.premium),
                   ),
                 ),
@@ -294,6 +310,8 @@ class _RewardCell extends StatelessWidget {
     required this.reward,
     required this.status,
     required this.lane,
+    required this.claimLabel,
+    required this.claimedLabel,
     required this.onClaim,
   });
 
@@ -302,6 +320,8 @@ class _RewardCell extends StatelessWidget {
   final MilestoneReward? reward;
   final RewardTrackClaimState status;
   final RewardTrackLane lane;
+  final String claimLabel;
+  final String claimedLabel;
   final VoidCallback onClaim;
 
   @override
@@ -389,7 +409,7 @@ class _RewardCell extends StatelessWidget {
                       widthFactor: 1,
                       heightFactor: 1,
                       child: Text(
-                        'Claim',
+                        claimLabel,
                         textAlign: TextAlign.center,
                         style: TextStyle(
                           color: color,
@@ -404,7 +424,7 @@ class _RewardCell extends StatelessWidget {
             ),
           if (claimed)
             Text(
-              'Claimed',
+              claimedLabel,
               textAlign: TextAlign.center,
               style: TextStyle(
                 color: NeonTheme.inkSoft,

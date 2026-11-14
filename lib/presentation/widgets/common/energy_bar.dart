@@ -34,6 +34,7 @@ class EnergyBar extends StatefulWidget {
     this.semanticLabel,
     this.onRefillTap,
     this.enableStatusPulse = true,
+    this.refillLabel = 'Refill lives',
   });
 
   final int currentEnergy;
@@ -65,6 +66,9 @@ class EnergyBar extends StatefulWidget {
   /// shop, ask friends, watch an ad). `null` (default) shows no button, so
   /// existing callers are unchanged. Hidden while [hasInfiniteLives].
   final VoidCallback? onRefillTap;
+
+  /// Semantics label of the refill button (shown only with [onRefillTap]).
+  final String refillLabel;
 
   /// Heartbeat pulse on the pips while lives are at zero (danger) — skipped
   /// under Reduce Motion, when [hasInfiniteLives], or when `false`.
@@ -163,7 +167,7 @@ class _EnergyBarState extends State<EnergyBar>
       padding: const EdgeInsetsDirectional.only(start: NeonTheme.s8),
       child: Semantics(
         button: true,
-        label: 'Refill lives',
+        label: widget.refillLabel,
         child: GestureDetector(
           key: const ValueKey('energyBarRefillBtn'),
           onTap: widget.onRefillTap,

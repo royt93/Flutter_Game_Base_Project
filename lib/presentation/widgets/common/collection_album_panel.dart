@@ -37,6 +37,7 @@ class CollectionAlbumPanel extends StatefulWidget {
     this.completionRewardLabel,
     this.onViewReward,
     this.emptyMessage = 'No collectibles in this album.',
+    this.viewRewardLabel = 'View Reward',
   }) {
     if (title.trim().isEmpty) {
       throw ArgumentError.value(title, 'title', 'must not be empty');
@@ -88,6 +89,9 @@ class CollectionAlbumPanel extends StatefulWidget {
   final String? completionRewardLabel;
   final VoidCallback? onViewReward;
   final String emptyMessage;
+
+  /// Label of the completion-reward link shown with [onViewReward].
+  final String viewRewardLabel;
 
   @override
   State<CollectionAlbumPanel> createState() => _CollectionAlbumPanelState();
@@ -184,7 +188,7 @@ class _CollectionAlbumPanelState extends State<CollectionAlbumPanel> {
                               widthFactor: 1,
                               heightFactor: 1,
                               child: Text(
-                                'View Reward',
+                                widget.viewRewardLabel,
                                 style: TextStyle(
                                   color: NeonTheme.cyan,
                                   fontSize: 12,

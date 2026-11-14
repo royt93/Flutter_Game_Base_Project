@@ -45,9 +45,14 @@ class CommunityLeaderboardCard extends StatelessWidget {
     this.emptyMessage = 'No leaderboard entries yet.',
     this.semanticLabel,
     this.maxVisibleRows = 5,
+    this.refreshLabel = 'Refresh',
   }) {
-    if (title.trim().isEmpty || emptyMessage.trim().isEmpty) {
-      throw ArgumentError('title and emptyMessage must not be empty');
+    if (title.trim().isEmpty ||
+        emptyMessage.trim().isEmpty ||
+        refreshLabel.trim().isEmpty) {
+      throw ArgumentError(
+        'title, emptyMessage and refreshLabel must not be empty',
+      );
     }
     if (maxVisibleRows <= 0) {
       throw ArgumentError.value(
@@ -84,6 +89,9 @@ class CommunityLeaderboardCard extends StatelessWidget {
   final Future<void> Function()? onRetry;
   final String title;
   final String emptyMessage;
+
+  /// Tooltip of the refresh button (shown only with [onRefresh]).
+  final String refreshLabel;
   final String? semanticLabel;
   final int maxVisibleRows;
 
@@ -124,7 +132,7 @@ class CommunityLeaderboardCard extends StatelessWidget {
                 if (onRefresh != null)
                   IconButton(
                     key: const ValueKey('communityLeaderboardRefresh'),
-                    tooltip: 'Refresh',
+                    tooltip: refreshLabel,
                     onPressed: onRefresh,
                     icon: Icon(Icons.refresh_rounded, color: NeonTheme.cyan),
                   ),

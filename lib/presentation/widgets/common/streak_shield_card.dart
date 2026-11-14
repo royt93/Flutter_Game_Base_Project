@@ -23,6 +23,8 @@ class StreakShieldCard extends StatelessWidget {
     this.useShieldLabel = 'Use Shield',
     this.repairLabel = 'Repair Streak',
     this.dismissLabel = 'Dismiss',
+    this.currentStreakLabel = 'Current Streak',
+    this.shieldsLabel = 'Freeze Shields',
     this.semanticLabel,
     this.showActions = true,
   }) {
@@ -77,6 +79,8 @@ class StreakShieldCard extends StatelessWidget {
   final String useShieldLabel;
   final String repairLabel;
   final String dismissLabel;
+  final String currentStreakLabel;
+  final String shieldsLabel;
   final String? semanticLabel;
   final bool showActions;
 
@@ -196,7 +200,7 @@ class StreakShieldCard extends StatelessWidget {
                 children: [
                   Flexible(
                     child: _buildMetric(
-                      label: 'Current Streak',
+                      label: currentStreakLabel,
                       value: '$streakDays days',
                       icon: Icons.local_fire_department_rounded,
                       color: NeonTheme.orange,
@@ -209,7 +213,7 @@ class StreakShieldCard extends StatelessWidget {
                   ),
                   Flexible(
                     child: _buildMetric(
-                      label: 'Freeze Shields',
+                      label: shieldsLabel,
                       value: '$shieldCount left',
                       icon: hasShield
                           ? Icons.shield_rounded

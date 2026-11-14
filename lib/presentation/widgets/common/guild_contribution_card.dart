@@ -41,6 +41,7 @@ class GuildContributionCard extends StatelessWidget {
     this.onRetry,
     this.contributeLabel = 'Contribute',
     this.title = 'Guild Goal',
+    this.retryLabel = 'Retry',
   }) {
     if (guildName.trim().isEmpty ||
         goalTitle.trim().isEmpty ||
@@ -102,6 +103,9 @@ class GuildContributionCard extends StatelessWidget {
   final Future<void> Function()? onRetry;
   final String contributeLabel;
   final String title;
+
+  /// Label of the retry link shown with [onRetry] after a load error.
+  final String retryLabel;
 
   double get progress => (totalContribution / goalContribution).clamp(0.0, 1.0);
 
@@ -309,7 +313,7 @@ class GuildContributionCard extends StatelessWidget {
                   widthFactor: 1,
                   heightFactor: 1,
                   child: Text(
-                    'Retry',
+                    retryLabel,
                     style: TextStyle(
                       color: NeonTheme.cyan,
                       fontWeight: FontWeight.w900,

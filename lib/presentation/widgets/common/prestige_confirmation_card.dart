@@ -36,6 +36,9 @@ class PrestigeConfirmationCard extends StatelessWidget {
     this.message = 'Reset your current level to unlock permanent boosts!',
     this.confirmLabel = 'Prestige Now',
     this.cancelLabel = 'Keep Playing',
+    this.currentLabel = 'Current',
+    this.afterPrestigeLabel = 'After Prestige',
+    this.rewardsHeader = 'Permanent Rewards',
     this.semanticLabel,
     this.showActions = true,
   }) {
@@ -100,6 +103,9 @@ class PrestigeConfirmationCard extends StatelessWidget {
   final String message;
   final String confirmLabel;
   final String cancelLabel;
+  final String currentLabel;
+  final String afterPrestigeLabel;
+  final String rewardsHeader;
   final String? semanticLabel;
   final bool showActions;
 
@@ -231,7 +237,7 @@ class PrestigeConfirmationCard extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                 children: [
                   _buildMultiplierColumn(
-                    label: 'Current',
+                    label: currentLabel,
                     value: '${currentMultiplier.toStringAsFixed(1)}x',
                     color: NeonTheme.inkSoft,
                   ),
@@ -241,7 +247,7 @@ class PrestigeConfirmationCard extends StatelessWidget {
                     size: 24,
                   ),
                   _buildMultiplierColumn(
-                    label: 'After Prestige',
+                    label: afterPrestigeLabel,
                     value: '${nextMultiplier.toStringAsFixed(1)}x',
                     diff: diffLabel,
                     color: NeonTheme.gold,
@@ -290,7 +296,7 @@ class PrestigeConfirmationCard extends StatelessWidget {
           const SizedBox(height: NeonTheme.s16),
           // Rewards section header
           Text(
-            'Permanent Rewards',
+            rewardsHeader,
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w800,

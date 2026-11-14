@@ -34,6 +34,7 @@ class VipPerkProgressRow extends StatelessWidget {
     this.onAction,
     this.actionLabel = 'View Perks',
     this.semanticLabel,
+    this.perksHeader = 'Perks & Privileges',
   }) {
     if (currentTier < 0) {
       throw ArgumentError.value(
@@ -76,6 +77,9 @@ class VipPerkProgressRow extends StatelessWidget {
   final VoidCallback? onAction;
   final String actionLabel;
   final String? semanticLabel;
+
+  /// Header above the perk chips.
+  final String perksHeader;
 
   bool get isMaxTier => nextTierPoints == null;
 
@@ -243,7 +247,7 @@ class VipPerkProgressRow extends StatelessWidget {
             if (perks.isNotEmpty) ...[
               const SizedBox(height: NeonTheme.s16),
               Text(
-                'Perks & Privileges',
+                perksHeader,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,

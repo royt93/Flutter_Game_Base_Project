@@ -40,6 +40,7 @@ class AchievementRoadmapCard extends StatelessWidget {
     this.isLoading = false,
     this.semanticLabel,
     this.maxVisibleItems = 4,
+    this.claimLabel = 'Claim',
   }) {
     if (title.trim().isEmpty || emptyMessage.trim().isEmpty) {
       throw ArgumentError('title and emptyMessage must not be empty');
@@ -88,6 +89,9 @@ class AchievementRoadmapCard extends StatelessWidget {
   final bool isLoading;
   final String? semanticLabel;
   final int maxVisibleItems;
+
+  /// Label of each claimable item's claim link.
+  final String claimLabel;
 
   @override
   Widget build(BuildContext context) {
@@ -147,6 +151,7 @@ class AchievementRoadmapCard extends StatelessWidget {
                   itemBuilder: (context, index) => _RoadmapItem(
                     item: items[index],
                     onClaim: () => onClaim(items[index].id),
+                    claimLabel: claimLabel,
                     onOpen: onOpen == null
                         ? null
                         : () => onOpen!(items[index].id),
@@ -161,10 +166,16 @@ class AchievementRoadmapCard extends StatelessWidget {
 }
 
 class _RoadmapItem extends StatelessWidget {
-  const _RoadmapItem({required this.item, required this.onClaim, this.onOpen});
+  const _RoadmapItem({
+    required this.item,
+    required this.onClaim,
+    required this.claimLabel,
+    this.onOpen,
+  });
 
   final AchievementRoadmapItem item;
   final VoidCallback onClaim;
+  final String claimLabel;
   final VoidCallback? onOpen;
 
   @override
@@ -287,7 +298,7 @@ class _RoadmapItem extends StatelessWidget {
                               widthFactor: 1,
                               heightFactor: 1,
                               child: Text(
-                                'Claim',
+                                claimLabel,
                                 style: TextStyle(
                                   color: NeonTheme.gold,
                                   fontSize: 11,

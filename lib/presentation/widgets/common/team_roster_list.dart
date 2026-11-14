@@ -44,6 +44,7 @@ class TeamRosterList extends StatelessWidget {
     this.emptyMessage = 'No members in this team.',
     this.maxListHeight = 420,
     this.expand = false,
+    this.youLabel = 'YOU',
   }) {
     if (title.trim().isEmpty || emptyMessage.trim().isEmpty) {
       throw ArgumentError('title and emptyMessage must not be empty');
@@ -101,6 +102,9 @@ class TeamRosterList extends StatelessWidget {
   /// Fills the parent's remaining height instead of fitting content. Needs a
   /// bounded-height parent (e.g. inside an `Expanded`); ignores [maxListHeight].
   final bool expand;
+
+  /// Badge on the current player's own row.
+  final String youLabel;
 
   Color _roleColor(TeamRole role) => switch (role) {
     TeamRole.leader => NeonTheme.gold,
@@ -330,7 +334,7 @@ class TeamRosterList extends StatelessWidget {
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
-                              'YOU',
+                              youLabel,
                               style: TextStyle(
                                 color: NeonTheme.cyan,
                                 fontSize: 8,

@@ -42,6 +42,7 @@ class CraftingRecipeCard extends StatelessWidget {
     this.craftingLabel = 'Crafting…',
     this.onIngredientTap,
     this.semanticLabel,
+    this.materialsHeader = 'Required Materials',
   }) {
     if (recipeId.trim().isEmpty || title.trim().isEmpty) {
       throw ArgumentError('recipeId and title must not be empty');
@@ -105,6 +106,9 @@ class CraftingRecipeCard extends StatelessWidget {
   final String craftingLabel;
   final ValueChanged<String>? onIngredientTap;
   final String? semanticLabel;
+
+  /// Header above the ingredient list.
+  final String materialsHeader;
 
   bool get _canCraft =>
       !isLocked && !isCrafting && ingredients.every((i) => i.isAvailable);
@@ -176,7 +180,7 @@ class CraftingRecipeCard extends StatelessWidget {
             _outputRow(),
             const SizedBox(height: NeonTheme.s8),
             Text(
-              'Required Materials',
+              materialsHeader,
               style: TextStyle(
                 color: NeonTheme.inkSoft,
                 fontSize: 11,

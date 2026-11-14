@@ -34,6 +34,7 @@ class StarChestProgressHud extends StatefulWidget {
     this.chestColor,
     this.trackColor,
     this.semanticLabel,
+    this.openLabel = 'Open!',
   }) {
     if (currentStars < 0) {
       throw ArgumentError.value(
@@ -66,6 +67,9 @@ class StarChestProgressHud extends StatefulWidget {
   final Color? chestColor;
   final Color? trackColor;
   final String? semanticLabel;
+
+  /// Text on the chest button once the target is reached.
+  final String openLabel;
 
   @override
   State<StarChestProgressHud> createState() => _StarChestProgressHudState();
@@ -218,7 +222,7 @@ class _StarChestProgressHudState extends State<StarChestProgressHud>
                             boxShadow: NeonTheme.drop(blur: 3),
                           ),
                           child: Text(
-                            'Open!',
+                            widget.openLabel,
                             style: TextStyle(
                               color: NeonTheme.ink,
                               fontSize: 13,

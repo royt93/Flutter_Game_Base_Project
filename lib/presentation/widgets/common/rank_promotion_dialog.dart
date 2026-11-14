@@ -47,6 +47,7 @@ class RankPromotionDialog extends StatefulWidget {
     this.continueLabel = 'Continue',
     this.shareLabel = 'Share',
     this.semanticLabel,
+    this.rewardsHeader = 'Promotion Rewards',
   }) {
     if (toTier.index <= fromTier.index) {
       throw ArgumentError(
@@ -79,6 +80,9 @@ class RankPromotionDialog extends StatefulWidget {
   final String shareLabel;
   final String? semanticLabel;
 
+  /// Header above the reward list.
+  final String rewardsHeader;
+
   /// Shows the promotion celebration via [NeonDialog.show] (in-tree overlay,
   /// safe over Flame `GameWidget`).
   static Future<void> show(
@@ -93,6 +97,7 @@ class RankPromotionDialog extends StatefulWidget {
     String continueLabel = 'Continue',
     String shareLabel = 'Share',
     String? semanticLabel,
+    String rewardsHeader = 'Promotion Rewards',
   }) {
     if (toTier.index <= fromTier.index) {
       throw ArgumentError(
@@ -111,6 +116,7 @@ class RankPromotionDialog extends StatefulWidget {
         rewards: rewards,
         subtitle: subtitle,
         semanticLabel: semanticLabel,
+        rewardsHeader: rewardsHeader,
       ),
       actions: [
         if (onShare != null)
@@ -144,6 +150,7 @@ class _RankPromotionDialogState extends State<RankPromotionDialog> {
         rewards: widget.rewards,
         subtitle: widget.subtitle,
         semanticLabel: widget.semanticLabel,
+        rewardsHeader: widget.rewardsHeader,
       ),
       actions: [
         if (widget.onShare != null)
@@ -167,6 +174,7 @@ class _RankPromotionBody extends StatefulWidget {
     required this.fromTier,
     required this.toTier,
     required this.rewards,
+    required this.rewardsHeader,
     this.subtitle,
     this.semanticLabel,
   });
@@ -174,6 +182,7 @@ class _RankPromotionBody extends StatefulWidget {
   final LeaderboardTier fromTier;
   final LeaderboardTier toTier;
   final List<MilestoneReward> rewards;
+  final String rewardsHeader;
   final String? subtitle;
   final String? semanticLabel;
 
@@ -342,7 +351,7 @@ class _RankPromotionBodyState extends State<_RankPromotionBody>
             if (widget.rewards.isNotEmpty) ...[
               const SizedBox(height: NeonTheme.s16),
               Text(
-                'Promotion Rewards',
+                widget.rewardsHeader,
                 style: TextStyle(
                   fontSize: 11,
                   fontWeight: FontWeight.w800,

@@ -30,6 +30,7 @@ class AppVersionGateOverlay extends StatefulWidget {
     required this.config,
     required this.launchStore,
     this.onSoftDismiss,
+    this.labels = const AppVersionGateLabels(),
   });
 
   final Widget child;
@@ -37,6 +38,10 @@ class AppVersionGateOverlay extends StatefulWidget {
   final AppVersionGateConfig config;
   final Future<bool> Function(String url) launchStore;
   final VoidCallback? onSoftDismiss;
+
+  /// Every user-visible text of the overlay; the defaults are the current
+  /// (mixed Vietnamese / English) strings, kept unchanged.
+  final AppVersionGateLabels labels;
 
   @override
   State<AppVersionGateOverlay> createState() => _AppVersionGateOverlayState();
@@ -101,15 +106,15 @@ class _AppVersionGateOverlayState extends State<AppVersionGateOverlay> {
 
   Widget _buildOverlay(BuildContext context) {
     final isMaintenance = widget.decision == GateDecision.maintenance;
+    final labels = widget.labels;
     final title = isMaintenance
-        ? 'Đang bảo trì'
+        ? labels.maintenanceTitle
         : _blocking
-        ? 'Cần cập nhật'
-        : 'Có bản cập nhật mới';
+        ? labels.requiredTitle
+        : labels.optionalTitle;
     final message = isMaintenance
-        ? (widget.config.maintenanceMessage ??
-              'App đang bảo trì, vui lòng quay lại sau.')
-        : 'Vui lòng cập nhật lên phiên bản mới nhất để tiếp tục.';
+        ? (widget.config.maintenanceMessage ?? labels.maintenanceMessage)
+        : labels.updateMessage;
 
     return ColoredBox(
       color: Colors.black54,
@@ -133,7 +138,7 @@ class _AppVersionGateOverlayState extends State<AppVersionGateOverlay> {
                 if (_launchFailed) ...[
                   const SizedBox(height: NeonTheme.s8),
                   Text(
-                    'Không thể mở cửa hàng ứng dụng.',
+                    labels.storeOpenFailed,
                     style: TextStyle(color: NeonTheme.red),
                   ),
                 ],
@@ -144,13 +149,13 @@ class _AppVersionGateOverlayState extends State<AppVersionGateOverlay> {
                     if (!isMaintenance)
                       CommonButton(
                         label: _launchFailed
-                            ? 'Retry'
-                            : (_launching ? 'Đang mở…' : 'Update now'),
+                            ? labels.retry
+                            : (_launching ? labels.opening : labels.updateNow),
                         onTap: _launching ? null : _launch,
                       ),
                     if (!_blocking)
                       CommonButton(
-                        label: 'Để sau',
+                        label: labels.later,
                         variant: CommonButtonVariant.secondary,
                         onTap: _dismissSoft,
                       ),
@@ -163,4 +168,33 @@ class _AppVersionGateOverlayState extends State<AppVersionGateOverlay> {
       ),
     );
   }
+}
+
+/// Texts shown by [AppVersionGateOverlay]. The defaults are the strings the
+/// overlay always used, so passing nothing changes nothing.
+class AppVersionGateLabels {
+  const AppVersionGateLabels({
+    this.maintenanceTitle = 'Đang bảo trì',
+    this.requiredTitle = 'Cần cập nhật',
+    this.optionalTitle = 'Có bản cập nhật mới',
+    this.maintenanceMessage = 'App đang bảo trì, vui lòng quay lại sau.',
+    this.updateMessage =
+        'Vui lòng cập nhật lên phiên bản mới nhất để tiếp tục.',
+    this.storeOpenFailed = 'Không thể mở cửa hàng ứng dụng.',
+    this.updateNow = 'Update now',
+    this.opening = 'Đang mở…',
+    this.retry = 'Retry',
+    this.later = 'Để sau',
+  });
+
+  final String maintenanceTitle;
+  final String requiredTitle;
+  final String optionalTitle;
+  final String maintenanceMessage;
+  final String updateMessage;
+  final String storeOpenFailed;
+  final String updateNow;
+  final String opening;
+  final String retry;
+  final String later;
 }

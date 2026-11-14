@@ -43,6 +43,8 @@ class RetryErrorState extends StatelessWidget {
     this.extraAction,
     this.color,
     this.compact = false,
+    this.copiedLabel = 'Copied to clipboard',
+    this.copyHintLabel = 'tap to copy',
   });
 
   final IconData icon;
@@ -51,6 +53,13 @@ class RetryErrorState extends StatelessWidget {
   final String? code;
   final Future<void> Function()? onRetry;
   final String? retryLabel;
+
+  /// Toast shown after the diagnostic [code] was copied.
+  final String copiedLabel;
+
+  /// Spoken after the code in the code's Semantics label, as in
+  /// `Diagnostic code X, tap to copy`.
+  final String copyHintLabel;
 
   /// A second, caller-supplied action rendered below retry/code — e.g. an
   /// "Open network settings" button for a [SdkErrorKind.network] failure.
@@ -95,6 +104,8 @@ class RetryErrorState extends StatelessWidget {
     Widget? extraAction,
     Color? color,
     bool compact = false,
+    String copiedLabel = 'Copied to clipboard',
+    String copyHintLabel = 'tap to copy',
   }) => RetryErrorState(
     icon: _iconFor(failure.kind),
     title: _titleFor(failure.kind),
@@ -105,6 +116,8 @@ class RetryErrorState extends StatelessWidget {
     extraAction: extraAction,
     color: color,
     compact: compact,
+    copiedLabel: copiedLabel,
+    copyHintLabel: copyHintLabel,
   );
 
   Future<void> _copyCode(BuildContext context) async {
@@ -112,7 +125,7 @@ class RetryErrorState extends StatelessWidget {
     if (value == null) return;
     await Clipboard.setData(ClipboardData(text: value));
     if (context.mounted) {
-      ToastBanner.show(context, message: 'Copied to clipboard');
+      ToastBanner.show(context, message: copiedLabel);
     }
   }
 
@@ -146,7 +159,7 @@ class RetryErrorState extends StatelessWidget {
                       onTap: () => _copyCode(context),
                       child: Semantics(
                         button: true,
-                        label: 'Diagnostic code $code, tap to copy',
+                        label: 'Diagnostic code $code, $copyHintLabel',
                         child: Text(
                           code!,
                           style: TextStyle(

@@ -38,6 +38,9 @@ class CharacterCollectionGrid extends StatefulWidget {
     this.filter = CharacterCollectionFilter.all,
     this.onFilterChanged,
     this.maxGridHeight = 420,
+    this.selectedBadgeLabel = 'SELECTED',
+    this.selectedLabel = 'Selected',
+    this.selectLabel = 'Select',
   }) {
     if (title.trim().isEmpty || emptyMessage.trim().isEmpty) {
       throw ArgumentError('title and emptyMessage must not be empty');
@@ -90,6 +93,12 @@ class CharacterCollectionGrid extends StatefulWidget {
   final CharacterCollectionFilter filter;
   final ValueChanged<CharacterCollectionFilter>? onFilterChanged;
   final double maxGridHeight;
+
+  /// Badge on the selected character, and the label of the select button in
+  /// its selected and not-selected states.
+  final String selectedBadgeLabel;
+  final String selectedLabel;
+  final String selectLabel;
 
   @override
   State<CharacterCollectionGrid> createState() =>
@@ -330,7 +339,7 @@ class _CharacterCollectionGridState extends State<CharacterCollectionGrid> {
                   ),
                   if (character.isSelected)
                     Text(
-                      'SELECTED',
+                      widget.selectedBadgeLabel,
                       style: TextStyle(
                         color: NeonTheme.cyan,
                         fontSize: 8,
@@ -351,7 +360,9 @@ class _CharacterCollectionGridState extends State<CharacterCollectionGrid> {
                         constraints: const BoxConstraints(minHeight: 48),
                         child: Center(
                           child: Text(
-                            character.isSelected ? 'Selected' : 'Select',
+                            character.isSelected
+                                ? widget.selectedLabel
+                                : widget.selectLabel,
                             style: TextStyle(
                               color: character.isSelected
                                   ? NeonTheme.inkSoft

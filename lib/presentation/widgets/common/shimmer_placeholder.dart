@@ -20,6 +20,7 @@ class ShimmerPlaceholder extends StatefulWidget {
     this.shape = BoxShape.rectangle,
     this.baseColor,
     this.highlightColor,
+    this.semanticLabel = 'Loading',
   });
 
   final double? width;
@@ -39,6 +40,9 @@ class ShimmerPlaceholder extends StatefulWidget {
 
   /// Color of the sweeping highlight band. Defaults to [NeonTheme.card].
   final Color? highlightColor;
+
+  /// What a screen reader announces for this placeholder.
+  final String semanticLabel;
 
   @override
   State<ShimmerPlaceholder> createState() => _ShimmerPlaceholderState();
@@ -106,7 +110,7 @@ class _ShimmerPlaceholderState extends State<ShimmerPlaceholder>
         // silence — excludeSemantics since the block itself carries no
         // real content/descendants worth exposing individually.
         return Semantics(
-          label: 'Loading',
+          label: widget.semanticLabel,
           excludeSemantics: true,
           child: Container(
             width: widget.width,
