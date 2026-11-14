@@ -144,13 +144,7 @@ void main() {
         );
         expect(find.text('Next Tier Progress'), findsOneWidget);
         expect(find.text('Perks & Privileges'), findsOneWidget);
-        expect(
-          candidates.map((issue) => issue.text),
-          dark
-              ? isEmpty
-              : containsAll(['Next Tier Progress', 'Perks & Privileges']),
-          reason: '$candidates',
-        );
+        expect(candidates, isEmpty, reason: '$candidates');
       });
     }
   });

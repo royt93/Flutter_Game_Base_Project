@@ -14,7 +14,12 @@ The active `Next Tier Progress` and `Perks & Privileges` labels use `NeonTheme.i
 ## Scope
 Raise only these two label colors to at least 4.5:1 in both themes without changing global theme tokens. Preserve tier-badge, progress-value, and perk-chip colors.
 
+## Progress (2026-11-14)
+- [x] Changed only the two confirmed labels to `NeonTheme.ink`; progress values and perk-chip colors unchanged.
+- [x] Rendered-text assertions pass in light/dark; existing VIP widget and viewport tests pass.
+- [x] Targeted analyzer clean.
+
 ## Acceptance
-- Add a rendered-contrast regression test for `VipPerkProgressRow` in light and dark modes.
-- Light-mode labels reach at least 4.5:1 on the actual opaque card surface.
-- Existing widget and viewport tests pass.
+- [x] Add a rendered-contrast regression test for `VipPerkProgressRow` in light and dark modes.
+- [x] Light-mode labels reach at least 4.5:1 on the actual opaque card surface.
+- [x] Existing widget and viewport tests pass.

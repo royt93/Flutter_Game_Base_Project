@@ -195,7 +195,7 @@ class VipPerkProgressRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 11,
                       fontWeight: FontWeight.w700,
-                      color: NeonTheme.inkSoft,
+                      color: NeonTheme.ink,
                     ),
                   ),
                 ),
@@ -252,7 +252,7 @@ class VipPerkProgressRow extends StatelessWidget {
                   fontSize: 11,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0.5,
-                  color: NeonTheme.inkSoft,
+                  color: NeonTheme.ink,
                 ),
               ),
               const SizedBox(height: 6),
