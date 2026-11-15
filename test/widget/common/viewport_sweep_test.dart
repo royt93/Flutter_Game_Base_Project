@@ -151,6 +151,60 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2aa: preload and replay status', () {
+    Widget preloadStatus() => ScenePreloadStatusPanel(
+      sceneId: 'level-8',
+      status: ScenePreloadStatus.loading,
+      progress: 0.65,
+      itemCount: 4,
+    );
+
+    Widget replayStatus() => ReplayVerificationResultCard(
+      status: ReplayVerificationStatus.diverged,
+      checkedOutcomeCount: 8,
+      divergenceIndex: 6,
+      rngStatus: ReplayRngCheckStatus.mismatched,
+      rngMismatchCount: 1,
+    );
+
+    testWidgets('ScenePreloadStatusPanel', (tester) async {
+      await runViewportSweep(tester, preloadStatus);
+    });
+
+    testWidgets('ScenePreloadStatusPanel at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        preloadStatus,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('ReplayVerificationResultCard', (tester) async {
+      await runViewportSweep(tester, replayStatus);
+    });
+
+    testWidgets(
+      'ReplayVerificationResultCard at 2.0x text, 320dp and landscape',
+      (tester) async {
+        await runViewportSweep(
+          tester,
+          replayStatus,
+          viewports: const [
+            ViewportCase('320x480', Size(320, 480)),
+            ViewportCase('568x320-landscape', Size(568, 320)),
+          ],
+          textScale: 2.0,
+        );
+      },
+    );
+  });
+
   group('FEAT-200 phase 2z: experiment assignments and unlock listener', () {
     Widget experiments() => ExperimentVariantAssignmentCard(
       rows: [

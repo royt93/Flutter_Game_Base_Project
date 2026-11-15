@@ -150,72 +150,74 @@ class _ScenePreloadStatusPanelState extends State<ScenePreloadStatusPanel> {
       container: true,
       explicitChildNodes: true,
       child: PanelCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              widget.title,
-              style: TextStyle(color: NeonTheme.ink, fontSize: 18),
-            ),
-            Row(
-              children: [
-                Expanded(child: Text(widget.sceneId)),
-                Text('${widget.itemCountLabel}: ${widget.itemCount}'),
-              ],
-            ),
-            Row(
-              children: [
-                Expanded(
-                  child: LinearProgressIndicator(
-                    value: _isLoading ? null : widget.progress,
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                widget.title,
+                style: TextStyle(color: NeonTheme.ink, fontSize: 18),
+              ),
+              Row(
+                children: [
+                  Expanded(child: Text(widget.sceneId)),
+                  Text('${widget.itemCountLabel}: ${widget.itemCount}'),
+                ],
+              ),
+              Row(
+                children: [
+                  Expanded(
+                    child: LinearProgressIndicator(
+                      value: _isLoading ? null : widget.progress,
+                    ),
                   ),
-                ),
-                const SizedBox(width: 8),
-                Text(progressLabel),
-              ],
-            ),
-            Row(
-              children: [
-                Icon(
-                  failure ? Icons.error_outline : Icons.downloading_outlined,
-                  color: failure ? NeonTheme.red : NeonTheme.ink,
-                ),
-                const SizedBox(width: 8),
-                Expanded(child: Text(statusLabel)),
-              ],
-            ),
-            if (_failed) Text(widget.actionErrorLabel),
-            Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                if (startable && widget.onStart != null)
-                  CommonButton(
-                    key: const ValueKey('scenePreloadStart'),
-                    label: widget.startLabel,
-                    loading: _busy,
-                    onTap: _busy ? null : () => _run(widget.onStart),
+                  const SizedBox(width: 8),
+                  Text(progressLabel),
+                ],
+              ),
+              Row(
+                children: [
+                  Icon(
+                    failure ? Icons.error_outline : Icons.downloading_outlined,
+                    color: failure ? NeonTheme.red : NeonTheme.ink,
                   ),
-                if (retryable && widget.onRetry != null)
-                  CommonButton(
-                    key: const ValueKey('scenePreloadRetry'),
-                    label: widget.retryLabel,
-                    loading: _busy,
-                    onTap: _busy ? null : () => _run(widget.onRetry),
-                  ),
-                if (cancellable && widget.onCancel != null)
-                  CommonButton(
-                    key: const ValueKey('scenePreloadCancel'),
-                    label: widget.cancelLabel,
-                    variant: CommonButtonVariant.secondary,
-                    onTap: widget.busy || widget.onCancel == null
-                        ? null
-                        : widget.onCancel,
-                  ),
-              ],
-            ),
-          ],
+                  const SizedBox(width: 8),
+                  Expanded(child: Text(statusLabel)),
+                ],
+              ),
+              if (_failed) Text(widget.actionErrorLabel),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [
+                  if (startable && widget.onStart != null)
+                    CommonButton(
+                      key: const ValueKey('scenePreloadStart'),
+                      label: widget.startLabel,
+                      loading: _busy,
+                      onTap: _busy ? null : () => _run(widget.onStart),
+                    ),
+                  if (retryable && widget.onRetry != null)
+                    CommonButton(
+                      key: const ValueKey('scenePreloadRetry'),
+                      label: widget.retryLabel,
+                      loading: _busy,
+                      onTap: _busy ? null : () => _run(widget.onRetry),
+                    ),
+                  if (cancellable && widget.onCancel != null)
+                    CommonButton(
+                      key: const ValueKey('scenePreloadCancel'),
+                      label: widget.cancelLabel,
+                      variant: CommonButtonVariant.secondary,
+                      onTap: widget.busy || widget.onCancel == null
+                          ? null
+                          : widget.onCancel,
+                    ),
+                ],
+              ),
+            ],
+          ),
         ),
       ),
     );
