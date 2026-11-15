@@ -50,6 +50,22 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
   final _haptics = HapticChoreographer();
 
   String _status = 'Browse store offers or earn rewards through ads.';
+  bool _actionInFlight = false;
+
+  Future<void> _runMonetizationAction(Future<void> Function() action) async {
+    if (_actionInFlight) return;
+    setState(() => _actionInFlight = true);
+    try {
+      await action();
+    } catch (_) {
+      if (mounted) {
+        _haptics.play(HapticPattern.error);
+        setState(() => _status = 'Action failed. Please try again.');
+      }
+    } finally {
+      if (mounted) setState(() => _actionInFlight = false);
+    }
+  }
 
   @override
   void initState() {
@@ -78,7 +94,7 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
     required String currency,
     required int amount,
     required String label,
-  }) async {
+  }) => _runMonetizationAction(() async {
     final success = await _purchases.buy(sku);
     if (!success) {
       _haptics.play(HapticPattern.error);
@@ -105,9 +121,9 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
     _haptics.play(HapticPattern.reward);
     if (!mounted) return;
     setState(() => _status = 'Purchased $label! +$amount $currency.');
-  }
+  });
 
-  Future<void> _buyVip() async {
+  Future<void> _buyVip() => _runMonetizationAction(() async {
     final success = await _purchases.buy(_vipSku);
     if (!success) {
       _haptics.play(HapticPattern.error);
@@ -120,9 +136,9 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
     _haptics.play(HapticPattern.reward);
     if (!mounted) return;
     setState(() => _status = 'Unlocked VIP No-Ads Pass permanently!');
-  }
+  });
 
-  Future<void> _restorePurchases() async {
+  Future<void> _restorePurchases() => _runMonetizationAction(() async {
     await _purchases.restorePurchases();
     if (_purchases.isOwned(_vipSku)) {
       _ledger.grantPermanent(_vipSku);
@@ -130,9 +146,9 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
     _haptics.play(HapticPattern.reward);
     if (!mounted) return;
     setState(() => _status = 'Purchases restored successfully.');
-  }
+  });
 
-  Future<void> _watchRewardedAd() async {
+  Future<void> _watchRewardedAd() => _runMonetizationAction(() async {
     // If player owns VIP No-Ads, skip ad playback directly as a VIP benefit.
     if (_isVip) {
       final earnResult = await _wallet.earn(
@@ -182,9 +198,11 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
     } else {
       _haptics.play(HapticPattern.error);
       if (!mounted) return;
-      setState(() => _status = 'Ad closed before completion. No reward earned.');
+      setState(
+        () => _status = 'Ad closed before completion. No reward earned.',
+      );
     }
-  }
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -225,8 +243,9 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
                                   Text(
                                     _isVip ? 'VIP Member' : 'Standard Player',
                                     style: TextStyle(
-                                      color:
-                                          _isVip ? NeonTheme.gold : NeonTheme.ink,
+                                      color: _isVip
+                                          ? NeonTheme.gold
+                                          : NeonTheme.ink,
                                       fontWeight: FontWeight.bold,
                                       fontSize: 16,
                                     ),
@@ -277,13 +296,14 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
                             trailing: CommonButton(
                               width: 90,
                               label: r'$0.99',
-                              onTap:
-                                  () => _buyConsumable(
-                                    sku: 'pack_coins_100',
-                                    currency: 'coins',
-                                    amount: 100,
-                                    label: 'Pouch of Coins',
-                                  ),
+                              onTap: _actionInFlight
+                                  ? null
+                                  : () => _buyConsumable(
+                                      sku: 'pack_coins_100',
+                                      currency: 'coins',
+                                      amount: 100,
+                                      label: 'Pouch of Coins',
+                                    ),
                             ),
                           ),
                           const SizedBox(height: NeonTheme.s8),
@@ -293,37 +313,36 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
                             trailing: CommonButton(
                               width: 90,
                               label: r'$1.99',
-                              onTap:
-                                  () => _buyConsumable(
-                                    sku: 'pack_gems_20',
-                                    currency: 'gems',
-                                    amount: 20,
-                                    label: 'Handful of Gems',
-                                  ),
+                              onTap: _actionInFlight
+                                  ? null
+                                  : () => _buyConsumable(
+                                      sku: 'pack_gems_20',
+                                      currency: 'gems',
+                                      amount: 20,
+                                      label: 'Handful of Gems',
+                                    ),
                             ),
                           ),
                           const SizedBox(height: NeonTheme.s8),
                           CommonListTile(
                             title: 'VIP No-Ads Pass',
-                            subtitle:
-                                _isVip
-                                    ? 'Owned (Permanent unlock)'
-                                    : r'Remove all ads & instant claim • $2.99',
+                            subtitle: _isVip
+                                ? 'Owned (Permanent unlock)'
+                                : r'Remove all ads & instant claim • $2.99',
                             trailing: CommonButton(
                               width: 90,
                               label: _isVip ? 'Owned' : r'$2.99',
-                              variant:
-                                  _isVip
-                                      ? CommonButtonVariant.secondary
-                                      : CommonButtonVariant.primary,
-                              onTap: _isVip ? null : _buyVip,
+                              variant: _isVip
+                                  ? CommonButtonVariant.secondary
+                                  : CommonButtonVariant.primary,
+                              onTap: _isVip || _actionInFlight ? null : _buyVip,
                             ),
                           ),
                           const SizedBox(height: 12),
                           CommonButton(
                             label: 'Restore Purchases',
                             variant: CommonButtonVariant.secondary,
-                            onTap: _restorePurchases,
+                            onTap: _actionInFlight ? null : _restorePurchases,
                           ),
                         ],
                       ),
@@ -369,11 +388,10 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
                           ),
                           const SizedBox(height: 12),
                           CommonButton(
-                            label:
-                                _isVip
-                                    ? 'Claim Free 50 Coins (VIP Skip)'
-                                    : 'Watch Ad for +50 Coins',
-                            onTap: _watchRewardedAd,
+                            label: _isVip
+                                ? 'Claim Free 50 Coins (VIP Skip)'
+                                : 'Watch Ad for +50 Coins',
+                            onTap: _actionInFlight ? null : _watchRewardedAd,
                           ),
                         ],
                       ),

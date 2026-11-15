@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
@@ -13,46 +15,60 @@ import 'package:roy_casual_kit_example/screens/monetization_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Finder _button(String label) => find.byWidgetPredicate(
-      (widget) => widget is CommonButton && widget.label == label,
-    );
+  (widget) => widget is CommonButton && widget.label == label,
+);
 
 Widget _wrap(Widget child) => GetMaterialApp(
-      translations: AppTranslations(),
-      locale: AppTranslations.fallback,
-      fallbackLocale: AppTranslations.fallback,
-      home: child,
-    );
+  translations: AppTranslations(),
+  locale: AppTranslations.fallback,
+  fallbackLocale: AppTranslations.fallback,
+  home: child,
+);
 
 class _ScriptedPurchases implements PurchaseSeam {
-  _ScriptedPurchases({this.buySucceeds = true, Set<String>? owned})
-    : _owned = owned ?? {};
+  _ScriptedPurchases({
+    this.buySucceeds = true,
+    this.onBuy,
+    this.onRestore,
+    Set<String>? owned,
+  }) : _owned = owned ?? {};
 
   final bool buySucceeds;
+  final Future<bool> Function(String productId)? onBuy;
+  final Future<void> Function()? onRestore;
   final Set<String> _owned;
+  int buyCalls = 0;
   int restoreCalls = 0;
 
   @override
-  Future<bool> buy(String productId) async => buySucceeds;
+  Future<bool> buy(String productId) {
+    buyCalls++;
+    return onBuy?.call(productId) ?? Future<bool>.value(buySucceeds);
+  }
 
   @override
   bool isOwned(String productId) => _owned.contains(productId);
 
   @override
-  Future<void> restorePurchases() async => restoreCalls++;
+  Future<void> restorePurchases() {
+    restoreCalls++;
+    return onRestore?.call() ?? Future<void>.value();
+  }
 }
 
 class _ScriptedAds implements AdRewardSeam {
-  _ScriptedAds({required this.isReady, this.rewarded = true});
+  _ScriptedAds({required this.isReady, this.rewarded = true, this.onShow});
 
   @override
   final bool isReady;
   final bool rewarded;
+  final Future<bool> Function(String? placement)? onShow;
   int shown = 0;
 
   @override
-  Future<bool> showRewardedAd({String? placement}) async {
+  Future<bool> showRewardedAd({String? placement}) {
     shown++;
-    return rewarded;
+    return onShow?.call(placement) ?? Future<bool>.value(rewarded);
   }
 }
 
@@ -67,8 +83,9 @@ Future<void> _boot() async {
 void main() {
   tearDown(Get.reset);
 
-  testWidgets('renders MonetizationScreen with wallet, IAP packs, and ads',
-      (tester) async {
+  testWidgets('renders MonetizationScreen with wallet, IAP packs, and ads', (
+    tester,
+  ) async {
     await _boot();
 
     await tester.pumpWidget(_wrap(const MonetizationScreen()));
@@ -87,8 +104,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('buying consumable pack credits currency and ledger',
-      (tester) async {
+  testWidgets('buying consumable pack credits currency and ledger', (
+    tester,
+  ) async {
     await _boot();
 
     await tester.pumpWidget(_wrap(const MonetizationScreen()));
@@ -118,8 +136,9 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('buying VIP activates permanent VIP and instant ad skip',
-      (tester) async {
+  testWidgets('buying VIP activates permanent VIP and instant ad skip', (
+    tester,
+  ) async {
     await _boot();
 
     await tester.pumpWidget(_wrap(const MonetizationScreen()));
@@ -168,9 +187,149 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(EconomyWallet.maybe!.balanceOf('coins'), 50);
-    expect(find.textContaining('Watched ad! Received 50 coins.'), findsOneWidget);
+    expect(
+      find.textContaining('Watched ad! Received 50 coins.'),
+      findsOneWidget,
+    );
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('provider buy exception shows safe error and releases guard', (
+    tester,
+  ) async {
+    await _boot();
+    var shouldThrow = true;
+    final purchases = _ScriptedPurchases(
+      onBuy: (_) async {
+        if (shouldThrow) throw StateError('private provider details');
+        return true;
+      },
+    );
+    Get.put<PurchaseSeam>(purchases);
+
+    await tester.pumpWidget(_wrap(const MonetizationScreen()));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(_button(r'$0.99').first);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Action failed. Please try again.'), findsOneWidget);
+    expect(find.textContaining('private provider details'), findsNothing);
+    expect(EconomyWallet.maybe!.balanceOf('coins'), 0);
+    expect(PurchaseLedgerService.maybe!.balanceOf('pack_coins_100'), 0);
+    expect(tester.takeException(), isNull);
+
+    shouldThrow = false;
+    await tester.tap(_button(r'$0.99').first);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(EconomyWallet.maybe!.balanceOf('coins'), 100);
+    expect(PurchaseLedgerService.maybe!.balanceOf('pack_coins_100'), 1);
+  });
+
+  testWidgets(
+    'concurrent consumable taps are ignored while provider is pending',
+    (tester) async {
+      await _boot();
+      final pending = Completer<bool>();
+      final purchases = _ScriptedPurchases(onBuy: (_) => pending.future);
+      Get.put<PurchaseSeam>(purchases);
+
+      await tester.pumpWidget(_wrap(const MonetizationScreen()));
+      await tester.pump(const Duration(milliseconds: 500));
+      final button = _button(r'$0.99').first;
+      await tester.tap(button);
+      await tester.pump();
+
+      expect(tester.widget<CommonButton>(button).onTap, isNull);
+      expect(purchases.buyCalls, 1);
+      pending.complete(true);
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(EconomyWallet.maybe!.balanceOf('coins'), 100);
+      expect(PurchaseLedgerService.maybe!.balanceOf('pack_coins_100'), 1);
+    },
+  );
+
+  testWidgets(
+    'concurrent VIP purchase taps are ignored while provider is pending',
+    (tester) async {
+      await _boot();
+      final pending = Completer<bool>();
+      final purchases = _ScriptedPurchases(onBuy: (_) => pending.future);
+      Get.put<PurchaseSeam>(purchases);
+
+      await tester.pumpWidget(_wrap(const MonetizationScreen()));
+      await tester.pump(const Duration(milliseconds: 500));
+      final button = _button(r'$2.99').first;
+      await tester.tap(button);
+      await tester.pump();
+
+      expect(tester.widget<CommonButton>(button).onTap, isNull);
+      expect(purchases.buyCalls, 1);
+      pending.complete(true);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(PurchaseLedgerService.maybe!.owns('pack_vip_no_ads'), isTrue);
+      expect(purchases.buyCalls, 1);
+    },
+  );
+
+  testWidgets('concurrent restore taps are ignored while provider is pending', (
+    tester,
+  ) async {
+    await _boot();
+    final pending = Completer<void>();
+    final purchases = _ScriptedPurchases(
+      owned: {'pack_vip_no_ads'},
+      onRestore: () => pending.future,
+    );
+    Get.put<PurchaseSeam>(purchases);
+
+    await tester.pumpWidget(_wrap(const MonetizationScreen()));
+    await tester.pump(const Duration(milliseconds: 500));
+    final button = _button('Restore Purchases').first;
+    await tester.tap(button);
+    await tester.pump();
+
+    expect(tester.widget<CommonButton>(button).onTap, isNull);
+    expect(purchases.restoreCalls, 1);
+    pending.complete();
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(PurchaseLedgerService.maybe!.owns('pack_vip_no_ads'), isTrue);
+    expect(purchases.restoreCalls, 1);
+  });
+
+  testWidgets(
+    'restore provider exception shows safe error and releases guard',
+    (tester) async {
+      await _boot();
+      var shouldThrow = true;
+      final purchases = _ScriptedPurchases(
+        onRestore: () async {
+          if (shouldThrow) throw StateError('private restore details');
+        },
+      );
+      Get.put<PurchaseSeam>(purchases);
+
+      await tester.pumpWidget(_wrap(const MonetizationScreen()));
+      await tester.pump(const Duration(milliseconds: 500));
+      await tester.tap(_button('Restore Purchases').first);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 200));
+
+      expect(find.text('Action failed. Please try again.'), findsOneWidget);
+      expect(find.textContaining('private restore details'), findsNothing);
+      expect(PurchaseLedgerService.maybe!.owns('pack_vip_no_ads'), isFalse);
+      expect(tester.takeException(), isNull);
+
+      shouldThrow = false;
+      await tester.tap(_button('Restore Purchases').first);
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(
+        find.textContaining('Purchases restored successfully.'),
+        findsOneWidget,
+      );
+    },
+  );
 
   testWidgets('restoring purchases succeeds', (tester) async {
     await _boot();
@@ -189,12 +348,17 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  Future<void> scrollToAdButton(WidgetTester tester, String label) async {
+  Future<Finder> showAdButton(WidgetTester tester, String label) async {
     await tester.drag(find.byType(ListView), const Offset(0, -500));
     await tester.pump();
     final button = _button(label).first;
     await tester.ensureVisible(button);
     await tester.pump();
+    return button;
+  }
+
+  Future<void> scrollToAdButton(WidgetTester tester, String label) async {
+    final button = await showAdButton(tester, label);
     await tester.tap(button);
     await tester.pump(const Duration(milliseconds: 500));
   }
@@ -253,6 +417,62 @@ void main() {
     expect(PurchaseLedgerService.maybe!.owns('pack_vip_no_ads'), isTrue);
     expect(find.text('VIP Member'), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('ad provider exception grants nothing and permits retry', (
+    tester,
+  ) async {
+    await _boot();
+    var shouldThrow = true;
+    final ads = _ScriptedAds(
+      isReady: true,
+      onShow: (_) async {
+        if (shouldThrow) throw StateError('private ad provider details');
+        return true;
+      },
+    );
+    Get.put<AdRewardSeam>(ads);
+
+    await tester.pumpWidget(_wrap(const MonetizationScreen()));
+    await tester.pump(const Duration(milliseconds: 500));
+    final button = await showAdButton(tester, 'Watch Ad for +50 Coins');
+    await tester.tap(button);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 200));
+
+    expect(find.text('Action failed. Please try again.'), findsOneWidget);
+    expect(find.textContaining('private ad provider details'), findsNothing);
+    expect(EconomyWallet.maybe!.balanceOf('coins'), 0);
+    expect(ads.shown, 1);
+    expect(tester.takeException(), isNull);
+
+    shouldThrow = false;
+    await tester.tap(button);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(EconomyWallet.maybe!.balanceOf('coins'), 50);
+    expect(ads.shown, 2);
+  });
+
+  testWidgets('concurrent rewarded-ad taps are ignored while ad is pending', (
+    tester,
+  ) async {
+    await _boot();
+    final pending = Completer<bool>();
+    final ads = _ScriptedAds(isReady: true, onShow: (_) => pending.future);
+    Get.put<AdRewardSeam>(ads);
+
+    await tester.pumpWidget(_wrap(const MonetizationScreen()));
+    await tester.pump(const Duration(milliseconds: 500));
+    final button = await showAdButton(tester, 'Watch Ad for +50 Coins');
+    await tester.tap(button);
+    await tester.pump();
+
+    expect(tester.widget<CommonButton>(button).onTap, isNull);
+    expect(ads.shown, 1);
+    pending.complete(true);
+    await tester.pump(const Duration(milliseconds: 500));
+    expect(EconomyWallet.maybe!.balanceOf('coins'), 50);
+    expect(ads.shown, 1);
   });
 
   testWidgets('quảng cáo chưa sẵn sàng: không phát, không cộng coins', (
@@ -335,7 +555,10 @@ void main() {
           find.textContaining('Wallet could not be updated. Please try again.'),
           findsOneWidget,
         );
-        expect(find.textContaining('Watched ad! Received 50 coins.'), findsNothing);
+        expect(
+          find.textContaining('Watched ad! Received 50 coins.'),
+          findsNothing,
+        );
         expect(EconomyWallet.maybe!.balanceOf('coins'), 0);
         expect(tester.takeException(), isNull);
       },
