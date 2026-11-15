@@ -147,6 +147,134 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2x: reward track and adaptive HUD', () {
+    testWidgets('RewardTrackRoad', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => RewardTrackRoad(
+          tiers: [
+            RewardTrackTier(
+              id: 'tier-1',
+              requiredXp: 100,
+              freeReward: MilestoneReward(
+                icon: Icons.stars_rounded,
+                label: 'Stars',
+                amountLabel: '+10',
+              ),
+              premiumReward: MilestoneReward(
+                icon: Icons.diamond_rounded,
+                label: 'Gems',
+                amountLabel: '+2',
+              ),
+            ),
+            RewardTrackTier(
+              id: 'tier-2',
+              requiredXp: 200,
+              freeReward: MilestoneReward(
+                icon: Icons.favorite_rounded,
+                label: 'Lives',
+                amountLabel: '+1',
+              ),
+            ),
+          ],
+          currentXp: 120,
+          premiumEnabled: true,
+          onClaim: (_, _) {},
+        ),
+      );
+    });
+
+    testWidgets('RewardTrackRoad at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => RewardTrackRoad(
+          tiers: [
+            RewardTrackTier(
+              id: 'tier-1',
+              requiredXp: 100,
+              freeReward: MilestoneReward(
+                icon: Icons.stars_rounded,
+                label: 'Stars',
+                amountLabel: '+10',
+              ),
+              premiumReward: MilestoneReward(
+                icon: Icons.diamond_rounded,
+                label: 'Gems',
+                amountLabel: '+2',
+              ),
+            ),
+            RewardTrackTier(
+              id: 'tier-2',
+              requiredXp: 200,
+              freeReward: MilestoneReward(
+                icon: Icons.favorite_rounded,
+                label: 'Lives',
+                amountLabel: '+1',
+              ),
+            ),
+          ],
+          currentXp: 120,
+          premiumEnabled: true,
+          onClaim: (_, _) {},
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('AdaptiveGameHud', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const AdaptiveGameHud(
+          slots: {
+            HudSlot.topStart: SizedBox(
+              key: ValueKey('viewportHudTop'),
+              width: 48,
+              height: 32,
+            ),
+            HudSlot.bottom: SizedBox(
+              key: ValueKey('viewportHudBottom'),
+              width: 64,
+              height: 32,
+            ),
+          },
+        ),
+      );
+    });
+
+    testWidgets('AdaptiveGameHud at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const AdaptiveGameHud(
+          slots: {
+            HudSlot.topStart: SizedBox(
+              key: ValueKey('viewportHudTop'),
+              width: 48,
+              height: 32,
+            ),
+            HudSlot.bottom: SizedBox(
+              key: ValueKey('viewportHudBottom'),
+              width: 64,
+              height: 32,
+            ),
+          },
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2v: roadmap and battle pass', () {
     testWidgets('AchievementRoadmapCard', (tester) async {
       await runViewportSweep(

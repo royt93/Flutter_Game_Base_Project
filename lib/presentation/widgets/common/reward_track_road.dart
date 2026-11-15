@@ -120,59 +120,61 @@ class RewardTrackRoad extends StatelessWidget {
       key: const ValueKey('rewardTrackSemantics'),
       container: true,
       label: semantics,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  title,
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      color: NeonTheme.ink,
+                      fontSize: 18,
+                      fontWeight: FontWeight.w900,
+                    ),
+                  ),
+                ),
+                Text(
+                  '$currentXp XP',
                   style: TextStyle(
-                    color: NeonTheme.ink,
-                    fontSize: 18,
+                    color: NeonTheme.gold,
+                    fontSize: 13,
                     fontWeight: FontWeight.w900,
                   ),
                 ),
-              ),
-              Text(
-                '$currentXp XP',
-                style: TextStyle(
-                  color: NeonTheme.gold,
-                  fontSize: 13,
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: NeonTheme.s8),
-          SizedBox(
-            height: MediaQuery.textScalerOf(context).scale(240),
-            child: ListView.builder(
-              key: const ValueKey('rewardTrackScroll'),
-              scrollDirection: Axis.horizontal,
-              itemCount: tiers.length,
-              itemBuilder: (context, index) {
-                final tier = tiers[index];
-                return _TierColumn(
-                  key: ValueKey('rewardTrackTier_${tier.id}'),
-                  tier: tier,
-                  currentXp: currentXp,
-                  premiumEnabled: premiumEnabled,
-                  claimedFreeIds: claimedFreeIds,
-                  claimedPremiumIds: claimedPremiumIds,
-                  freeLabel: freeLabel,
-                  premiumLabel: premiumLabel,
-                  claimLabel: claimLabel,
-                  claimedLabel: claimedLabel,
-                  onClaim: onClaim,
-                  isLast: index == tiers.length - 1,
-                );
-              },
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: NeonTheme.s8),
+            SizedBox(
+              height: MediaQuery.textScalerOf(context).scale(240),
+              child: ListView.builder(
+                key: const ValueKey('rewardTrackScroll'),
+                scrollDirection: Axis.horizontal,
+                itemCount: tiers.length,
+                itemBuilder: (context, index) {
+                  final tier = tiers[index];
+                  return _TierColumn(
+                    key: ValueKey('rewardTrackTier_${tier.id}'),
+                    tier: tier,
+                    currentXp: currentXp,
+                    premiumEnabled: premiumEnabled,
+                    claimedFreeIds: claimedFreeIds,
+                    claimedPremiumIds: claimedPremiumIds,
+                    freeLabel: freeLabel,
+                    premiumLabel: premiumLabel,
+                    claimLabel: claimLabel,
+                    claimedLabel: claimedLabel,
+                    onClaim: onClaim,
+                    isLast: index == tiers.length - 1,
+                  );
+                },
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
