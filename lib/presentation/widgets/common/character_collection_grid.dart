@@ -154,58 +154,60 @@ class _CharacterCollectionGridState extends State<CharacterCollectionGrid> {
       key: const ValueKey('characterCollectionSemantics'),
       container: true,
       label: semantics,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            widget.title,
-            style: TextStyle(
-              color: NeonTheme.ink,
-              fontSize: 18,
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: NeonTheme.s8),
-          Wrap(
-            spacing: 6,
-            children: [
-              for (final filter in CharacterCollectionFilter.values)
-                _filterChip(filter, chipHeight),
-            ],
-          ),
-          const SizedBox(height: NeonTheme.s8),
-          if (filtered.isEmpty)
-            SizedBox(
-              height: 120,
-              child: Center(
-                child: Text(
-                  widget.emptyMessage,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: NeonTheme.inkSoft),
-                ),
-              ),
-            )
-          else
-            SizedBox(
-              height: gridHeight,
-              child: GridView.builder(
-                padding: EdgeInsets.zero,
-                key: const ValueKey('characterCollectionGrid'),
-                itemCount: filtered.length,
-                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 3,
-                  crossAxisSpacing: 8,
-                  mainAxisSpacing: 8,
-                  mainAxisExtent: cellExtent,
-                ),
-                itemBuilder: (context, index) {
-                  final character = filtered[index];
-                  return _characterCell(character);
-                },
+      child: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Text(
+              widget.title,
+              style: TextStyle(
+                color: NeonTheme.ink,
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
               ),
             ),
-        ],
+            const SizedBox(height: NeonTheme.s8),
+            Wrap(
+              spacing: 6,
+              children: [
+                for (final filter in CharacterCollectionFilter.values)
+                  _filterChip(filter, chipHeight),
+              ],
+            ),
+            const SizedBox(height: NeonTheme.s8),
+            if (filtered.isEmpty)
+              SizedBox(
+                height: 120,
+                child: Center(
+                  child: Text(
+                    widget.emptyMessage,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(color: NeonTheme.inkSoft),
+                  ),
+                ),
+              )
+            else
+              SizedBox(
+                height: gridHeight,
+                child: GridView.builder(
+                  padding: EdgeInsets.zero,
+                  key: const ValueKey('characterCollectionGrid'),
+                  itemCount: filtered.length,
+                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                    crossAxisCount: 3,
+                    crossAxisSpacing: 8,
+                    mainAxisSpacing: 8,
+                    mainAxisExtent: cellExtent,
+                  ),
+                  itemBuilder: (context, index) {
+                    final character = filtered[index];
+                    return _characterCell(character);
+                  },
+                ),
+              ),
+          ],
+        ),
       ),
     );
   }

@@ -3,6 +3,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 
 import 'package:get/get.dart';
+import 'package:roy_casual_kit/core/app_version_gate.dart'
+    show AppVersionGateConfig, GateDecision;
 import 'package:roy_casual_kit/core/consent_state_service.dart'
     show ConsentStatus, ConsentStateService;
 import 'package:roy_casual_kit/core/inventory_service.dart'
@@ -138,6 +140,82 @@ void main() {
       await runViewportSweep(
         tester,
         () => WinStreakFlameHud(streakCount: 0, multiplierLabel: 'x1.0'),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
+  group('FEAT-200 phase 2y: collection grid and version gate', () {
+    const characters = [
+      CharacterCollectionItem(
+        id: 'knight',
+        name: 'Knight',
+        rarity: ItemRarity.common,
+        isOwned: true,
+        isSelected: true,
+      ),
+      CharacterCollectionItem(
+        id: 'mage',
+        name: 'Mage',
+        rarity: ItemRarity.epic,
+        isOwned: true,
+      ),
+      CharacterCollectionItem(
+        id: 'dragon',
+        name: 'Dragon Lord',
+        rarity: ItemRarity.legendary,
+        isOwned: false,
+      ),
+    ];
+
+    Widget characterGrid() => CharacterCollectionGrid(
+      characters: characters,
+      onCharacterTap: (_) {},
+      maxGridHeight: 320,
+    );
+
+    Widget versionGate() => AppVersionGateOverlay(
+      decision: GateDecision.forceUpdate,
+      config: const AppVersionGateConfig(
+        minimumVersion: '2.0.0',
+        storeUrl: 'market://details',
+      ),
+      launchStore: (_) async => true,
+      child: const Text('Game content'),
+    );
+
+    testWidgets('CharacterCollectionGrid', (tester) async {
+      await runViewportSweep(tester, characterGrid);
+    });
+
+    testWidgets('CharacterCollectionGrid at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        characterGrid,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('AppVersionGateOverlay', (tester) async {
+      await runViewportSweep(tester, versionGate);
+    });
+
+    testWidgets('AppVersionGateOverlay at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        versionGate,
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),
