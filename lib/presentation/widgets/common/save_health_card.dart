@@ -93,8 +93,7 @@ class SaveHealthCardState extends State<SaveHealthCard> {
   @visibleForTesting
   String? get errorMessage => _errorMessage;
 
-  int _now() =>
-      (widget.nowMs ?? () => DateTime.now().millisecondsSinceEpoch)();
+  int _now() => (widget.nowMs ?? () => DateTime.now().millisecondsSinceEpoch)();
 
   /// Re-runs the check — a consumer can also call this via a
   /// [GlobalKey<SaveHealthCardState>] after their own save/backup flow
@@ -149,60 +148,63 @@ class SaveHealthCardState extends State<SaveHealthCard> {
   Widget build(BuildContext context) {
     final checkedAt = _checkedAtMs;
     return PanelCard(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Text(
-            widget.title,
-            style: TextStyle(
-              color: NeonTheme.ink,
-              fontWeight: FontWeight.w800,
-              fontSize: 16,
-            ),
-          ),
-          const SizedBox(height: NeonTheme.s16),
-          Text(
-            'Kiểm tra lần cuối: ${checkedAt == null ? '(chưa kiểm tra)' : _formatTime(checkedAt)}',
-            style: TextStyle(color: NeonTheme.inkSoft, fontSize: 13),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            _sizeBytes == null
-                ? 'Kích thước save: —'
-                : 'Kích thước save: ${_sizeBytes!} bytes',
-            style: TextStyle(color: NeonTheme.inkSoft, fontSize: 13),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            widget.secret == null || widget.secret!.isEmpty
-                ? 'HMAC: bỏ qua (chưa có secret)'
-                : switch (_result) {
-                    SaveHealthResult.ok => 'HMAC: hợp lệ',
-                    SaveHealthResult.error => 'HMAC/save: lỗi — $_errorMessage',
-                    SaveHealthResult.unknown => 'HMAC: chưa kiểm tra',
-                  },
-            style: TextStyle(
-              color: _result == SaveHealthResult.error
-                  ? NeonTheme.red
-                  : NeonTheme.inkSoft,
-              fontSize: 13,
-            ),
-          ),
-          if (_result == SaveHealthResult.error &&
-              (widget.secret == null || widget.secret!.isEmpty))
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
             Text(
-              'Lỗi: $_errorMessage',
-              style: TextStyle(color: NeonTheme.red, fontSize: 13),
+              widget.title,
+              style: TextStyle(
+                color: NeonTheme.ink,
+                fontWeight: FontWeight.w800,
+                fontSize: 16,
+              ),
             ),
-          const SizedBox(height: NeonTheme.s16),
-          CommonButton(
-            key: const Key('saveHealthCardCheckNow'),
-            label: widget.checkLabel,
-            variant: CommonButtonVariant.secondary,
-            onTap: check,
-          ),
-        ],
+            const SizedBox(height: NeonTheme.s16),
+            Text(
+              'Kiểm tra lần cuối: ${checkedAt == null ? '(chưa kiểm tra)' : _formatTime(checkedAt)}',
+              style: TextStyle(color: NeonTheme.inkSoft, fontSize: 13),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              _sizeBytes == null
+                  ? 'Kích thước save: —'
+                  : 'Kích thước save: ${_sizeBytes!} bytes',
+              style: TextStyle(color: NeonTheme.inkSoft, fontSize: 13),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              widget.secret == null || widget.secret!.isEmpty
+                  ? 'HMAC: bỏ qua (chưa có secret)'
+                  : switch (_result) {
+                      SaveHealthResult.ok => 'HMAC: hợp lệ',
+                      SaveHealthResult.error =>
+                        'HMAC/save: lỗi — $_errorMessage',
+                      SaveHealthResult.unknown => 'HMAC: chưa kiểm tra',
+                    },
+              style: TextStyle(
+                color: _result == SaveHealthResult.error
+                    ? NeonTheme.red
+                    : NeonTheme.inkSoft,
+                fontSize: 13,
+              ),
+            ),
+            if (_result == SaveHealthResult.error &&
+                (widget.secret == null || widget.secret!.isEmpty))
+              Text(
+                'Lỗi: $_errorMessage',
+                style: TextStyle(color: NeonTheme.red, fontSize: 13),
+              ),
+            const SizedBox(height: NeonTheme.s16),
+            CommonButton(
+              key: const Key('saveHealthCardCheckNow'),
+              label: widget.checkLabel,
+              variant: CommonButtonVariant.secondary,
+              onTap: check,
+            ),
+          ],
+        ),
       ),
     );
   }

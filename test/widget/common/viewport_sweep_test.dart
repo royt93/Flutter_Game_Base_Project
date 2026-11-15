@@ -151,6 +151,57 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2ab: save health and XP header', () {
+    testWidgets('SaveHealthCard', (tester) async {
+      await runViewportSweep(tester, () => const SaveHealthCard());
+    });
+
+    testWidgets('SaveHealthCard at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const SaveHealthCard(),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('XpLevelHeader', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => XpLevelHeader(
+          level: 12,
+          currentXp: 740,
+          xpForNextLevel: 1000,
+          title: 'Explorer progress',
+        ),
+      );
+    });
+
+    testWidgets('XpLevelHeader at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => XpLevelHeader(
+          level: 12,
+          currentXp: 740,
+          xpForNextLevel: 1000,
+          title: 'Explorer progress',
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2aa: preload and replay status', () {
     Widget preloadStatus() => ScenePreloadStatusPanel(
       sceneId: 'level-8',
