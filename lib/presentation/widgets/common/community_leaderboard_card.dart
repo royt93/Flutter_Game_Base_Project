@@ -113,79 +113,81 @@ class CommunityLeaderboardCard extends StatelessWidget {
           ),
           boxShadow: NeonTheme.drop(y: 4, blur: 12),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      color: NeonTheme.ink,
-                      fontSize: 18,
-                      fontWeight: FontWeight.w900,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      title,
+                      style: TextStyle(
+                        color: NeonTheme.ink,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w900,
+                      ),
                     ),
                   ),
-                ),
-                if (onRefresh != null)
-                  IconButton(
-                    key: const ValueKey('communityLeaderboardRefresh'),
-                    tooltip: refreshLabel,
-                    onPressed: onRefresh,
-                    icon: Icon(Icons.refresh_rounded, color: NeonTheme.cyan),
-                  ),
-              ],
-            ),
-            const SizedBox(height: NeonTheme.s8),
-            if (isLoading)
-              const Padding(
-                padding: EdgeInsets.all(NeonTheme.s16),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (errorMessage != null)
-              RetryErrorState(
-                key: const ValueKey('communityLeaderboardError'),
-                message: errorMessage!,
-                onRetry: onRetry,
-                compact: true,
-              )
-            else if (entries.isEmpty)
-              EmptyStatePlaceholder(
-                key: const ValueKey('communityLeaderboardEmpty'),
-                icon: Icons.groups_rounded,
-                message: emptyMessage,
-                color: NeonTheme.cyan,
-              )
-            else
-              SizedBox(
-                height: maxVisibleRows * 64,
-                child: ListView.builder(
-                  key: const ValueKey('communityLeaderboardList'),
-                  itemCount: entries.length,
-                  itemBuilder: (context, index) {
-                    final entry = entries[index];
-                    return Padding(
-                      padding: const EdgeInsets.symmetric(vertical: 2),
-                      child: TieredLeaderboardRow(
-                        key: ValueKey('communityLeaderboard_${entry.id}'),
-                        rank: entry.rank,
-                        playerName: entry.playerName,
-                        score: entry.score,
-                        tier: entry.tier,
-                        zone: entry.zone,
-                        isCurrentPlayer: entry.isCurrentPlayer,
-                        avatar: entry.avatar,
-                        onTap: onPlayerTap == null
-                            ? null
-                            : () => onPlayerTap!(entry.id),
-                      ),
-                    );
-                  },
-                ),
+                  if (onRefresh != null)
+                    IconButton(
+                      key: const ValueKey('communityLeaderboardRefresh'),
+                      tooltip: refreshLabel,
+                      onPressed: onRefresh,
+                      icon: Icon(Icons.refresh_rounded, color: NeonTheme.cyan),
+                    ),
+                ],
               ),
-          ],
+              const SizedBox(height: NeonTheme.s8),
+              if (isLoading)
+                const Padding(
+                  padding: EdgeInsets.all(NeonTheme.s16),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (errorMessage != null)
+                RetryErrorState(
+                  key: const ValueKey('communityLeaderboardError'),
+                  message: errorMessage!,
+                  onRetry: onRetry,
+                  compact: true,
+                )
+              else if (entries.isEmpty)
+                EmptyStatePlaceholder(
+                  key: const ValueKey('communityLeaderboardEmpty'),
+                  icon: Icons.groups_rounded,
+                  message: emptyMessage,
+                  color: NeonTheme.cyan,
+                )
+              else
+                SizedBox(
+                  height: maxVisibleRows * 64,
+                  child: ListView.builder(
+                    key: const ValueKey('communityLeaderboardList'),
+                    itemCount: entries.length,
+                    itemBuilder: (context, index) {
+                      final entry = entries[index];
+                      return Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 2),
+                        child: TieredLeaderboardRow(
+                          key: ValueKey('communityLeaderboard_${entry.id}'),
+                          rank: entry.rank,
+                          playerName: entry.playerName,
+                          score: entry.score,
+                          tier: entry.tier,
+                          zone: entry.zone,
+                          isCurrentPlayer: entry.isCurrentPlayer,
+                          avatar: entry.avatar,
+                          onTap: onPlayerTap == null
+                              ? null
+                              : () => onPlayerTap!(entry.id),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );

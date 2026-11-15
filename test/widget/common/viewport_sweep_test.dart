@@ -57,7 +57,9 @@ void main() {
         await runViewportSweep(tester, entry.value);
       });
 
-      testWidgets('${entry.key} at 2.0x text, 320dp and landscape', (tester) async {
+      testWidgets('${entry.key} at 2.0x text, 320dp and landscape', (
+        tester,
+      ) async {
         await runViewportSweep(
           tester,
           entry.value,
@@ -140,6 +142,119 @@ void main() {
       await runViewportSweep(
         tester,
         () => WinStreakFlameHud(streakCount: 0, multiplierLabel: 'x1.0'),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
+  group('FEAT-200 phase 2u: simple info components', () {
+    testWidgets('BottomSheetPanel', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const BottomSheetPanel(child: Text('Persistent panel content')),
+      );
+    });
+
+    testWidgets('BottomSheetPanel at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const BottomSheetPanel(child: Text('Persistent panel content')),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('ClanChatPreviewBar', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => ClanChatPreviewBar(
+          senderName: 'Maya Rose',
+          message: 'Ready for the next match?',
+          timestampText: '2m ago',
+          unreadCount: 3,
+          senderAvatar: const Icon(Icons.face),
+          onTap: () {},
+        ),
+      );
+    });
+
+    testWidgets('ClanChatPreviewBar at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => ClanChatPreviewBar(
+          senderName: 'Maya Rose',
+          message: 'Ready for the next match?',
+          timestampText: '2m ago',
+          unreadCount: 3,
+          senderAvatar: const Icon(Icons.face),
+          onTap: () {},
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('CommunityLeaderboardCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => CommunityLeaderboardCard(
+          entries: const [
+            CommunityLeaderboardEntry(
+              id: 'p1',
+              rank: 1,
+              playerName: 'Maya Rose',
+              score: '12,500',
+            ),
+            CommunityLeaderboardEntry(
+              id: 'p2',
+              rank: 2,
+              playerName: 'Long Player Name',
+              score: '8,900',
+              isCurrentPlayer: true,
+            ),
+          ],
+          onRefresh: () {},
+        ),
+      );
+    });
+
+    testWidgets('CommunityLeaderboardCard at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => CommunityLeaderboardCard(
+          entries: const [
+            CommunityLeaderboardEntry(
+              id: 'p1',
+              rank: 1,
+              playerName: 'Maya Rose',
+              score: '12,500',
+            ),
+            CommunityLeaderboardEntry(
+              id: 'p2',
+              rank: 2,
+              playerName: 'Long Player Name',
+              score: '8,900',
+              isCurrentPlayer: true,
+            ),
+          ],
+          onRefresh: () {},
+        ),
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),
@@ -256,7 +371,9 @@ void main() {
       ViewportCase('320x480', Size(320, 480)),
       ViewportCase('568x320-landscape', Size(568, 320)),
     ]) {
-      testWidgets('ConsentBanner at 2.0x text, ${viewport.name}', (tester) async {
+      testWidgets('ConsentBanner at 2.0x text, ${viewport.name}', (
+        tester,
+      ) async {
         SharedPreferences.setMockInitialValues({});
         Get.put(
           StorageService(await SharedPreferences.getInstance()),
@@ -401,7 +518,9 @@ void main() {
       );
     });
 
-    testWidgets('InventoryGrid at 2.0x text, 320dp and landscape', (tester) async {
+    testWidgets('InventoryGrid at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
       await runViewportSweep(
         tester,
         () => InventoryGrid(
@@ -432,11 +551,19 @@ void main() {
           spacing: 12,
           children: [
             LevelPathMapTile(
-              node: LevelPathNode(level: 3, state: LevelState.completed, starsEarned: 2),
+              node: LevelPathNode(
+                level: 3,
+                state: LevelState.completed,
+                starsEarned: 2,
+              ),
               onTap: () {},
             ),
             LevelPathMapTile(
-              node: LevelPathNode(level: 4, state: LevelState.unlocked, isCurrent: true),
+              node: LevelPathNode(
+                level: 4,
+                state: LevelState.unlocked,
+                isCurrent: true,
+              ),
               onTap: () {},
             ),
           ],
@@ -444,18 +571,28 @@ void main() {
       );
     });
 
-    testWidgets('LevelPathMapTile at 2.0x text, 320dp and landscape', (tester) async {
+    testWidgets('LevelPathMapTile at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
       await runViewportSweep(
         tester,
         () => Wrap(
           spacing: 12,
           children: [
             LevelPathMapTile(
-              node: LevelPathNode(level: 3, state: LevelState.completed, starsEarned: 2),
+              node: LevelPathNode(
+                level: 3,
+                state: LevelState.completed,
+                starsEarned: 2,
+              ),
               onTap: () {},
             ),
             LevelPathMapTile(
-              node: LevelPathNode(level: 4, state: LevelState.unlocked, isCurrent: true),
+              node: LevelPathNode(
+                level: 4,
+                state: LevelState.unlocked,
+                isCurrent: true,
+              ),
               onTap: () {},
             ),
           ],
@@ -477,7 +614,9 @@ void main() {
       );
     });
 
-    testWidgets('CandySlider at 2.0x text, 320dp and landscape', (tester) async {
+    testWidgets('CandySlider at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
       await runViewportSweep(
         tester,
         () => CandySlider(value: 0.55, onChanged: (_) {}),
@@ -613,36 +752,37 @@ void main() {
       );
     });
 
-    testWidgets('ContentRevisionHistoryPanel at 2.0x text, 320dp and landscape', (
-      tester,
-    ) async {
-      await runViewportSweep(
-        tester,
-        () => ContentRevisionHistoryPanel(
-          revisions: [
-            ContentRevisionSummary(
-              revision: 'opaque-revision-v12',
-              label: 'Winter event content update',
-              version: 12,
-              appliedAtText: 'Today, 10:30 UTC',
-            ),
-            ContentRevisionSummary(
-              revision: 'opaque-revision-v11',
-              label: 'New character release notes',
-              version: 11,
-              appliedAtText: 'Yesterday, 18:45 UTC',
-            ),
+    testWidgets(
+      'ContentRevisionHistoryPanel at 2.0x text, 320dp and landscape',
+      (tester) async {
+        await runViewportSweep(
+          tester,
+          () => ContentRevisionHistoryPanel(
+            revisions: [
+              ContentRevisionSummary(
+                revision: 'opaque-revision-v12',
+                label: 'Winter event content update',
+                version: 12,
+                appliedAtText: 'Today, 10:30 UTC',
+              ),
+              ContentRevisionSummary(
+                revision: 'opaque-revision-v11',
+                label: 'New character release notes',
+                version: 11,
+                appliedAtText: 'Yesterday, 18:45 UTC',
+              ),
+            ],
+            currentRevision: 'opaque-revision-v12',
+            onRollback: (_) async {},
+          ),
+          viewports: const [
+            ViewportCase('320x480', Size(320, 480)),
+            ViewportCase('568x320-landscape', Size(568, 320)),
           ],
-          currentRevision: 'opaque-revision-v12',
-          onRollback: (_) async {},
-        ),
-        viewports: const [
-          ViewportCase('320x480', Size(320, 480)),
-          ViewportCase('568x320-landscape', Size(568, 320)),
-        ],
-        textScale: 2.0,
-      );
-    });
+          textScale: 2.0,
+        );
+      },
+    );
   });
 
   group('FEAT-200 phase 2m: lists and goal indicators', () {
@@ -745,7 +885,12 @@ void main() {
     testWidgets('QuestProgressPill', (tester) async {
       await runViewportSweep(
         tester,
-        () => QuestProgressPill(completed: 4, total: 12, claimableCount: 2, onTap: () {}),
+        () => QuestProgressPill(
+          completed: 4,
+          total: 12,
+          claimableCount: 2,
+          onTap: () {},
+        ),
       );
     });
 
@@ -754,7 +899,12 @@ void main() {
     ) async {
       await runViewportSweep(
         tester,
-        () => QuestProgressPill(completed: 4, total: 12, claimableCount: 2, onTap: () {}),
+        () => QuestProgressPill(
+          completed: 4,
+          total: 12,
+          claimableCount: 2,
+          onTap: () {},
+        ),
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),
@@ -801,9 +951,22 @@ void main() {
         tester,
         () => AvatarFrameSelector(
           options: const [
-            AvatarFrameOption(id: 'cyan', label: 'Classic Cyan', color: Colors.cyan),
-            AvatarFrameOption(id: 'gold', label: 'Golden Legend', color: Colors.amber, locked: true),
-            AvatarFrameOption(id: 'fire', label: 'Fire Streak', color: Colors.deepOrange),
+            AvatarFrameOption(
+              id: 'cyan',
+              label: 'Classic Cyan',
+              color: Colors.cyan,
+            ),
+            AvatarFrameOption(
+              id: 'gold',
+              label: 'Golden Legend',
+              color: Colors.amber,
+              locked: true,
+            ),
+            AvatarFrameOption(
+              id: 'fire',
+              label: 'Fire Streak',
+              color: Colors.deepOrange,
+            ),
           ],
           selectedId: 'cyan',
           onSelect: (_) {},
@@ -819,9 +982,22 @@ void main() {
         tester,
         () => AvatarFrameSelector(
           options: const [
-            AvatarFrameOption(id: 'cyan', label: 'Classic Cyan', color: Colors.cyan),
-            AvatarFrameOption(id: 'gold', label: 'Golden Legend', color: Colors.amber, locked: true),
-            AvatarFrameOption(id: 'fire', label: 'Fire Streak', color: Colors.deepOrange),
+            AvatarFrameOption(
+              id: 'cyan',
+              label: 'Classic Cyan',
+              color: Colors.cyan,
+            ),
+            AvatarFrameOption(
+              id: 'gold',
+              label: 'Golden Legend',
+              color: Colors.amber,
+              locked: true,
+            ),
+            AvatarFrameOption(
+              id: 'fire',
+              label: 'Fire Streak',
+              color: Colors.deepOrange,
+            ),
           ],
           selectedId: 'cyan',
           onSelect: (_) {},
@@ -840,10 +1016,7 @@ void main() {
     testWidgets('AsyncCommonButton', (tester) async {
       await runViewportSweep(
         tester,
-        () => AsyncCommonButton(
-          label: 'Save progress',
-          onPressed: () async {},
-        ),
+        () => AsyncCommonButton(label: 'Save progress', onPressed: () async {}),
       );
     });
 
@@ -852,10 +1025,7 @@ void main() {
     ) async {
       await runViewportSweep(
         tester,
-        () => AsyncCommonButton(
-          label: 'Save progress',
-          onPressed: () async {},
-        ),
+        () => AsyncCommonButton(label: 'Save progress', onPressed: () async {}),
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),
@@ -959,7 +1129,9 @@ void main() {
       );
     });
 
-    testWidgets('AvatarFrame at 2.0x text, 320dp and landscape', (tester) async {
+    testWidgets('AvatarFrame at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
       await runViewportSweep(
         tester,
         () => const AvatarFrame(child: Text('AB')),
