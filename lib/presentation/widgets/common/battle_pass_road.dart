@@ -175,14 +175,6 @@ class BattlePassRoadState extends State<BattlePassRoad> {
     _scrollController = ScrollController(
       initialScrollOffset: _currentIndex * _milestoneExtent,
     );
-  }
-
-  double _milestoneExtentFor(BuildContext context) =>
-      _milestoneExtent * MediaQuery.textScalerOf(context).scale(1);
-
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted || !_scrollController.hasClients) return;
       final position = _scrollController.position;
@@ -194,6 +186,9 @@ class BattlePassRoadState extends State<BattlePassRoad> {
       );
     });
   }
+
+  double _milestoneExtentFor(BuildContext context) =>
+      _milestoneExtent * MediaQuery.textScalerOf(context).scale(1);
 
   void _validateMilestones(List<BattlePassMilestone> milestones) {
     final ids = <String>{};
