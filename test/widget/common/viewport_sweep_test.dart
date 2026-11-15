@@ -152,7 +152,7 @@ void main() {
   });
 
   group('FEAT-200 phase 2z: experiment assignments and unlock listener', () {
-    final experiments = () => ExperimentVariantAssignmentCard(
+    Widget experiments() => ExperimentVariantAssignmentCard(
       rows: [
         for (var index = 1; index <= 3; index++)
           ExperimentVariantRow(
@@ -165,7 +165,7 @@ void main() {
       ],
     );
 
-    final listener = () => const AchievementUnlockListener(
+    Widget listener() => const AchievementUnlockListener(
       labelFor: _achievementViewportLabel,
       child: Text('Game content'),
     );
