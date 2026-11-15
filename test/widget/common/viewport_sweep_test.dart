@@ -15,6 +15,8 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/viewport_sweep.dart';
 
+String _achievementViewportLabel(String id) => id;
+
 Widget _defaultSweepInventoryItemBuilder(
   BuildContext context,
   InventorySlot slot,
@@ -140,6 +142,69 @@ void main() {
       await runViewportSweep(
         tester,
         () => WinStreakFlameHud(streakCount: 0, multiplierLabel: 'x1.0'),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
+  group('FEAT-200 phase 2z: experiment assignments and unlock listener', () {
+    final experiments = () => ExperimentVariantAssignmentCard(
+      rows: [
+        for (var index = 1; index <= 3; index++)
+          ExperimentVariantRow(
+            experimentKey: 'experiment-$index',
+            label: 'Store layout $index',
+            assignedVariant: index.isEven ? 'wide' : 'control',
+            availableVariants: const ['control', 'wide'],
+            isOverridden: false,
+          ),
+      ],
+    );
+
+    final listener = () => const AchievementUnlockListener(
+      labelFor: _achievementViewportLabel,
+      child: Text('Game content'),
+    );
+
+    testWidgets('ExperimentVariantAssignmentCard', (tester) async {
+      await runViewportSweep(tester, experiments);
+    });
+
+    testWidgets(
+      'ExperimentVariantAssignmentCard at 2.0x text, 320dp and landscape',
+      (tester) async {
+        await runViewportSweep(
+          tester,
+          experiments,
+          viewports: const [
+            ViewportCase('320x480', Size(320, 480)),
+            ViewportCase('568x320-landscape', Size(568, 320)),
+          ],
+          textScale: 2.0,
+        );
+      },
+    );
+
+    testWidgets('AchievementUnlockListener', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      Get.put(StorageService(await SharedPreferences.getInstance()));
+      addTearDown(Get.reset);
+      await runViewportSweep(tester, listener);
+    });
+
+    testWidgets('AchievementUnlockListener at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      Get.put(StorageService(await SharedPreferences.getInstance()));
+      addTearDown(Get.reset);
+      await runViewportSweep(
+        tester,
+        listener,
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),
