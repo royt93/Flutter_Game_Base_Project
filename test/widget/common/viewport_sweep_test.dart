@@ -149,6 +149,78 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2t: input and selection controls', () {
+    testWidgets('CandyTextField', (tester) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+      await runViewportSweep(
+        tester,
+        () => CandyTextField(
+          controller: controller,
+          hintText: 'Search player names',
+          prefixIcon: Icons.person_search,
+        ),
+      );
+    });
+
+    testWidgets('CandyTextField at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+      await runViewportSweep(
+        tester,
+        () => CandyTextField(
+          controller: controller,
+          hintText: 'Search player names',
+          prefixIcon: Icons.person_search,
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('CandyRadioGroup', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => CandyRadioGroup<String>(
+          options: const [
+            CandyRadioOption(value: 'casual', label: 'Casual play mode'),
+            CandyRadioOption(value: 'competitive', label: 'Competitive mode'),
+            CandyRadioOption(value: 'cooperative', label: 'Cooperative play'),
+          ],
+          value: 'casual',
+          onChanged: (_) {},
+        ),
+      );
+    });
+
+    testWidgets('CandyRadioGroup at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => CandyRadioGroup<String>(
+          options: const [
+            CandyRadioOption(value: 'casual', label: 'Casual play mode'),
+            CandyRadioOption(value: 'competitive', label: 'Competitive mode'),
+            CandyRadioOption(value: 'cooperative', label: 'Cooperative play'),
+          ],
+          value: 'casual',
+          onChanged: (_) {},
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2s: consent banner', () {
     for (final viewport in defaultViewports) {
       testWidgets('ConsentBanner at ${viewport.name}', (tester) async {
