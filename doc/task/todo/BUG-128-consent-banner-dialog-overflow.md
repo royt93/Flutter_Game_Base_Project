@@ -19,3 +19,4 @@ source: "FEAT-200 phase 2s viewport sweep, 2026-11-14"
 - [x] Existing `consent_banner_test.dart` passes.
 - [x] Full viewport sweep passes 157 tests.
 - [x] Targeted analyzer reports no issues.
+- [x] Full CI passes on `9a3b3766` (all three jobs).
