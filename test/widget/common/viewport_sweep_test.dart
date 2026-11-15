@@ -26,17 +26,13 @@ void main() {
   group('FEAT-200 phase 2e: general display widgets', () {
     final cases = <String, Widget Function()>{
       'BadgeDot': () => const BadgeDot(size: 24),
-      'CircularProgressRing': () => const CircularProgressRing(
-        progress: 0.75,
-        label: '75%',
-      ),
+      'CircularProgressRing': () =>
+          const CircularProgressRing(progress: 0.75, label: '75%'),
       'CurrencyCounter': () => const CurrencyCounter(value: 123456),
       'ProgressBarStars': () => const ProgressBarStars(progress: 0.75),
       'StarRating': () => const StarRating(earned: 2),
-      'PaginatedDotsIndicator': () => const PaginatedDotsIndicator(
-        count: 8,
-        currentIndex: 4,
-      ),
+      'PaginatedDotsIndicator': () =>
+          const PaginatedDotsIndicator(count: 8, currentIndex: 4),
       'SectionHeader': () => const SectionHeader(title: 'Daily rewards'),
       'CooldownCountdownChip': () => const CooldownCountdownChip(
         remaining: Duration(hours: 2, minutes: 30),
@@ -142,6 +138,136 @@ void main() {
       await runViewportSweep(
         tester,
         () => WinStreakFlameHud(streakCount: 0, multiplierLabel: 'x1.0'),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
+  group('FEAT-200 phase 2v: roadmap and battle pass', () {
+    testWidgets('AchievementRoadmapCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => AchievementRoadmapCard(
+          items: [
+            for (var index = 1; index <= 4; index++)
+              AchievementRoadmapItem(
+                id: 'road-$index',
+                title: 'Collect $index rare treasures',
+                description: 'Explore the world and claim rewards',
+                progress: index,
+                target: 4,
+                reward: MilestoneReward(
+                  icon: Icons.stars_rounded,
+                  label: 'Stars',
+                  amountLabel: '+$index',
+                ),
+              ),
+          ],
+          onClaim: (_) {},
+        ),
+      );
+    });
+
+    testWidgets('AchievementRoadmapCard at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => AchievementRoadmapCard(
+          items: [
+            for (var index = 1; index <= 4; index++)
+              AchievementRoadmapItem(
+                id: 'road-$index',
+                title: 'Collect $index rare treasures',
+                description: 'Explore the world and claim rewards',
+                progress: index,
+                target: 4,
+                reward: MilestoneReward(
+                  icon: Icons.stars_rounded,
+                  label: 'Stars',
+                  amountLabel: '+$index',
+                ),
+              ),
+          ],
+          onClaim: (_) {},
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('BattlePassRoad', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => BattlePassRoad(
+          milestones: [
+            BattlePassMilestone(
+              id: 'm1',
+              requiredProgress: 10,
+              freeRewards: const [RewardLine(currency: 'coin', amount: 50)],
+              vipRewards: const [RewardLine(currency: 'gem', amount: 1)],
+            ),
+            BattlePassMilestone(
+              id: 'm2',
+              requiredProgress: 20,
+              freeRewards: const [RewardLine(currency: 'coin', amount: 100)],
+              vipRewards: const [RewardLine(currency: 'gem', amount: 2)],
+            ),
+            BattlePassMilestone(
+              id: 'm3',
+              requiredProgress: 30,
+              freeRewards: const [RewardLine(currency: 'coin', amount: 150)],
+              vipRewards: const [RewardLine(currency: 'gem', amount: 3)],
+            ),
+          ],
+          progress: 15,
+          vipEnabled: true,
+          claimedFreeIds: const {},
+          claimedVipIds: const {},
+          onClaimMilestone: (_, _) {},
+        ),
+      );
+    });
+
+    testWidgets('BattlePassRoad at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => BattlePassRoad(
+          milestones: [
+            BattlePassMilestone(
+              id: 'm1',
+              requiredProgress: 10,
+              freeRewards: const [RewardLine(currency: 'coin', amount: 50)],
+              vipRewards: const [RewardLine(currency: 'gem', amount: 1)],
+            ),
+            BattlePassMilestone(
+              id: 'm2',
+              requiredProgress: 20,
+              freeRewards: const [RewardLine(currency: 'coin', amount: 100)],
+              vipRewards: const [RewardLine(currency: 'gem', amount: 2)],
+            ),
+            BattlePassMilestone(
+              id: 'm3',
+              requiredProgress: 30,
+              freeRewards: const [RewardLine(currency: 'coin', amount: 150)],
+              vipRewards: const [RewardLine(currency: 'gem', amount: 3)],
+            ),
+          ],
+          progress: 15,
+          vipEnabled: true,
+          claimedFreeIds: const {},
+          claimedVipIds: const {},
+          onClaimMilestone: (_, _) {},
+        ),
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),

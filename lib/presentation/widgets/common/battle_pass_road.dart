@@ -177,6 +177,24 @@ class BattlePassRoadState extends State<BattlePassRoad> {
     );
   }
 
+  double _milestoneExtentFor(BuildContext context) =>
+      _milestoneExtent * MediaQuery.textScalerOf(context).scale(1);
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted || !_scrollController.hasClients) return;
+      final position = _scrollController.position;
+      _scrollController.jumpTo(
+        (_currentIndex * _milestoneExtentFor(context)).clamp(
+          0.0,
+          position.maxScrollExtent,
+        ),
+      );
+    });
+  }
+
   void _validateMilestones(List<BattlePassMilestone> milestones) {
     final ids = <String>{};
     var previous = -1;
@@ -215,7 +233,7 @@ class BattlePassRoadState extends State<BattlePassRoad> {
         if (!mounted || !_scrollController.hasClients) return;
         final position = _scrollController.position;
         _scrollController.jumpTo(
-          (_currentIndex * _milestoneExtent).clamp(
+          (_currentIndex * _milestoneExtentFor(context)).clamp(
             0.0,
             position.maxScrollExtent,
           ),
@@ -238,7 +256,7 @@ class BattlePassRoadState extends State<BattlePassRoad> {
       controller: _scrollController,
       physics: widget.physics,
       shrinkWrap: widget.shrinkWrap,
-      itemExtent: _milestoneExtent,
+      itemExtent: _milestoneExtentFor(context),
       itemCount: widget.milestones.length,
       itemBuilder: (context, index) {
         final milestone = widget.milestones[index];
@@ -378,7 +396,7 @@ class _RewardTrackCard extends StatelessWidget {
             '$trackName · $rewardText',
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
-            style: TextStyle(color: NeonTheme.inkSoft, fontSize: 11),
+            style: TextStyle(color: NeonTheme.ink, fontSize: 11),
           ),
           const Spacer(),
           if (available)
@@ -403,7 +421,7 @@ class _RewardTrackCard extends StatelessWidget {
                   ? 'VIP locked'
                   : 'Locked',
               textAlign: TextAlign.center,
-              style: TextStyle(color: NeonTheme.inkSoft, fontSize: 11),
+              style: TextStyle(color: NeonTheme.ink, fontSize: 11),
             ),
         ],
       ),

@@ -45,7 +45,8 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 - [x] Pha 2s (2026-11-14): thêm `ConsentBanner` với service setup/reset riêng cho từng viewport; full sweep 157 tests pass, `consent_banner_test.dart` và analyzer pass. Sweep lộ BUG-128: dialog tràn ở màn thấp và 2× text. Sửa shared `NeonDialog.panel` bằng max-height theo viewport và scroll content. Tổng coverage 84/170 widget. Full CI pass on `9a3b3766`.
 - [x] Pha 2t (2026-11-15): thêm `CandyTextField` và `CandyRadioGroup` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 161 tests pass; tổng coverage 86/170 widget.
 - [x] Pha 2u (2026-11-15): thêm `BottomSheetPanel`, `ClanChatPreviewBar`, `CommunityLeaderboardCard` ở sweep mặc định và 320dp/landscape với text 2.0x. Sweep lộ overflow thật ở `CommunityLeaderboardCard`, sửa bằng scroll body trong `PanelCard`. Full sweep 167 tests pass; tổng coverage 89/170 widget.
-- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 81 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- [x] Pha 2v (2026-11-15): thêm `AchievementRoadmapCard` và `BattlePassRoad` ở sweep mặc định và 320dp/landscape với text 2.0x. Lộ overflow ở roadmap, sửa scroll body; BattlePassRoad milestone extent nay scale theo text scale để reward card vừa layout. Full sweep 171 tests pass; tổng coverage 91/170 widget.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 79 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 
 ## Tiêu chí xong

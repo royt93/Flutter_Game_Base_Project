@@ -33,12 +33,11 @@ void main() {
   group('BUG-120..124: confirmed widget text contrast', () {
     final cases = <String, (Widget Function() build, List<String> labels)>{
       'StreakRepairDialog': (
-        () => StreakRepairDialog(
-          streakDays: 14,
-          onRepair: () {},
-          onSkip: () {},
-        ),
-        ['Your 14-day streak is frozen! Repair it to continue where you left off.'],
+        () =>
+            StreakRepairDialog(streakDays: 14, onRepair: () {}, onSkip: () {}),
+        [
+          'Your 14-day streak is frozen! Repair it to continue where you left off.',
+        ],
       ),
       'PrestigeConfirmationCard': (
         () => PrestigeConfirmationCard(
@@ -56,7 +55,11 @@ void main() {
           onConfirm: () {},
           onCancel: () {},
         ),
-        ['Reset your current level to unlock permanent boosts!', 'Current', 'After Prestige'],
+        [
+          'Reset your current level to unlock permanent boosts!',
+          'Current',
+          'After Prestige',
+        ],
       ),
       'RewardPopup': (
         () => const RewardPopup(
@@ -107,6 +110,59 @@ void main() {
           }
         });
       }
+    }
+  });
+
+  group('FEAT-200 phase 2v contrast: roadmap and battle pass', () {
+    for (final dark in [false, true]) {
+      testWidgets('dark=$dark', (tester) async {
+        NeonTheme.dark = dark;
+        final widgets = [
+          AchievementRoadmapCard(
+            items: [
+              AchievementRoadmapItem(
+                id: 'road-1',
+                title: 'Collect rare treasures',
+                description: 'Explore and claim rewards',
+                progress: 1,
+                target: 3,
+                reward: MilestoneReward(
+                  icon: Icons.stars_rounded,
+                  label: 'Stars',
+                  amountLabel: '+10',
+                ),
+              ),
+            ],
+            onClaim: (_) {},
+          ),
+          SizedBox(
+            height: 320,
+            child: BattlePassRoad(
+              milestones: [
+                BattlePassMilestone(
+                  id: 'm1',
+                  requiredProgress: 10,
+                  freeRewards: const [RewardLine(currency: 'coin', amount: 50)],
+                  vipRewards: const [RewardLine(currency: 'gem', amount: 1)],
+                ),
+              ],
+              progress: 5,
+              vipEnabled: true,
+              claimedFreeIds: const {},
+              claimedVipIds: const {},
+              onClaimMilestone: (_, _) {},
+            ),
+          ),
+        ];
+        for (final widget in widgets) {
+          final issues = await _auditWidget(
+            tester,
+            widget,
+            find.byType(Scaffold),
+          );
+          expect(issues, isEmpty, reason: '$issues');
+        }
+      });
     }
   });
 
@@ -230,32 +286,36 @@ void main() {
       expect(issues.single.text, 'bad');
     });
 
-    testWidgets('bỏ qua text trên nền gradient (không thể tính bằng alpha blend phẳng)', (
-      tester,
-    ) async {
-      await tester.pumpWidget(
-        MaterialApp(
-          home: Scaffold(
-            backgroundColor: Colors.white,
-            body: Container(
-              decoration: const BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [Colors.purple, Colors.deepPurple],
+    testWidgets(
+      'bỏ qua text trên nền gradient (không thể tính bằng alpha blend phẳng)',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              backgroundColor: Colors.white,
+              body: Container(
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.purple, Colors.deepPurple],
+                  ),
+                ),
+                child: const Text(
+                  'Button',
+                  style: TextStyle(color: Colors.white),
                 ),
               ),
-              child: const Text('Button', style: TextStyle(color: Colors.white)),
             ),
           ),
-        ),
-      );
+        );
 
-      final issues = auditRenderedTextContrast(
-        tester,
-        find.byType(Scaffold),
-        defaultBackground: Colors.white,
-      );
-      expect(issues, isEmpty, reason: '$issues');
-    });
+        final issues = auditRenderedTextContrast(
+          tester,
+          find.byType(Scaffold),
+          defaultBackground: Colors.white,
+        );
+        expect(issues, isEmpty, reason: '$issues');
+      },
+    );
 
     for (final dark in [false, true]) {
       testWidgets('dark=$dark: audit real PrestigeConfirmationCard', (
@@ -302,7 +362,8 @@ void main() {
               (issue) =>
                   issue.text == 'Current' ||
                   issue.text == 'After Prestige' ||
-                  issue.text == 'Reset your current level to unlock permanent boosts!',
+                  issue.text ==
+                      'Reset your current level to unlock permanent boosts!',
             ),
             isEmpty,
             reason: '$issues',
@@ -310,49 +371,50 @@ void main() {
         }
       });
 
-      testWidgets('dark=$dark: bắt lại lỗi cũ ENH-104 nếu hoàn nguyên dùng Colors.orange', (
-        tester,
-      ) async {
-        NeonTheme.dark = dark;
-        await tester.pumpWidget(
-          MaterialApp(
-            home: Scaffold(
-              backgroundColor: NeonTheme.card,
-              body: Center(
-                child: Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: const Text(
-                    'Requires Level 50',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.orange, // Lỗi cũ trước ENH-104
+      testWidgets(
+        'dark=$dark: bắt lại lỗi cũ ENH-104 nếu hoàn nguyên dùng Colors.orange',
+        (tester) async {
+          NeonTheme.dark = dark;
+          await tester.pumpWidget(
+            MaterialApp(
+              home: Scaffold(
+                backgroundColor: NeonTheme.card,
+                body: Center(
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.withValues(alpha: 0.12),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Text(
+                      'Requires Level 50',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: Colors.orange, // Lỗi cũ trước ENH-104
+                      ),
                     ),
                   ),
                 ),
               ),
             ),
-          ),
-        );
+          );
 
-        final issues = auditRenderedTextContrast(
-          tester,
-          find.byType(Scaffold),
-          defaultBackground: NeonTheme.card,
-        );
-        if (!dark) {
-          // Ở light theme: Colors.orange trên tint orange chỉ đạt ~1.96:1 (< 3.0:1)
-          expect(issues, hasLength(1), reason: '$issues');
-          expect(issues.single.ratio, lessThan(3.0));
-        } else {
-          // Ở dark theme: nền navy tối nên Colors.orange đạt tương phản cao
-          expect(issues, isEmpty, reason: '$issues');
-        }
-      });
+          final issues = auditRenderedTextContrast(
+            tester,
+            find.byType(Scaffold),
+            defaultBackground: NeonTheme.card,
+          );
+          if (!dark) {
+            // Ở light theme: Colors.orange trên tint orange chỉ đạt ~1.96:1 (< 3.0:1)
+            expect(issues, hasLength(1), reason: '$issues');
+            expect(issues.single.ratio, lessThan(3.0));
+          } else {
+            // Ở dark theme: nền navy tối nên Colors.orange đạt tương phản cao
+            expect(issues, isEmpty, reason: '$issues');
+          }
+        },
+      );
     }
   });
 }

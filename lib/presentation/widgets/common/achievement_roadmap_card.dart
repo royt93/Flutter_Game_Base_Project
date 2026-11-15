@@ -112,53 +112,55 @@ class AchievementRoadmapCard extends StatelessWidget {
           ),
           boxShadow: NeonTheme.drop(y: 4, blur: 12),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: NeonTheme.ink,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: NeonTheme.s8),
-            if (isLoading)
-              const Padding(
-                padding: EdgeInsets.all(NeonTheme.s16),
-                child: Center(child: CircularProgressIndicator()),
-              )
-            else if (items.isEmpty)
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: NeonTheme.s16),
-                child: Text(
-                  emptyMessage,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    color: NeonTheme.inkSoft,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              )
-            else
-              SizedBox(
-                height: listHeight,
-                child: ListView.builder(
-                  key: const ValueKey('achievementRoadmapList'),
-                  itemCount: items.length,
-                  itemBuilder: (context, index) => _RoadmapItem(
-                    item: items[index],
-                    onClaim: () => onClaim(items[index].id),
-                    claimLabel: claimLabel,
-                    onOpen: onOpen == null
-                        ? null
-                        : () => onOpen!(items[index].id),
-                  ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: NeonTheme.ink,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-          ],
+              const SizedBox(height: NeonTheme.s8),
+              if (isLoading)
+                const Padding(
+                  padding: EdgeInsets.all(NeonTheme.s16),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (items.isEmpty)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: NeonTheme.s16),
+                  child: Text(
+                    emptyMessage,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: NeonTheme.inkSoft,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                )
+              else
+                SizedBox(
+                  height: listHeight,
+                  child: ListView.builder(
+                    key: const ValueKey('achievementRoadmapList'),
+                    itemCount: items.length,
+                    itemBuilder: (context, index) => _RoadmapItem(
+                      item: items[index],
+                      onClaim: () => onClaim(items[index].id),
+                      claimLabel: claimLabel,
+                      onOpen: onOpen == null
+                          ? null
+                          : () => onOpen!(items[index].id),
+                    ),
+                  ),
+                ),
+            ],
+          ),
         ),
       ),
     );
@@ -240,7 +242,7 @@ class _RoadmapItem extends StatelessWidget {
                         ? 'Complete'
                         : '${item.progress}/${item.target}',
                     style: TextStyle(
-                      color: color,
+                      color: NeonTheme.ink,
                       fontSize: 10,
                       fontWeight: FontWeight.w900,
                     ),
@@ -252,7 +254,7 @@ class _RoadmapItem extends StatelessWidget {
                   item.description!,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: TextStyle(color: NeonTheme.inkSoft, fontSize: 10),
+                  style: TextStyle(color: NeonTheme.ink, fontSize: 10),
                 ),
               const SizedBox(height: 4),
               RepaintBoundary(
@@ -276,7 +278,7 @@ class _RoadmapItem extends StatelessWidget {
                   Text(
                     'Reward: $rewardText',
                     style: TextStyle(
-                      color: NeonTheme.inkSoft,
+                      color: NeonTheme.ink,
                       fontSize: 10,
                       fontWeight: FontWeight.w700,
                     ),
