@@ -277,6 +277,141 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2w: expandable and overlays', () {
+    testWidgets('ExpandablePanel', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const ExpandablePanel(
+          header: Text('Gameplay settings'),
+          content: Text('Advanced accessibility options'),
+          isExpanded: true,
+        ),
+      );
+    });
+
+    testWidgets('ExpandablePanel at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const ExpandablePanel(
+          header: Text('Gameplay settings'),
+          content: Text('Advanced accessibility options'),
+          isExpanded: true,
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('SpotlightOverlay', (tester) async {
+      final targetKey = GlobalKey();
+      await runViewportSweep(
+        tester,
+        () => GetMaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: SizedBox(
+                      key: targetKey,
+                      width: 120,
+                      height: 48,
+                      child: const Text('Highlighted target'),
+                    ),
+                  ),
+                ),
+                SpotlightOverlay(
+                  targetKey: targetKey,
+                  title: 'Welcome',
+                  message: 'Explore your achievements',
+                  onDismiss: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
+
+    testWidgets('SpotlightOverlay at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      final targetKey = GlobalKey();
+      await runViewportSweep(
+        tester,
+        () => GetMaterialApp(
+          home: Scaffold(
+            body: Stack(
+              children: [
+                Align(
+                  alignment: Alignment.topLeft,
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: SizedBox(
+                      key: targetKey,
+                      width: 120,
+                      height: 48,
+                      child: const Text('Highlighted target'),
+                    ),
+                  ),
+                ),
+                SpotlightOverlay(
+                  targetKey: targetKey,
+                  title: 'Welcome',
+                  message: 'Explore your achievements',
+                  onDismiss: () {},
+                ),
+              ],
+            ),
+          ),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('ConfettiOverlay', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const Material(
+          child: ConfettiOverlay(
+            particleCount: 12,
+            duration: Duration(milliseconds: 500),
+          ),
+        ),
+      );
+    });
+
+    testWidgets('ConfettiOverlay at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const Material(
+          child: ConfettiOverlay(
+            particleCount: 12,
+            duration: Duration(milliseconds: 500),
+          ),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2u: simple info components', () {
     testWidgets('BottomSheetPanel', (tester) async {
       await runViewportSweep(

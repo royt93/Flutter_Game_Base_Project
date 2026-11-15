@@ -46,7 +46,8 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 - [x] Pha 2t (2026-11-15): thêm `CandyTextField` và `CandyRadioGroup` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 161 tests pass; tổng coverage 86/170 widget.
 - [x] Pha 2u (2026-11-15): thêm `BottomSheetPanel`, `ClanChatPreviewBar`, `CommunityLeaderboardCard` ở sweep mặc định và 320dp/landscape với text 2.0x. Sweep lộ overflow thật ở `CommunityLeaderboardCard`, sửa bằng scroll body trong `PanelCard`. Full sweep 167 tests pass; tổng coverage 89/170 widget.
 - [x] Pha 2v (2026-11-15): thêm `AchievementRoadmapCard` và `BattlePassRoad` ở sweep mặc định và 320dp/landscape với text 2.0x. Lộ overflow ở roadmap, sửa scroll body; BattlePassRoad milestone extent nay scale theo text scale để reward card vừa layout. Full sweep 171 tests pass; tổng coverage 91/170 widget.
-- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 79 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- [x] Pha 2w (2026-11-15): thêm `ExpandablePanel`, `SpotlightOverlay`, `ConfettiOverlay` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 177 tests pass; test riêng cả ba widget, contrast audit, accessibility audit và analyzer đều pass. Tổng coverage 94/170 widget.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 76 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 
 ## Tiêu chí xong
