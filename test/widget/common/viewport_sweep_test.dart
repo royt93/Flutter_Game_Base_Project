@@ -28,6 +28,8 @@ void _onJoystickDirectionChanged(
   Offset vector,
 ) {}
 
+void _onCheckboxChanged(bool value) {}
+
 Widget _defaultSweepInventoryItemBuilder(
   BuildContext context,
   InventorySlot slot,
@@ -233,6 +235,68 @@ void main() {
           selectedId: 'soft',
           onSelect: (_) {},
           onPreview: (_) {},
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
+  group('FEAT-200 phase 2an: checkbox and level node', () {
+    testWidgets('CandyCheckboxTile', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const CandyCheckboxTile(
+          label: 'Enable haptic feedback',
+          subtitle: 'Vibration on important actions',
+          value: true,
+          onChanged: _onCheckboxChanged,
+        ),
+      );
+    });
+
+    testWidgets('CandyCheckboxTile at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const CandyCheckboxTile(
+          label: 'Enable haptic feedback',
+          subtitle: 'Vibration on important actions',
+          value: true,
+          onChanged: _onCheckboxChanged,
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('LevelNodeButton', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const LevelNodeButton(
+          levelNumber: 12,
+          state: LevelState.completed,
+          starsEarned: 2,
+        ),
+      );
+    });
+
+    testWidgets('LevelNodeButton at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const LevelNodeButton(
+          levelNumber: 12,
+          state: LevelState.completed,
+          starsEarned: 2,
         ),
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
