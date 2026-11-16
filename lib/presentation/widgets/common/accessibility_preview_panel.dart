@@ -154,135 +154,137 @@ class _AccessibilityPreviewPanelState extends State<AccessibilityPreviewPanel> {
       return SizedBox(
         width: constraints.hasBoundedWidth ? constraints.maxWidth : null,
         height: height,
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.all(12),
-              child: Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 8,
-                runSpacing: 8,
-                children: [
-                  Semantics(
-                    label: widget.scaleLabel,
-                    child: Wrap(
-                      spacing: 4,
-                      runSpacing: 4,
-                      children: [
-                        for (final scale in const [1.0, 1.3, 2.0])
-                          _scaleButton(context, scale),
-                      ],
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.all(12),
+                child: Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 8,
+                  runSpacing: 8,
+                  children: [
+                    Semantics(
+                      label: widget.scaleLabel,
+                      child: Wrap(
+                        spacing: 4,
+                        runSpacing: 4,
+                        children: [
+                          for (final scale in const [1.0, 1.3, 2.0])
+                            _scaleButton(context, scale),
+                        ],
+                      ),
                     ),
-                  ),
-                  Semantics(
-                    label: widget.targetLabel,
-                    toggled: _showTargets,
-                    onTap: () => _setShowTargets(!_showTargets),
-                    child: GestureDetector(
-                      key: const ValueKey('accessibilityTargetToggle'),
-                      behavior: HitTestBehavior.opaque,
+                    Semantics(
+                      label: widget.targetLabel,
+                      toggled: _showTargets,
                       onTap: () => _setShowTargets(!_showTargets),
-                      child: Container(
-                        constraints: const BoxConstraints(
-                          minWidth: 48,
-                          minHeight: 48,
-                        ),
-                        alignment: Alignment.center,
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        decoration: BoxDecoration(
-                          color: _showTargets
-                              ? NeonTheme.purple.withValues(alpha: 0.15)
-                              : NeonTheme.card,
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(
+                      child: GestureDetector(
+                        key: const ValueKey('accessibilityTargetToggle'),
+                        behavior: HitTestBehavior.opaque,
+                        onTap: () => _setShowTargets(!_showTargets),
+                        child: Container(
+                          constraints: const BoxConstraints(
+                            minWidth: 48,
+                            minHeight: 48,
+                          ),
+                          alignment: Alignment.center,
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          decoration: BoxDecoration(
                             color: _showTargets
-                                ? NeonTheme.purple
-                                : NeonTheme.inkSoft,
-                            width: _showTargets ? 2 : 1,
+                                ? NeonTheme.purple.withValues(alpha: 0.15)
+                                : NeonTheme.card,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: _showTargets
+                                  ? NeonTheme.purple
+                                  : NeonTheme.inkSoft,
+                              width: _showTargets ? 2 : 1,
+                            ),
+                          ),
+                          child: Wrap(
+                            crossAxisAlignment: WrapCrossAlignment.center,
+                            children: [
+                              Text(widget.targetLabel),
+                              const SizedBox(width: 4),
+                              Icon(
+                                _showTargets
+                                    ? Icons.check_box_rounded
+                                    : Icons.check_box_outline_blank_rounded,
+                                size: 20,
+                                color: NeonTheme.purple,
+                              ),
+                            ],
                           ),
                         ),
-                        child: Wrap(
-                          crossAxisAlignment: WrapCrossAlignment.center,
-                          children: [
-                            Text(widget.targetLabel),
-                            const SizedBox(width: 4),
-                            Icon(
-                              _showTargets
-                                  ? Icons.check_box_rounded
-                                  : Icons.check_box_outline_blank_rounded,
-                              size: 20,
-                              color: NeonTheme.purple,
-                            ),
-                          ],
+                      ),
+                    ),
+                    if (widget.onClose != null)
+                      Semantics(
+                        label: widget.closeLabel,
+                        child: CommonButton(
+                          label: widget.closeLabel,
+                          semanticLabel: widget.closeLabel,
+                          onTap: widget.onClose,
+                          width: 132,
+                          variant: CommonButtonVariant.secondary,
                         ),
                       ),
-                    ),
-                  ),
-                  if (widget.onClose != null)
-                    Semantics(
-                      label: widget.closeLabel,
-                      child: CommonButton(
-                        label: widget.closeLabel,
-                        semanticLabel: widget.closeLabel,
-                        onTap: widget.onClose,
-                        width: 132,
-                        variant: CommonButtonVariant.secondary,
-                      ),
-                    ),
-                ],
+                  ],
+                ),
               ),
-            ),
-            Expanded(
-              child: NotificationListener<ScrollNotification>(
-                onNotification: _onScroll,
-                child: SingleChildScrollView(
-                  key: const ValueKey('accessibilityPreviewScroll'),
-                  child: MediaQuery(
-                    data: MediaQuery.of(
-                      context,
-                    ).copyWith(textScaler: TextScaler.linear(_scale)),
-                    child: Stack(
-                      key: _viewportKey,
-                      clipBehavior: Clip.hardEdge,
-                      children: [
-                        widget.preview,
-                        if (_showTargets)
-                          Positioned.fill(
-                            child: IgnorePointer(
-                              child: ExcludeSemantics(
-                                child: Stack(
-                                  children: [
-                                    for (final entry in _targetRects.entries)
-                                      Positioned.fromRect(
-                                        rect: entry.value,
-                                        child: DecoratedBox(
-                                          key: ValueKey(
-                                            'accessibilityTarget_${identityHashCode(entry.key)}',
-                                          ),
-                                          decoration: BoxDecoration(
-                                            border: Border.all(
-                                              color: NeonTheme.pink,
-                                              width: 2,
+              SizedBox(
+                height: math.max(0.0, height - 96),
+                child: NotificationListener<ScrollNotification>(
+                  onNotification: _onScroll,
+                  child: SingleChildScrollView(
+                    key: const ValueKey('accessibilityPreviewScroll'),
+                    child: MediaQuery(
+                      data: MediaQuery.of(
+                        context,
+                      ).copyWith(textScaler: TextScaler.linear(_scale)),
+                      child: Stack(
+                        key: _viewportKey,
+                        clipBehavior: Clip.hardEdge,
+                        children: [
+                          widget.preview,
+                          if (_showTargets)
+                            Positioned.fill(
+                              child: IgnorePointer(
+                                child: ExcludeSemantics(
+                                  child: Stack(
+                                    children: [
+                                      for (final entry in _targetRects.entries)
+                                        Positioned.fromRect(
+                                          rect: entry.value,
+                                          child: DecoratedBox(
+                                            key: ValueKey(
+                                              'accessibilityTarget_${identityHashCode(entry.key)}',
                                             ),
-                                            borderRadius: BorderRadius.circular(
-                                              4,
+                                            decoration: BoxDecoration(
+                                              border: Border.all(
+                                                color: NeonTheme.pink,
+                                                width: 2,
+                                              ),
+                                              borderRadius:
+                                                  BorderRadius.circular(4),
                                             ),
                                           ),
                                         ),
-                                      ),
-                                  ],
+                                    ],
+                                  ),
                                 ),
                               ),
                             ),
-                          ),
-                      ],
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       );
     },

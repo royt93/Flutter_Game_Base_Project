@@ -151,8 +151,75 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2ae: accessibility preview and level grid', () {
+    Widget accessibilityPreview() => SizedBox(
+      height: 260,
+      child: AccessibilityPreviewPanel(
+        preview: const Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text('Sample title'),
+            Text('Preview text for accessibility'),
+            FilledButton(onPressed: null, child: Text('Continue')),
+          ],
+        ),
+      ),
+    );
+
+    Widget levelGrid() => LevelSelectGrid(
+      states: const [
+        LevelState.completed,
+        LevelState.completed,
+        LevelState.unlocked,
+        LevelState.locked,
+        LevelState.locked,
+        LevelState.locked,
+        LevelState.locked,
+        LevelState.locked,
+        LevelState.locked,
+      ],
+      starsEarnedByLevel: const {1: 3, 2: 1},
+    );
+
+    testWidgets('AccessibilityPreviewPanel', (tester) async {
+      await runViewportSweep(tester, accessibilityPreview);
+    });
+
+    testWidgets('AccessibilityPreviewPanel at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        accessibilityPreview,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('LevelSelectGrid', (tester) async {
+      await runViewportSweep(tester, levelGrid);
+    });
+
+    testWidgets('LevelSelectGrid at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        levelGrid,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ad: invites and leaderboard', () {
-    final inviteProgress = () => FriendInviteProgressCard(
+    Widget inviteProgress() => FriendInviteProgressCard(
       completedInvites: 2,
       inviteGoal: 5,
       milestones: [
@@ -227,7 +294,7 @@ void main() {
   });
 
   group('FEAT-200 phase 2ac: crafting and guild cards', () {
-    final recipe = () => CraftingRecipeCard(
+    Widget recipe() => CraftingRecipeCard(
       recipeId: 'iron-shield',
       title: 'Iron Shield Recipe',
       output: MilestoneReward(
@@ -252,7 +319,7 @@ void main() {
       onCraft: () {},
     );
 
-    final guild = () => GuildContributionCard(
+    Widget guild() => GuildContributionCard(
       guildName: 'Star Seekers',
       goalTitle: 'Community Boss',
       totalContribution: 250,
