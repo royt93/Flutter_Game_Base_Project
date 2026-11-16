@@ -307,6 +307,96 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2ap: radial menu and level-up overlay', () {
+    testWidgets('RadialActionMenu', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => RadialActionMenu(
+          alignment: Alignment.bottomRight,
+          radius: 90,
+          startAngleDegrees: 180,
+          sweepAngleDegrees: 90,
+          items: [
+            RadialActionItem(
+              label: 'Share',
+              icon: Icons.share_rounded,
+              onTap: _noop,
+            ),
+            RadialActionItem(
+              label: 'Help',
+              icon: Icons.help_outline_rounded,
+              onTap: _noop,
+            ),
+          ],
+        ),
+      );
+    });
+
+    testWidgets('RadialActionMenu at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => RadialActionMenu(
+          alignment: Alignment.bottomRight,
+          radius: 90,
+          startAngleDegrees: 180,
+          sweepAngleDegrees: 90,
+          items: [
+            RadialActionItem(
+              label: 'Share',
+              icon: Icons.share_rounded,
+              onTap: _noop,
+            ),
+            RadialActionItem(
+              label: 'Help',
+              icon: Icons.help_outline_rounded,
+              onTap: _noop,
+            ),
+          ],
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('LevelUpOverlay idle state', (tester) async {
+      final controller = LevelUpOverlayController();
+      addTearDown(controller.dispose);
+      await runViewportSweep(
+        tester,
+        () => LevelUpOverlay(
+          controller: controller,
+          enableHaptics: false,
+          child: const Scaffold(body: Text('Game content')),
+        ),
+      );
+    });
+
+    testWidgets('LevelUpOverlay idle at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      final controller = LevelUpOverlayController();
+      addTearDown(controller.dispose);
+      await runViewportSweep(
+        tester,
+        () => LevelUpOverlay(
+          controller: controller,
+          enableHaptics: false,
+          child: const Scaffold(body: Text('Game content')),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2am: piggy bank and mystery chest', () {
     testWidgets('PiggyBankVault', (tester) async {
       await runViewportSweep(
