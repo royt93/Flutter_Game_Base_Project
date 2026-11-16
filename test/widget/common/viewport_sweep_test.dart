@@ -243,6 +243,62 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2al: shimmer and coin flight', () {
+    testWidgets('GoldenShimmerText', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const GoldenShimmerText('NEW RECORD', fontSize: 28),
+      );
+    });
+
+    testWidgets('GoldenShimmerText at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const GoldenShimmerText('NEW RECORD', fontSize: 28),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('CoinFlyOverlay', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const CoinFlyOverlay(
+          from: Offset(32, 32),
+          to: Offset(240, 200),
+          coinCount: 3,
+          duration: Duration(milliseconds: 300),
+          stagger: Duration(milliseconds: 30),
+        ),
+      );
+    });
+
+    testWidgets('CoinFlyOverlay at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const CoinFlyOverlay(
+          from: Offset(32, 32),
+          to: Offset(240, 200),
+          coinCount: 3,
+          duration: Duration(milliseconds: 300),
+          stagger: Duration(milliseconds: 30),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2aj: network and loading overlays', () {
     testWidgets('NetworkStatusBanner', (tester) async {
       await runViewportSweep(
