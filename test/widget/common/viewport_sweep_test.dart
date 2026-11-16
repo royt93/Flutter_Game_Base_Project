@@ -243,6 +243,60 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2am: piggy bank and mystery chest', () {
+    testWidgets('PiggyBankVault', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const PiggyBankVault(
+          amount: 350,
+          capacity: 1000,
+          onBreak: _noop,
+          onUnlock: _noop,
+        ),
+      );
+    });
+
+    testWidgets('PiggyBankVault at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const PiggyBankVault(
+          amount: 350,
+          capacity: 1000,
+          onBreak: _noop,
+          onUnlock: _noop,
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('MysteryChestOpening', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const MysteryChestOpening(reward: Text('Mystery reward')),
+      );
+    });
+
+    testWidgets('MysteryChestOpening at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const MysteryChestOpening(reward: Text('Mystery reward')),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2al: shimmer and coin flight', () {
     testWidgets('GoldenShimmerText', (tester) async {
       await runViewportSweep(

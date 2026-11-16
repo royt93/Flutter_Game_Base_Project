@@ -62,7 +62,8 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 - [x] Pha 2aj (2026-11-16): thêm `NetworkStatusBanner` và `LoadingOverlay` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 229 tests pass; existing network/loading widget suites, tap-target, contrast và analyzer pass. Tổng coverage 120/170 widget.
 - [x] Pha 2ak (2026-11-16): thêm `ReactiveEnergyBar` và `HapticPatternPicker` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 233 tests pass; existing energy/haptic suites, tap-target, contrast và analyzer pass. Tổng coverage 122/170 widget.
 - [x] Pha 2al (2026-11-16): thêm `GoldenShimmerText` và `CoinFlyOverlay` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 237 tests pass; existing suites cover reduced-motion, ticker pause/resume, interruptions and animation cleanup; tap-target, contrast and analyzer pass. Tổng coverage 124/170 widget.
-- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 46 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- [x] Pha 2am (2026-11-16): thêm `PiggyBankVault` và `MysteryChestOpening` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 241 tests pass; existing suites cover reduced-motion, mid-animation toggles and disposal; tap-target, contrast and analyzer pass. Tổng coverage 126/170 widget.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 44 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 
 ## Tiêu chí xong
