@@ -128,96 +128,98 @@ class GuildContributionCard extends StatelessWidget {
           ),
           boxShadow: NeonTheme.drop(y: 4, blur: 12),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: NeonTheme.ink,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            Text(
-              guildName,
-              style: TextStyle(
-                color: NeonTheme.cyan,
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: NeonTheme.s8),
-            if (isLoading)
-              const Center(child: CircularProgressIndicator())
-            else if (errorMessage != null)
-              _errorView()
-            else ...[
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Text(
-                goalTitle,
+                title,
                 style: TextStyle(
                   color: NeonTheme.ink,
-                  fontSize: 14,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              Text(
+                guildName,
+                style: TextStyle(
+                  color: NeonTheme.cyan,
+                  fontSize: 12,
                   fontWeight: FontWeight.w800,
                 ),
               ),
-              const SizedBox(height: 3),
-              Wrap(
-                alignment: WrapAlignment.spaceBetween,
-                spacing: 4,
-                children: [
-                  Text(
-                    '${fmtNum(totalContribution)} / ${fmtNum(goalContribution)}',
-                    key: const ValueKey('guildTotalContribution'),
-                    style: TextStyle(
-                      color: NeonTheme.cyan,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  Text(
-                    'You: ${fmtNum(memberContribution)}',
-                    key: const ValueKey('guildMemberContribution'),
-                    style: TextStyle(
-                      color: NeonTheme.inkSoft,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 6),
-              RepaintBoundary(
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: progress,
-                    minHeight: 12,
-                    color: NeonTheme.cyan,
-                    backgroundColor: NeonTheme.cardAlt,
+              const SizedBox(height: NeonTheme.s8),
+              if (isLoading)
+                const Center(child: CircularProgressIndicator())
+              else if (errorMessage != null)
+                _errorView()
+              else ...[
+                Text(
+                  goalTitle,
+                  style: TextStyle(
+                    color: NeonTheme.ink,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w800,
                   ),
                 ),
-              ),
-              if (milestones.isNotEmpty) ...[
-                const SizedBox(height: NeonTheme.s8),
+                const SizedBox(height: 3),
                 Wrap(
-                  spacing: 6,
-                  runSpacing: 6,
+                  alignment: WrapAlignment.spaceBetween,
+                  spacing: 4,
                   children: [
-                    for (final milestone in milestones)
-                      _milestoneChip(milestone),
+                    Text(
+                      '${fmtNum(totalContribution)} / ${fmtNum(goalContribution)}',
+                      key: const ValueKey('guildTotalContribution'),
+                      style: TextStyle(
+                        color: NeonTheme.cyan,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w900,
+                      ),
+                    ),
+                    Text(
+                      'You: ${fmtNum(memberContribution)}',
+                      key: const ValueKey('guildMemberContribution'),
+                      style: TextStyle(
+                        color: NeonTheme.inkSoft,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                      ),
+                    ),
                   ],
                 ),
+                const SizedBox(height: 6),
+                RepaintBoundary(
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: LinearProgressIndicator(
+                      value: progress,
+                      minHeight: 12,
+                      color: NeonTheme.cyan,
+                      backgroundColor: NeonTheme.cardAlt,
+                    ),
+                  ),
+                ),
+                if (milestones.isNotEmpty) ...[
+                  const SizedBox(height: NeonTheme.s8),
+                  Wrap(
+                    spacing: 6,
+                    runSpacing: 6,
+                    children: [
+                      for (final milestone in milestones)
+                        _milestoneChip(milestone),
+                    ],
+                  ),
+                ],
+                const SizedBox(height: NeonTheme.s16),
+                CommonButton(
+                  key: const ValueKey('guildContributeBtn'),
+                  label: contributeLabel,
+                  onTap: onContribute,
+                ),
               ],
-              const SizedBox(height: NeonTheme.s16),
-              CommonButton(
-                key: const ValueKey('guildContributeBtn'),
-                label: contributeLabel,
-                onTap: onContribute,
-              ),
             ],
-          ],
+          ),
         ),
       ),
     );

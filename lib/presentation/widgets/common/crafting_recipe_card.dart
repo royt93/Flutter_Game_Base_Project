@@ -142,86 +142,92 @@ class CraftingRecipeCard extends StatelessWidget {
           ),
           boxShadow: NeonTheme.drop(y: 4, blur: 12),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.science_rounded, color: NeonTheme.purple, size: 24),
-                const SizedBox(width: NeonTheme.s8),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          color: NeonTheme.ink,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w900,
-                        ),
-                      ),
-                      if (subtitle != null)
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(
+                    Icons.science_rounded,
+                    color: NeonTheme.purple,
+                    size: 24,
+                  ),
+                  const SizedBox(width: NeonTheme.s8),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
                         Text(
-                          subtitle!,
+                          title,
                           style: TextStyle(
-                            color: NeonTheme.inkSoft,
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
+                            color: NeonTheme.ink,
+                            fontSize: 16,
+                            fontWeight: FontWeight.w900,
                           ),
                         ),
-                    ],
+                        if (subtitle != null)
+                          Text(
+                            subtitle!,
+                            style: TextStyle(
+                              color: NeonTheme.inkSoft,
+                              fontSize: 11,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: NeonTheme.s8),
+              _outputRow(),
+              const SizedBox(height: NeonTheme.s8),
+              Text(
+                materialsHeader,
+                style: TextStyle(
+                  color: NeonTheme.inkSoft,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Wrap(
+                spacing: 6,
+                runSpacing: 6,
+                children: [
+                  for (final ingredient in ingredients)
+                    _ingredientChip(ingredient),
+                ],
+              ),
+              if (statusLabel != null) ...[
+                const SizedBox(height: NeonTheme.s8),
+                Text(
+                  statusLabel,
+                  key: const ValueKey('craftingRecipeStatus'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: isCrafting ? NeonTheme.cyan : NeonTheme.orange,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
                   ),
                 ),
               ],
-            ),
-            const SizedBox(height: NeonTheme.s8),
-            _outputRow(),
-            const SizedBox(height: NeonTheme.s8),
-            Text(
-              materialsHeader,
-              style: TextStyle(
-                color: NeonTheme.inkSoft,
-                fontSize: 11,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 5),
-            Wrap(
-              spacing: 6,
-              runSpacing: 6,
-              children: [
-                for (final ingredient in ingredients)
-                  _ingredientChip(ingredient),
-              ],
-            ),
-            if (statusLabel != null) ...[
-              const SizedBox(height: NeonTheme.s8),
-              Text(
-                statusLabel,
-                key: const ValueKey('craftingRecipeStatus'),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: isCrafting ? NeonTheme.cyan : NeonTheme.orange,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w900,
-                ),
+              const SizedBox(height: NeonTheme.s16),
+              CommonButton(
+                key: const ValueKey('craftingRecipeCraftBtn'),
+                label: isCrafting
+                    ? craftingLabel
+                    : isLocked
+                    ? lockedLabel
+                    : craftLabel,
+                color: NeonTheme.purple,
+                loading: isCrafting,
+                onTap: _canCraft ? onCraft : null,
               ),
             ],
-            const SizedBox(height: NeonTheme.s16),
-            CommonButton(
-              key: const ValueKey('craftingRecipeCraftBtn'),
-              label: isCrafting
-                  ? craftingLabel
-                  : isLocked
-                  ? lockedLabel
-                  : craftLabel,
-              color: NeonTheme.purple,
-              loading: isCrafting,
-              onTap: _canCraft ? onCraft : null,
-            ),
-          ],
+          ),
         ),
       ),
     );

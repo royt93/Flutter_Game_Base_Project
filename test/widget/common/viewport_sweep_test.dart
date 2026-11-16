@@ -151,6 +151,99 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2ac: crafting and guild cards', () {
+    final recipe = () => CraftingRecipeCard(
+      recipeId: 'iron-shield',
+      title: 'Iron Shield Recipe',
+      output: MilestoneReward(
+        icon: Icons.shield_rounded,
+        label: 'Iron Shield',
+        amountLabel: 'x1',
+      ),
+      ingredients: const [
+        CraftingIngredient(
+          itemId: 'iron',
+          label: 'Iron',
+          ownedQuantity: 5,
+          requiredQuantity: 3,
+        ),
+        CraftingIngredient(
+          itemId: 'wood',
+          label: 'Wood',
+          ownedQuantity: 2,
+          requiredQuantity: 2,
+        ),
+      ],
+      onCraft: () {},
+    );
+
+    final guild = () => GuildContributionCard(
+      guildName: 'Star Seekers',
+      goalTitle: 'Community Boss',
+      totalContribution: 250,
+      goalContribution: 1000,
+      memberContribution: 25,
+      milestones: [
+        GuildContributionMilestone(
+          id: 'goal-100',
+          requiredContribution: 100,
+          reward: MilestoneReward(
+            icon: Icons.diamond_rounded,
+            label: 'Gems',
+            amountLabel: 'x50',
+          ),
+        ),
+        GuildContributionMilestone(
+          id: 'goal-500',
+          requiredContribution: 500,
+          reward: MilestoneReward(
+            icon: Icons.shield_rounded,
+            label: 'Shield',
+            amountLabel: 'x2',
+          ),
+        ),
+      ],
+      onContribute: () {},
+      onClaimMilestone: (_) {},
+    );
+
+    testWidgets('CraftingRecipeCard', (tester) async {
+      await runViewportSweep(tester, recipe);
+    });
+
+    testWidgets('CraftingRecipeCard at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        recipe,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('GuildContributionCard', (tester) async {
+      await runViewportSweep(tester, guild);
+    });
+
+    testWidgets('GuildContributionCard at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        guild,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ab: save health and XP header', () {
     testWidgets('SaveHealthCard', (tester) async {
       await runViewportSweep(tester, () => const SaveHealthCard());
