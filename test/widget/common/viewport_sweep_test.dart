@@ -3,6 +3,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 
 import 'package:get/get.dart';
+import 'package:roy_casual_kit/core/energy_service.dart' show EnergyService;
+import 'package:roy_casual_kit/core/haptic_choreographer.dart'
+    show HapticPattern, HapticPulse;
+import 'package:roy_casual_kit/core/haptics.dart' show HapticLevel;
 import 'package:roy_casual_kit/core/app_version_gate.dart'
     show AppVersionGateConfig, GateDecision;
 import 'package:roy_casual_kit/core/consent_state_service.dart'
@@ -149,6 +153,87 @@ void main() {
       await runViewportSweep(
         tester,
         () => WinStreakFlameHud(streakCount: 0, multiplierLabel: 'x1.0'),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
+  group('FEAT-200 phase 2ak: reactive energy and haptic picker', () {
+    List<HapticPatternOption> hapticOptions() => [
+      HapticPatternOption(
+        id: 'soft',
+        label: 'Soft touch',
+        pattern: HapticPattern([HapticPulse(level: HapticLevel.light)]),
+      ),
+      HapticPatternOption(
+        id: 'reward',
+        label: 'Reward celebration',
+        pattern: HapticPattern.reward,
+      ),
+      HapticPatternOption(
+        id: 'error',
+        label: 'Error warning',
+        pattern: HapticPattern.error,
+      ),
+    ];
+
+    Future<void> prepareEnergyFixture() async {
+      Get.put<StorageService>(StorageService(null));
+      Get.put<EnergyService>(EnergyService(maxEnergy: 5));
+    }
+
+    testWidgets('ReactiveEnergyBar', (tester) async {
+      await prepareEnergyFixture();
+      addTearDown(Get.reset);
+      await runViewportSweep(
+        tester,
+        () => const ReactiveEnergyBar(pollInterval: Duration(seconds: 30)),
+      );
+    });
+
+    testWidgets('ReactiveEnergyBar at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await prepareEnergyFixture();
+      addTearDown(Get.reset);
+      await runViewportSweep(
+        tester,
+        () => const ReactiveEnergyBar(pollInterval: Duration(seconds: 30)),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('HapticPatternPicker', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => HapticPatternPicker(
+          options: hapticOptions(),
+          selectedId: 'soft',
+          onSelect: (_) {},
+          onPreview: (_) {},
+        ),
+      );
+    });
+
+    testWidgets('HapticPatternPicker at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => HapticPatternPicker(
+          options: hapticOptions(),
+          selectedId: 'soft',
+          onSelect: (_) {},
+          onPreview: (_) {},
+        ),
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),
