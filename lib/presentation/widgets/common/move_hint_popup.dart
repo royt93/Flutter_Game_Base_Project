@@ -182,92 +182,98 @@ class MoveHintPopup extends StatelessWidget {
         maxWidth: 320,
         maxHeight: MediaQuery.sizeOf(context).height * 0.85,
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          ConstrainedBox(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.sizeOf(context).height * 0.55,
-            ),
-            child: SingleChildScrollView(
-              child: Semantics(
-                key: const ValueKey('moveHintSemantics'),
-                container: true,
-                label: semanticsDesc,
-                child: ExcludeSemantics(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Container(
-                        width: 54,
-                        height: 54,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: NeonTheme.cardAlt,
-                          border: Border.all(color: accent, width: 2),
-                          boxShadow: NeonTheme.glow(accent, blur: 10),
+      child: SingleChildScrollView(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.55,
+              ),
+              child: SingleChildScrollView(
+                child: Semantics(
+                  key: const ValueKey('moveHintSemantics'),
+                  container: true,
+                  label: semanticsDesc,
+                  child: ExcludeSemantics(
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Container(
+                          width: 54,
+                          height: 54,
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: NeonTheme.cardAlt,
+                            border: Border.all(color: accent, width: 2),
+                            boxShadow: NeonTheme.glow(accent, blur: 10),
+                          ),
+                          child: Icon(
+                            type.defaultIcon,
+                            color: accent,
+                            size: 30,
+                          ),
                         ),
-                        child: Icon(type.defaultIcon, color: accent, size: 30),
-                      ),
-                      const SizedBox(height: NeonTheme.s8),
-                      Text(
-                        title,
-                        key: const ValueKey('moveHintTitle'),
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: NeonTheme.ink,
-                          fontSize: 18,
-                          fontWeight: FontWeight.w900,
+                        const SizedBox(height: NeonTheme.s8),
+                        Text(
+                          title,
+                          key: const ValueKey('moveHintTitle'),
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: NeonTheme.ink,
+                            fontSize: 18,
+                            fontWeight: FontWeight.w900,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: NeonTheme.s8),
-                      Text(
-                        message,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: NeonTheme.inkSoft,
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          height: 1.3,
+                        const SizedBox(height: NeonTheme.s8),
+                        Text(
+                          message,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: NeonTheme.inkSoft,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            height: 1.3,
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: NeonTheme.s16),
-                      _buildIllustration(accent),
-                      const SizedBox(height: NeonTheme.s16),
-                      Text(
-                        hasHints
-                            ? '$remainingHints hints left'
-                            : 'Out of hints!',
-                        key: const ValueKey('moveHintRemainingText'),
-                        style: TextStyle(
-                          color: hasHints ? NeonTheme.inkSoft : NeonTheme.red,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w700,
+                        const SizedBox(height: NeonTheme.s16),
+                        _buildIllustration(accent),
+                        const SizedBox(height: NeonTheme.s16),
+                        Text(
+                          hasHints
+                              ? '$remainingHints hints left'
+                              : 'Out of hints!',
+                          key: const ValueKey('moveHintRemainingText'),
+                          style: TextStyle(
+                            color: hasHints ? NeonTheme.inkSoft : NeonTheme.red,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
-                      ),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-          const SizedBox(height: NeonTheme.s8),
-          CommonButton(
-            key: const ValueKey('moveHintActionBtn'),
-            label: actionLabel,
-            color: actionColor,
-            width: double.infinity,
-            onTap: hasHints ? onHintTap : onEmptyHintTap,
-          ),
-          const SizedBox(height: NeonTheme.s8),
-          CommonButton(
-            key: const ValueKey('moveHintDismissBtn'),
-            label: dismissLabel,
-            variant: CommonButtonVariant.secondary,
-            width: double.infinity,
-            onTap: onDismiss,
-          ),
-        ],
+            const SizedBox(height: NeonTheme.s8),
+            CommonButton(
+              key: const ValueKey('moveHintActionBtn'),
+              label: actionLabel,
+              color: actionColor,
+              width: double.infinity,
+              onTap: hasHints ? onHintTap : onEmptyHintTap,
+            ),
+            const SizedBox(height: NeonTheme.s8),
+            CommonButton(
+              key: const ValueKey('moveHintDismissBtn'),
+              label: dismissLabel,
+              variant: CommonButtonVariant.secondary,
+              width: double.infinity,
+              onTap: onDismiss,
+            ),
+          ],
+        ),
       ),
     );
   }

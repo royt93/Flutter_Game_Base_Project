@@ -361,6 +361,67 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2ao: onboarding and move hint', () {
+    Widget onboardingQueue() => OnboardingFlowQueueCard(
+      rows: [
+        for (var index = 1; index <= 3; index++)
+          OnboardingFlowRow(
+            flowId: 'flow-$index',
+            label: 'Setup step $index',
+            priority: 4 - index,
+            version: 1,
+            isSeen: index == 1,
+            isNext: index == 2,
+          ),
+      ],
+    );
+
+    Widget moveHint() => MoveHintPopup(
+      type: MoveHintType.swap,
+      title: 'Swap tiles',
+      message: 'Swap two adjacent gems to make a match.',
+      remainingHints: 2,
+      onHintTap: _noop,
+      onDismiss: _noop,
+    );
+
+    testWidgets('OnboardingFlowQueueCard', (tester) async {
+      await runViewportSweep(tester, onboardingQueue);
+    });
+
+    testWidgets('OnboardingFlowQueueCard at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        onboardingQueue,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('MoveHintPopup', (tester) async {
+      await runViewportSweep(tester, moveHint);
+    });
+
+    testWidgets('MoveHintPopup at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        moveHint,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2al: shimmer and coin flight', () {
     testWidgets('GoldenShimmerText', (tester) async {
       await runViewportSweep(
