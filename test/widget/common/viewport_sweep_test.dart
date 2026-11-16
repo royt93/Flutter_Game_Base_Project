@@ -359,6 +359,72 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2ar: guardrail and remote-config status', () {
+    Widget guardrail() => GuardrailStatusPanel(
+      rows: [
+        GuardrailStatusRow(
+          featureLabel: 'Shop rollout',
+          metricLabel: 'Crash rate',
+          state: GuardrailRowState.violated,
+        ),
+        GuardrailStatusRow(
+          featureLabel: 'Quest rollout',
+          metricLabel: 'Failure rate',
+          state: GuardrailRowState.ok,
+          boundsText: 'under 2%',
+          currentText: '0.4%',
+        ),
+        GuardrailStatusRow(
+          featureLabel: 'Offer rollout',
+          metricLabel: 'Load time',
+          state: GuardrailRowState.noData,
+        ),
+      ],
+    );
+
+    Widget remoteConfig() => RemoteConfigHealthCard(
+      source: RemoteConfigHealthSource.remoteFailed,
+      violationCount: 2,
+      lastCheckedText: 'Today at 12:30',
+    );
+
+    testWidgets('GuardrailStatusPanel', (tester) async {
+      await runViewportSweep(tester, guardrail);
+    });
+
+    testWidgets('GuardrailStatusPanel at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        guardrail,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('RemoteConfigHealthCard', (tester) async {
+      await runViewportSweep(tester, remoteConfig);
+    });
+
+    testWidgets('RemoteConfigHealthCard at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        remoteConfig,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ap: radial menu and level-up overlay', () {
     testWidgets('RadialActionMenu', (tester) async {
       await runViewportSweep(
