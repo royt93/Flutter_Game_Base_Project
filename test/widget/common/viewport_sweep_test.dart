@@ -19,6 +19,11 @@ String _achievementViewportLabel(String id) => id;
 
 void _noop() {}
 
+void _onJoystickDirectionChanged(
+  GameJoystickDirection direction,
+  Offset vector,
+) {}
+
 Widget _defaultSweepInventoryItemBuilder(
   BuildContext context,
   InventorySlot slot,
@@ -144,6 +149,56 @@ void main() {
       await runViewportSweep(
         tester,
         () => WinStreakFlameHud(streakCount: 0, multiplierLabel: 'x1.0'),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
+  group('FEAT-200 phase 2ag: joystick and combo meter', () {
+    testWidgets('GameJoystick', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const GameJoystick(
+          semanticLabel: 'Move character',
+          onDirectionChanged: _onJoystickDirectionChanged,
+        ),
+      );
+    });
+
+    testWidgets('GameJoystick at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const GameJoystick(
+          semanticLabel: 'Move character',
+          onDirectionChanged: _onJoystickDirectionChanged,
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('ComboMeterBar', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => ComboMeterBar(multiplier: 3, progress: 0.65),
+      );
+    });
+
+    testWidgets('ComboMeterBar at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => ComboMeterBar(multiplier: 3, progress: 0.65),
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),
