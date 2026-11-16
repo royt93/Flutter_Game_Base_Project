@@ -158,6 +158,64 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2ai: cooldown and combo feedback', () {
+    testWidgets('CooldownActionButton', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => CooldownActionButton(
+          label: 'Claim reward',
+          remaining: const Duration(seconds: 45),
+          onTap: _noop,
+        ),
+      );
+    });
+
+    testWidgets('CooldownActionButton at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => CooldownActionButton(
+          label: 'Claim reward',
+          remaining: const Duration(seconds: 45),
+          onTap: _noop,
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('FloatingComboText', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const FloatingComboText(
+          text: 'Combo x5',
+          duration: Duration(milliseconds: 500),
+        ),
+      );
+    });
+
+    testWidgets('FloatingComboText at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const FloatingComboText(
+          text: 'Combo x5',
+          duration: Duration(milliseconds: 500),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ah: card flip and combo heat', () {
     testWidgets('CardFlip3D', (tester) async {
       await runViewportSweep(
