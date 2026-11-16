@@ -158,6 +158,54 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2aj: network and loading overlays', () {
+    testWidgets('NetworkStatusBanner', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const NetworkStatusBanner(connected: false),
+      );
+    });
+
+    testWidgets('NetworkStatusBanner at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const NetworkStatusBanner(connected: false),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('LoadingOverlay', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const Stack(
+          children: [LoadingOverlay(message: 'Loading game assets')],
+        ),
+      );
+    });
+
+    testWidgets('LoadingOverlay at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const Stack(
+          children: [LoadingOverlay(message: 'Loading game assets')],
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ai: cooldown and combo feedback', () {
     testWidgets('CooldownActionButton', (tester) async {
       await runViewportSweep(
