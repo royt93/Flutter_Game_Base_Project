@@ -55,7 +55,8 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 - [x] Pha 2ac (2026-11-16): thêm `CraftingRecipeCard` và `GuildContributionCard` ở sweep mặc định và 320dp/landscape với text 2.0x. Lộ overflow 89px và 81px tương ứng ở 320×480/text 2×; thêm scroll cho hai card. Full sweep 201 tests pass; existing suites, tap-target, contrast và analyzer pass. Tổng coverage 106/170 widget.
 - [x] Pha 2ad (2026-11-16): thêm `FriendInviteProgressCard` và `LeaderboardList` ở sweep mặc định và 320dp/landscape với text 2.0x. Lộ overflow 255px ở `FriendInviteProgressCard` tại 320×480/text 2×; thêm scroll. Full sweep 205 tests pass; existing suites, tap-target, contrast và analyzer pass. Tổng coverage 108/170 widget.
 - [x] Pha 2ae (2026-11-16): thêm `AccessibilityPreviewPanel` và `LevelSelectGrid` ở sweep mặc định và 320dp/landscape với text 2.0x. Lộ overflow 86px ở preview panel tại 320×480/text 2×; cho toàn panel cuộn và giới hạn preview viewport. Full sweep 209 tests pass; existing suites, tap-target, contrast và analyzer pass. Tổng coverage 110/170 widget.
-- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 60 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- [x] Pha 2af (2026-11-16): thêm `IconBadgeButton` và `HoldToConfirmButton` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 213 tests pass; existing suites, tap-target, contrast và analyzer pass. Tổng coverage 112/170 widget.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 58 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 
 ## Tiêu chí xong

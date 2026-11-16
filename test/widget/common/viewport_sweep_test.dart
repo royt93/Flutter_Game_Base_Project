@@ -17,6 +17,8 @@ import '../../support/viewport_sweep.dart';
 
 String _achievementViewportLabel(String id) => id;
 
+void _noop() {}
+
 Widget _defaultSweepInventoryItemBuilder(
   BuildContext context,
   InventorySlot slot,
@@ -142,6 +144,74 @@ void main() {
       await runViewportSweep(
         tester,
         () => WinStreakFlameHud(streakCount: 0, multiplierLabel: 'x1.0'),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
+  group('FEAT-200 phase 2af: badge and hold controls', () {
+    testWidgets('IconBadgeButton', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const IconBadgeButton(
+          icon: Icons.mail_rounded,
+          badgeCount: 3,
+          showBadge: true,
+          semanticLabel: 'Inbox',
+          onTap: _noop,
+        ),
+      );
+    });
+
+    testWidgets('IconBadgeButton at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const IconBadgeButton(
+          icon: Icons.mail_rounded,
+          badgeCount: 3,
+          showBadge: true,
+          semanticLabel: 'Inbox',
+          onTap: _noop,
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('HoldToConfirmButton', (tester) async {
+      Get.put<StorageService>(StorageService(null));
+      addTearDown(Get.reset);
+      await runViewportSweep(
+        tester,
+        () => HoldToConfirmButton(
+          label: 'Confirm reset',
+          duration: const Duration(milliseconds: 600),
+          onConfirm: _noop,
+        ),
+      );
+    });
+
+    testWidgets('HoldToConfirmButton at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      Get.put<StorageService>(StorageService(null));
+      addTearDown(Get.reset);
+      await runViewportSweep(
+        tester,
+        () => HoldToConfirmButton(
+          label: 'Confirm reset',
+          duration: const Duration(milliseconds: 600),
+          onConfirm: _noop,
+        ),
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),
