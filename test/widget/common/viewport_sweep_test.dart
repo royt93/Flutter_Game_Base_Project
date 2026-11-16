@@ -158,6 +158,54 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2ah: card flip and combo heat', () {
+    testWidgets('CardFlip3D', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => CardFlip3D(front: Text('Front side'), back: Text('Back side')),
+      );
+    });
+
+    testWidgets('CardFlip3D at 2.0x text, 320dp and landscape', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => CardFlip3D(front: Text('Front side'), back: Text('Back side')),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('ComboHeatBackground', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => ComboHeatBackground(
+          heat: 0.7,
+          child: SizedBox(width: 40, height: 40),
+        ),
+      );
+    });
+
+    testWidgets('ComboHeatBackground at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => ComboHeatBackground(
+          heat: 0.7,
+          child: SizedBox(width: 40, height: 40),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ag: joystick and combo meter', () {
     testWidgets('GameJoystick', (tester) async {
       await runViewportSweep(

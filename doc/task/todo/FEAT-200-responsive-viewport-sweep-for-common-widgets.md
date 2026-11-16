@@ -57,7 +57,8 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 - [x] Pha 2ae (2026-11-16): thêm `AccessibilityPreviewPanel` và `LevelSelectGrid` ở sweep mặc định và 320dp/landscape với text 2.0x. Lộ overflow 86px ở preview panel tại 320×480/text 2×; cho toàn panel cuộn và giới hạn preview viewport. Full sweep 209 tests pass; existing suites, tap-target, contrast và analyzer pass. Tổng coverage 110/170 widget.
 - [x] Pha 2af (2026-11-16): thêm `IconBadgeButton` và `HoldToConfirmButton` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 213 tests pass; existing suites, tap-target, contrast và analyzer pass. Tổng coverage 112/170 widget.
 - [x] Pha 2ag (2026-11-16): thêm `GameJoystick` và `ComboMeterBar` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 217 tests pass; existing suites, tap-target, contrast và analyzer pass. Tổng coverage 114/170 widget.
-- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 56 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- [x] Pha 2ah (2026-11-16): thêm `CardFlip3D` và `ComboHeatBackground` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 221 tests pass; widget suites cover flip/interruption, reduced motion, ticker cleanup and heat changes; tap-target, contrast and analyzer pass. Tổng coverage 116/170 widget.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 54 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 
 ## Tiêu chí xong
