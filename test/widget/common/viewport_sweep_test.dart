@@ -151,6 +151,81 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2ad: invites and leaderboard', () {
+    final inviteProgress = () => FriendInviteProgressCard(
+      completedInvites: 2,
+      inviteGoal: 5,
+      milestones: [
+        FriendInviteMilestone(
+          id: 'invite-1',
+          requiredInvites: 1,
+          reward: MilestoneReward(
+            icon: Icons.diamond_rounded,
+            label: 'Gems',
+            amountLabel: 'x20',
+          ),
+        ),
+        FriendInviteMilestone(
+          id: 'invite-3',
+          requiredInvites: 3,
+          reward: MilestoneReward(
+            icon: Icons.shield_rounded,
+            label: 'Shield',
+            amountLabel: 'x1',
+          ),
+        ),
+      ],
+      inviteCode: 'STAR-1234',
+      onInvite: () {},
+      onCopyInvite: () {},
+      onClaimReward: (_) {},
+    );
+
+    Widget leaderboard() => const LeaderboardList(
+      entries: [
+        LeaderboardEntry(rank: 1, name: 'Alice North', score: '9,000'),
+        LeaderboardEntry(rank: 2, name: 'Morgan Rivers', score: '8,500'),
+        LeaderboardEntry(rank: 3, name: 'Casey Stone', score: '8,100'),
+      ],
+    );
+
+    testWidgets('FriendInviteProgressCard', (tester) async {
+      await runViewportSweep(tester, inviteProgress);
+    });
+
+    testWidgets('FriendInviteProgressCard at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        inviteProgress,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('LeaderboardList', (tester) async {
+      await runViewportSweep(tester, leaderboard);
+    });
+
+    testWidgets('LeaderboardList at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        leaderboard,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ac: crafting and guild cards', () {
     final recipe = () => CraftingRecipeCard(
       recipeId: 'iron-shield',

@@ -121,129 +121,131 @@ class FriendInviteProgressCard extends StatelessWidget {
           ),
           boxShadow: NeonTheme.drop(y: 4, blur: 12),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: NeonTheme.ink,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 3),
-            Text(
-              message,
-              style: TextStyle(
-                color: NeonTheme.inkSoft,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-            const SizedBox(height: NeonTheme.s8),
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              spacing: 4,
-              children: [
-                Text(
-                  '$completedInvites / $inviteGoal invited',
-                  key: const ValueKey('friendInviteProgressCount'),
-                  style: TextStyle(
-                    color: NeonTheme.purple,
-                    fontSize: 12,
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                Text(
-                  '${(progress * 100).round()}%',
-                  style: TextStyle(
-                    color: NeonTheme.inkSoft,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 5),
-            RepaintBoundary(
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(8),
-                child: LinearProgressIndicator(
-                  value: progress,
-                  minHeight: 10,
-                  color: NeonTheme.purple,
-                  backgroundColor: NeonTheme.cardAlt,
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                title,
+                style: TextStyle(
+                  color: NeonTheme.ink,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w900,
                 ),
               ),
-            ),
-            if (inviteCode != null) ...[
+              const SizedBox(height: 3),
+              Text(
+                message,
+                style: TextStyle(
+                  color: NeonTheme.inkSoft,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
               const SizedBox(height: NeonTheme.s8),
               Wrap(
                 alignment: WrapAlignment.spaceBetween,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                spacing: 6,
-                runSpacing: 4,
+                spacing: 4,
                 children: [
                   Text(
-                    'Code: $inviteCode',
-                    key: const ValueKey('friendInviteCode'),
+                    '$completedInvites / $inviteGoal invited',
+                    key: const ValueKey('friendInviteProgressCount'),
                     style: TextStyle(
-                      color: NeonTheme.ink,
+                      color: NeonTheme.purple,
                       fontSize: 12,
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                  if (onCopyInvite != null)
-                    MergeSemantics(
-                      child: Semantics(
-                        button: true,
-                        child: GestureDetector(
-                          key: const ValueKey('friendInviteCopyBtn'),
-                          onTap: onCopyInvite,
-                          behavior: HitTestBehavior.opaque,
-                          child: ConstrainedBox(
-                            constraints: const BoxConstraints(
-                              minWidth: 48,
-                              minHeight: 48,
-                            ),
-                            child: Align(
-                              widthFactor: 1,
-                              heightFactor: 1,
-                              child: Text(
-                                copyLabel,
-                                style: TextStyle(
-                                  color: NeonTheme.cyan,
-                                  fontSize: 12,
-                                  fontWeight: FontWeight.w900,
+                  Text(
+                    '${(progress * 100).round()}%',
+                    style: TextStyle(
+                      color: NeonTheme.inkSoft,
+                      fontSize: 11,
+                      fontWeight: FontWeight.w800,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 5),
+              RepaintBoundary(
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(8),
+                  child: LinearProgressIndicator(
+                    value: progress,
+                    minHeight: 10,
+                    color: NeonTheme.purple,
+                    backgroundColor: NeonTheme.cardAlt,
+                  ),
+                ),
+              ),
+              if (inviteCode != null) ...[
+                const SizedBox(height: NeonTheme.s8),
+                Wrap(
+                  alignment: WrapAlignment.spaceBetween,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: 6,
+                  runSpacing: 4,
+                  children: [
+                    Text(
+                      'Code: $inviteCode',
+                      key: const ValueKey('friendInviteCode'),
+                      style: TextStyle(
+                        color: NeonTheme.ink,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+                    if (onCopyInvite != null)
+                      MergeSemantics(
+                        child: Semantics(
+                          button: true,
+                          child: GestureDetector(
+                            key: const ValueKey('friendInviteCopyBtn'),
+                            onTap: onCopyInvite,
+                            behavior: HitTestBehavior.opaque,
+                            child: ConstrainedBox(
+                              constraints: const BoxConstraints(
+                                minWidth: 48,
+                                minHeight: 48,
+                              ),
+                              child: Align(
+                                widthFactor: 1,
+                                heightFactor: 1,
+                                child: Text(
+                                  copyLabel,
+                                  style: TextStyle(
+                                    color: NeonTheme.cyan,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w900,
+                                  ),
                                 ),
                               ),
                             ),
                           ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
+              ],
+              if (milestones.isNotEmpty) ...[
+                const SizedBox(height: NeonTheme.s8),
+                Wrap(
+                  spacing: 6,
+                  runSpacing: 6,
+                  children: [for (final m in milestones) _milestoneChip(m)],
+                ),
+              ],
+              const SizedBox(height: NeonTheme.s16),
+              CommonButton(
+                key: const ValueKey('friendInviteActionBtn'),
+                label: inviteLabel,
+                color: NeonTheme.purple,
+                onTap: onInvite,
               ),
             ],
-            if (milestones.isNotEmpty) ...[
-              const SizedBox(height: NeonTheme.s8),
-              Wrap(
-                spacing: 6,
-                runSpacing: 6,
-                children: [for (final m in milestones) _milestoneChip(m)],
-              ),
-            ],
-            const SizedBox(height: NeonTheme.s16),
-            CommonButton(
-              key: const ValueKey('friendInviteActionBtn'),
-              label: inviteLabel,
-              color: NeonTheme.purple,
-              onTap: onInvite,
-            ),
-          ],
+          ),
         ),
       ),
     );
