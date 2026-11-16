@@ -307,6 +307,58 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2aq: capability matrix and frame graph', () {
+    Widget capabilityMatrix() => PlatformCapabilityMatrix(
+      platformLabel: 'Desktop',
+      rows: [
+        PlatformCapabilityRow(label: 'Haptics', supported: false),
+        PlatformCapabilityRow(label: 'Audio', supported: true),
+        PlatformCapabilityRow(label: 'Text scaling', supported: true),
+      ],
+    );
+
+    Widget frameGraph() => LiveFrameGraph(
+      capacity: 4,
+      sampleFrameTimings: const Stream<Duration>.empty(),
+    );
+
+    testWidgets('PlatformCapabilityMatrix', (tester) async {
+      await runViewportSweep(tester, capabilityMatrix);
+    });
+
+    testWidgets('PlatformCapabilityMatrix at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        capabilityMatrix,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('LiveFrameGraph', (tester) async {
+      await runViewportSweep(tester, frameGraph);
+    });
+
+    testWidgets('LiveFrameGraph at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        frameGraph,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ap: radial menu and level-up overlay', () {
     testWidgets('RadialActionMenu', (tester) async {
       await runViewportSweep(

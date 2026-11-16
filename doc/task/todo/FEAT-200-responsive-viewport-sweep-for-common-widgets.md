@@ -66,7 +66,8 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 - [x] Pha 2an (2026-11-16): thêm `CandyCheckboxTile` và `LevelNodeButton` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 245 tests pass; existing checkbox/node suites, tap-target, contrast và analyzer pass. Tổng coverage 128/170 widget.
 - [x] Pha 2ao (2026-11-16): thêm `OnboardingFlowQueueCard` và `MoveHintPopup` ở sweep mặc định và 320dp/landscape với text 2.0x. Lộ overflow 16px landscape và 12px compact ở 2× text cho MoveHintPopup; popup nay scroll toàn nội dung. Full sweep 249 tests pass; existing onboarding/move-hint suites, tap-target, contrast and analyzer pass. Tổng coverage 130/170 widget.
 - [x] Pha 2ap (2026-11-16): thêm `RadialActionMenu` và `LevelUpOverlay` idle state ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 253 tests pass; existing menu/level-up suites, reduced-motion, tap-target, contrast and analyzer pass. Tổng coverage 132/170 widget.
-- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 38 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- [x] Pha 2aq (2026-11-16): thêm `PlatformCapabilityMatrix` và `LiveFrameGraph` với bounded empty frame stream ở default và 320dp/landscape, text 2.0x. Full sweep 257 tests pass; existing matrix and graph suites, tap-target, contrast and analyzer pass. Tổng coverage 134/170 widget.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 36 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 
 ## Tiêu chí xong
