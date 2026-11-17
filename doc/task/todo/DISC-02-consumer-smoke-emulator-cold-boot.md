@@ -138,3 +138,6 @@ Reference: successful jobs `128633219027` and `128729361841`; failed jobs `12865
 - Work only on `main`; no branches or worktrees.
 - Keep Flutter 3.41.9 pinned.
 - Do not edit workflow, change timeout, commit, push, tag, or publish without separate approval.
+
+## Trạng thái (2026-11-17)
+Không có bằng chứng mới từ phiên này. Ba kết luận đang đứng: (1) treo xảy ra cả khi không gắn tracer (control 1/8) và cả khi `--no-dds`, nên không do tracer hay DDS một mình; (2) mốc kẹt dao động giữa trước `main()` và trước `test-start`, chưa rõ một hay hai cơ chế; (3) mẫu quá nhỏ để so sánh tỉ lệ treo giữa các biến thể. Bước kế tiếp hợp lý cần thay đổi workflow (ví dụ regenerate `disc02-control` từ `ci.yml` hiện tại để có mẫu native, hoặc thêm lần chạy so sánh), mà ràng buộc ở trên cấm khi chưa có duyệt riêng, và mỗi lần thử tốn ~20 phút CI. Giữ mở, chờ duyệt thay đổi workflow.

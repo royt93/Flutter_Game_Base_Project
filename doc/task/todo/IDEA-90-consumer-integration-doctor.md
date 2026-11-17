@@ -16,3 +16,6 @@ Giảm "tích hợp sai âm thầm" mà không cần đọc README; đối tác 
 
 ## Làm gì trước khi bắt tay
 Xác nhận nhu cầu với partner (có ai đang tích hợp thật không), vì nếu chưa có consumer thật thì chưa rõ ưu tiên.
+
+## Trạng thái (2026-11-17): chờ xác nhận đối tác, chưa xây
+Mục "Làm gì trước khi bắt tay" chưa được đáp ứng: chưa có bằng chứng một đối tác đang tích hợp thật. Người dùng chọn giữ task ở trạng thái chờ thay vì xây bản thu gọn (lệnh `doctor` là bề mặt CLI công khai mới). Mở lại khi có đối tác xác nhận nhu cầu; bản thu gọn khả thi là các kiểm tra tĩnh rẻ (đã gọi `RoyCasualKit.initialize`, font Baloo2 trong pubspec, khoá orientation, seam còn `Noop`).
