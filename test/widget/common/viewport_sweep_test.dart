@@ -11,6 +11,9 @@ import 'package:roy_casual_kit/core/app_version_gate.dart'
     show AppVersionGateConfig, GateDecision;
 import 'package:roy_casual_kit/core/consent_state_service.dart'
     show ConsentStatus, ConsentStateService;
+import 'package:roy_casual_kit/core/game_session_controller.dart'
+    show GamePauseReason, GameSessionController;
+import 'package:roy_casual_kit/core/app_translations.dart' show AppTranslations;
 import 'package:roy_casual_kit/core/inventory_service.dart'
     show ItemRarity, InventorySlot, InventorySnapshot;
 import 'package:roy_casual_kit/core/onboarding_coordinator_service.dart';
@@ -752,6 +755,69 @@ void main() {
       await runViewportSweep(
         tester,
         moveHint,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
+  group('FEAT-200 phase 2au: memory watchdog and pause overlay', () {
+    Widget memoryWatchdog() =>
+        MemoryWatchdogPanel(orphans: const [], recentlyDisposed: const []);
+
+    GameSessionController pausedSession() => GameSessionController()
+      ..markReady()
+      ..start()
+      ..pause(GamePauseReason.user);
+
+    Widget pauseOverlay() {
+      final session = pausedSession();
+      return GetMaterialApp(
+        translations: AppTranslations(),
+        locale: AppTranslations.fallback,
+        fallbackLocale: AppTranslations.fallback,
+        home: Material(
+          child: Stack(
+            children: [
+              const Center(child: Text('Game content')),
+              PauseOverlay(session: session),
+            ],
+          ),
+        ),
+      );
+    }
+
+    testWidgets('MemoryWatchdogPanel', (tester) async {
+      await runViewportSweep(tester, memoryWatchdog);
+    });
+
+    testWidgets('MemoryWatchdogPanel at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        memoryWatchdog,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('PauseOverlay', (tester) async {
+      await runViewportSweep(tester, pauseOverlay);
+    });
+
+    testWidgets('PauseOverlay at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        pauseOverlay,
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),
