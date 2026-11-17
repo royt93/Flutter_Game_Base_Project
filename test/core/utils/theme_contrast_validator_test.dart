@@ -99,31 +99,12 @@ void main() {
       expect(inkIssues, isEmpty, reason: '$inkIssues');
     });
 
-    test(
-      'PHÁT HIỆN THẬT: inkSoft (chữ phụ) trên light theme KHÔNG đạt AA normal '
-      'text (dù đạt AA large text/UI 3.0) — ghi nhận trong Quyết định, không '
-      'sửa trong task này (đổi màu ink ảnh hưởng hàng loạt widget/golden khác)',
-      () {
-        final issues = validateNeonThemeContrast();
-        final inkSoftLight = issues.where(
-          (i) => i.token.startsWith('inkSoft on') && i.state == 'light',
-        );
-        expect(inkSoftLight, hasLength(2));
-        for (final issue in inkSoftLight) {
-          expect(issue.ratio, greaterThanOrEqualTo(3.0));
-          expect(issue.ratio, lessThan(4.5));
-        }
-
-        final inkSoftDark = issues.where(
-          (i) => i.token.startsWith('inkSoft on') && i.state == 'dark',
-        );
-        expect(
-          inkSoftDark,
-          isEmpty,
-          reason: 'dark theme đã đạt AA, chỉ light theme bị',
-        );
-      },
-    );
+    test('inkSoft (chữ phụ) đạt AA normal text trên card/cardAlt ở cả light '
+        'lẫn dark (FEAT-205: token light được tối lại từ #8579B0, 3.92/3.40)', () {
+      final issues = validateNeonThemeContrast();
+      final inkSoft = issues.where((i) => i.token.startsWith('inkSoft on'));
+      expect(inkSoft, isEmpty, reason: '$inkSoft');
+    });
 
     test('ENH-103: lockedBorder/lockedFill đạt ngưỡng UI-component 3.0 ở cả '
         'light lẫn dark (mỗi theme một cặp màu riêng)', () {

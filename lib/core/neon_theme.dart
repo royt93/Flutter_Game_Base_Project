@@ -145,7 +145,7 @@ class NeonTheme {
 
   // --- Mực chữ trên nền/thẻ ---
   static Color _inkLight = const Color(0xFF3A2E6B); // tím đậm, đọc rõ
-  static Color _inkSoftLight = const Color(0xFF8579B0); // phụ/mô tả
+  static Color _inkSoftLight = const Color(0xFF6F639E); // phụ/mô tả, AA trên card/cardAlt
   static Color _inkDark = const Color(0xFFEDEBFF); // trắng ngà trên nền tối
   static Color _inkSoftDark = const Color(0xFFA7A0D9);
 
@@ -255,7 +255,7 @@ class NeonTheme {
     'cardDark': '#1B1B3A',
     'cardAltDark': '#14142E',
     'inkLight': '#3A2E6B',
-    'inkSoftLight': '#8579B0',
+    'inkSoftLight': '#6F639E',
     'inkDark': '#EDEBFF',
     'inkSoftDark': '#A7A0D9',
     'cyan': '#35C4F0',

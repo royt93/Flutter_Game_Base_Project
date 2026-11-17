@@ -36,3 +36,10 @@ Nền có gradient/shader/ảnh không tính được bằng alpha-blend; harnes
 
 ## Quan hệ
 Bổ sung FEAT-201 (lint tĩnh màu cố định): lint bắt chỗ viết, audit này bắt kết quả render.
+
+## Mở rộng harness (2026-11-17)
+- Probe 13 widget hiển thị đơn giản ở light/dark: lộ gốc lỗi là token `NeonTheme.inkSoft` light `#8579B0` (3.92:1 trên `card`, 3.40:1 trên `cardAlt`), dùng ở 136 chỗ/64 file (`NextRewardTeaserChip`, `EmptyStatePlaceholder` là hai ca bị bắt). Dark đạt AA.
+- Quyết định người dùng: đổi token một lần thay vì sửa từng widget. `_inkSoftLight` -> `#6F639E` (5.31:1 trên `card`, 4.61:1 trên `cardAlt`). Test validator đổi từ "ghi nhận lỗi đã biết" sang khẳng định `inkSoft` đạt AA cả hai theme.
+- Probe `Text` không màu trong `PanelCard`/`TooltipBubble` dark báo 1.03:1 là artifact của fixture probe (chữ lấy màu mặc định Material), không phải lỗi widget.
+- Golden light có dùng `inkSoft` đổi pixel; baseline phải sinh lại bằng workflow `regenerate-goldens` (Linux), không từ macOS.
+- Chưa làm: ngưỡng icon 3.0:1, quét các nhóm widget còn lại.
