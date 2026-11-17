@@ -137,6 +137,24 @@ Future<void> disposeGameplay() async {
 
 Mẫu chạy đầy đủ: `example/lib/screens/game_demo_screen.dart`.
 
+## 4b. Wheel: `backgroundColor` bắt buộc
+
+`WheelSpinner` và `CoinMultiplierWheel` yêu cầu `backgroundColor` **đục hoàn toàn** (alpha 1.0, nếu không constructor ném `ArgumentError`). Wheel tự vẽ nền đó dưới từng sector, nên chữ nhãn được tính tương phản trên đúng màu hiển thị:
+
+```dart
+WheelSpinner(
+  backgroundColor: NeonTheme.card,        // màu thật phía sau wheel
+  segments: segments,
+  controller: controller,
+  onSpinEnd: onSpinEnd,
+);
+CoinMultiplierWheel(backgroundColor: NeonTheme.card);
+```
+
+- Nhãn tự chọn chữ đen hoặc trắng theo màu sector đã trộn alpha trên `backgroundColor` để đạt WCAG AA (4.5:1). Màu sector của bạn không bị đổi.
+- `contrastFindings` trả về nhãn còn dưới 4.5:1 (ví dụ để cảnh báo trong test của game).
+- `WheelSpinner` không còn `const`. `WheelSpinnerPainter` dùng trực tiếp cũng cần `backgroundColor` và vẫn vẽ nhãn trắng cố định.
+
 ## 5. Save và offline earnings
 
 ```dart
