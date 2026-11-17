@@ -60,10 +60,15 @@ class RewardChoicePanel extends StatefulWidget {
     this.color,
     this.emptyMessage = 'No rewards to choose from.',
     this.claimedLabel = 'Claimed',
-  }) : assert(
-         options.map((o) => o.id).toSet().length == options.length,
-         'RewardChoicePanel: duplicate option id',
-       );
+  }) {
+    if (options.map((o) => o.id).toSet().length != options.length) {
+      throw ArgumentError.value(
+        options.map((o) => o.id).toList(),
+        'options',
+        'duplicate option id',
+      );
+    }
+  }
 
   final List<RewardChoiceOption> options;
 

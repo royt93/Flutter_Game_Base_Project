@@ -23,10 +23,7 @@ class CommonButton extends StatelessWidget {
     this.width,
     this.semanticLabel,
     this.loading = false,
-  }) : assert(
-         variant == CommonButtonVariant.icon ? icon != null : label != null,
-         'label required for text variants, icon required for icon variant',
-       );
+  });
 
   final String? label;
   final IconData? icon;
@@ -66,6 +63,11 @@ class CommonButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (variant == CommonButtonVariant.icon ? icon == null : label == null) {
+      throw ArgumentError(
+        'label required for text variants, icon required for icon variant',
+      );
+    }
     final c = _enabled ? _baseColor : NeonTheme.muted;
     final baseLabel = semanticLabel ?? label ?? icon?.toString();
     return Semantics(

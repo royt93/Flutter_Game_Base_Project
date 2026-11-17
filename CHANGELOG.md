@@ -1,5 +1,7 @@
 ## Unreleased
 
+- **Behavior change:** `SegmentedTabBar`, `PaginatedDotsIndicator`, `GameOverCardTemplate`, `CommonButton` and `CoinFlyOverlay` now throw `ArgumentError` in release builds when passed invalid constructor values (segment count outside 2–4, non-positive page count/coin count, only one secondary action argument, or a missing label/icon for the selected button variant). The checks run during build/state initialization to preserve their `const` constructors. `RewardChoicePanel` throws `ArgumentError` at construction for duplicate option IDs instead of relying on `assert`.
+
 - Added `NeonTheme.accentText(Color)`: returns an accent adjusted to be readable as text (>= 4.5:1) on both `card` and `cardAlt` in the current theme; unchanged when it already passes (all candy accents in dark mode). Use it for labels and numbers, keep the raw accent for fills, borders and icons.
 - Added `NeonTheme.fillForWhiteText(Color)`: darkens an accent just enough that white text on it reaches 4.5:1; unchanged when it already does. For solid accent fills (badges, selected chips, filled pills) carrying white text.
 - **Behavior change:** the solid accent fill behind white text is slightly darker in `XpLevelHeader` (level badge), `CollectionAlbumPanel` (selected filter chip) and `GiftLivesRequestCard` (send button); the white text measured 2.1:1 to 3.3:1 on the old fill.

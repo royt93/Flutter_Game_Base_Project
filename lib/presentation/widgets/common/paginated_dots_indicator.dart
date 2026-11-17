@@ -16,7 +16,7 @@ class PaginatedDotsIndicator extends StatelessWidget {
     this.activeDotSize = 12,
     this.spacing = 8,
     this.semanticLabel,
-  }) : assert(count > 0, 'count must be positive');
+  });
 
   final int count;
   final int currentIndex;
@@ -30,6 +30,9 @@ class PaginatedDotsIndicator extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (count <= 0) {
+      throw ArgumentError.value(count, 'count', 'must be positive');
+    }
     final c = color ?? NeonTheme.purple;
     return Semantics(
       label: semanticLabel ?? 'Page ${currentIndex + 1} of $count',

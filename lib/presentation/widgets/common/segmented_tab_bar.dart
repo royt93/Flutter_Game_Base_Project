@@ -13,10 +13,7 @@ class SegmentedTabBar extends StatelessWidget {
     required this.selectedIndex,
     required this.onChanged,
     this.activeColor,
-  }) : assert(
-         labels.length >= 2 && labels.length <= 4,
-         'SegmentedTabBar supports 2-4 segments',
-       );
+  });
 
   final List<String> labels;
   final int selectedIndex;
@@ -30,6 +27,15 @@ class SegmentedTabBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Checked here, not in the const constructor: a release build strips
+    // `assert`, and a remote-config-driven label list must still fail loudly.
+    if (labels.length < 2 || labels.length > 4) {
+      throw ArgumentError.value(
+        labels.length,
+        'labels.length',
+        'SegmentedTabBar supports 2-4 segments',
+      );
+    }
     final activeColor = this.activeColor ?? NeonTheme.cyan;
     return Container(
       padding: const EdgeInsets.all(4),

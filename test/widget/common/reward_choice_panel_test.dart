@@ -28,18 +28,30 @@ const _options = [
 ];
 
 void main() {
-  testWidgets('option icons distinguish a locked option from an available one', (tester) async {
-    await tester.pumpWidget(_wrap(RewardChoicePanel(
-      options: const [
-        RewardChoiceOption(id: 'open', label: 'Open', icon: Icons.star),
-        RewardChoiceOption(id: 'locked', label: 'Locked', icon: Icons.diamond, locked: true),
-      ],
-      onConfirm: (_) async {},
-    )));
-    expect(find.byIcon(Icons.star), findsOneWidget);
-    expect(find.byIcon(Icons.lock_rounded), findsOneWidget);
-    expect(find.byIcon(Icons.diamond), findsNothing);
-  });
+  testWidgets(
+    'option icons distinguish a locked option from an available one',
+    (tester) async {
+      await tester.pumpWidget(
+        _wrap(
+          RewardChoicePanel(
+            options: const [
+              RewardChoiceOption(id: 'open', label: 'Open', icon: Icons.star),
+              RewardChoiceOption(
+                id: 'locked',
+                label: 'Locked',
+                icon: Icons.diamond,
+                locked: true,
+              ),
+            ],
+            onConfirm: (_) async {},
+          ),
+        ),
+      );
+      expect(find.byIcon(Icons.star), findsOneWidget);
+      expect(find.byIcon(Icons.lock_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.diamond), findsNothing);
+    },
+  );
 
   testWidgets('hiện đúng label mọi option', (tester) async {
     await tester.pumpWidget(
@@ -117,32 +129,33 @@ void main() {
     expect(confirmedIds, ['coin']);
   });
 
-  testWidgets('multi-select: bấm lại option đã chọn thì bỏ chọn, confirm chỉ còn option kia', (
-    tester,
-  ) async {
-    List<String>? confirmedIds;
-    await tester.pumpWidget(
-      _wrap(
-        RewardChoicePanel(
-          options: _options,
-          multiSelect: true,
-          onConfirm: (ids) async => confirmedIds = ids,
+  testWidgets(
+    'multi-select: bấm lại option đã chọn thì bỏ chọn, confirm chỉ còn option kia',
+    (tester) async {
+      List<String>? confirmedIds;
+      await tester.pumpWidget(
+        _wrap(
+          RewardChoicePanel(
+            options: _options,
+            multiSelect: true,
+            onConfirm: (ids) async => confirmedIds = ids,
+          ),
         ),
-      ),
-    );
+      );
 
-    await tester.tap(find.text('Coin pack'));
-    await tester.pump();
-    await tester.tap(find.text('Gem pack'));
-    await tester.pump();
-    await tester.tap(find.text('Coin pack')); // bỏ chọn
-    await tester.pump();
+      await tester.tap(find.text('Coin pack'));
+      await tester.pump();
+      await tester.tap(find.text('Gem pack'));
+      await tester.pump();
+      await tester.tap(find.text('Coin pack')); // bỏ chọn
+      await tester.pump();
 
-    await tester.tap(find.byType(AsyncCommonButton));
-    await tester.pump();
+      await tester.tap(find.byType(AsyncCommonButton));
+      await tester.pump();
 
-    expect(confirmedIds, ['gem']);
-  });
+      expect(confirmedIds, ['gem']);
+    },
+  );
 
   testWidgets('minSelectable chưa đạt: nút confirm disabled', (tester) async {
     await tester.pumpWidget(
@@ -249,7 +262,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('id trùng nhau trong debug mode throw assertion error', (
+  testWidgets('id trùng nhau ném ArgumentError (kể cả release)', (
     tester,
   ) async {
     expect(
@@ -260,7 +273,7 @@ void main() {
         ],
         onConfirm: (_) async {},
       ),
-      throwsAssertionError,
+      throwsArgumentError,
     );
   });
 

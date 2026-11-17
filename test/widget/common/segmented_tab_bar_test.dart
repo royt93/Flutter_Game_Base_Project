@@ -56,46 +56,64 @@ void main() {
 
     final semanticsA = tester.getSemantics(find.text('A'));
     final semanticsB = tester.getSemantics(find.text('B'));
-    expect(semanticsA.getSemanticsData().hasFlag(SemanticsFlag.isSelected), isFalse);
-    expect(semanticsB.getSemanticsData().hasFlag(SemanticsFlag.isSelected), isTrue);
+    expect(
+      semanticsA.getSemanticsData().hasFlag(SemanticsFlag.isSelected),
+      isFalse,
+    );
+    expect(
+      semanticsB.getSemanticsData().hasFlag(SemanticsFlag.isSelected),
+      isTrue,
+    );
   });
 
-  testWidgets('SegmentedTabBar: kích hoạt tap qua Semantics gọi onChanged đúng index', (
-    tester,
-  ) async {
-    final handle = tester.ensureSemantics();
-    final changed = <int>[];
-    await tester.pumpWidget(
-      MaterialApp(
-        home: Material(
-          child: SegmentedTabBar(
-            labels: const ['A', 'B'],
-            selectedIndex: 0,
-            onChanged: changed.add,
+  testWidgets(
+    'SegmentedTabBar: kích hoạt tap qua Semantics gọi onChanged đúng index',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      final changed = <int>[];
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: SegmentedTabBar(
+              labels: const ['A', 'B'],
+              selectedIndex: 0,
+              onChanged: changed.add,
+            ),
           ),
         ),
-      ),
-    );
+      );
 
-    final id = tester.getSemantics(find.text('B')).id;
-    tester.binding.pipelineOwner.semanticsOwner!.performAction(id, SemanticsAction.tap);
-    await tester.pump();
-    expect(changed, [1]);
-    handle.dispose();
-  });
+      final id = tester.getSemantics(find.text('B')).id;
+      tester.binding.pipelineOwner.semanticsOwner!.performAction(
+        id,
+        SemanticsAction.tap,
+      );
+      await tester.pump();
+      expect(changed, [1]);
+      handle.dispose();
+    },
+  );
 
-  testWidgets('SegmentedTabBar throw assert khi số lượng label ngoài 2-4', (
-    tester,
-  ) async {
-    expect(
-      () => SegmentedTabBar(
-        labels: const ['Only one'],
-        selectedIndex: 0,
-        onChanged: (_) {},
-      ),
-      throwsAssertionError,
-    );
-  });
+  testWidgets(
+    'SegmentedTabBar ném ArgumentError (kể cả release) khi số label ngoài 2-4',
+    (tester) async {
+      for (final labels in [
+        const ['Only one'],
+        const ['a', 'b', 'c', 'd', 'e'],
+      ]) {
+        await tester.pumpWidget(
+          MaterialApp(
+            home: SegmentedTabBar(
+              labels: labels,
+              selectedIndex: 0,
+              onChanged: (_) {},
+            ),
+          ),
+        );
+        expect(tester.takeException(), isA<ArgumentError>());
+      }
+    },
+  );
 
   testWidgets('ENH-24: pill indicator (AnimatedAlign) dùng easeOutBack (nảy)', (
     tester,

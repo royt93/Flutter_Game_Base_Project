@@ -141,3 +141,9 @@ Reference: successful jobs `128633219027` and `128729361841`; failed jobs `12865
 
 ## Trạng thái (2026-11-17)
 Không có bằng chứng mới từ phiên này. Ba kết luận đang đứng: (1) treo xảy ra cả khi không gắn tracer (control 1/8) và cả khi `--no-dds`, nên không do tracer hay DDS một mình; (2) mốc kẹt dao động giữa trước `main()` và trước `test-start`, chưa rõ một hay hai cơ chế; (3) mẫu quá nhỏ để so sánh tỉ lệ treo giữa các biến thể. Bước kế tiếp hợp lý cần thay đổi workflow (ví dụ regenerate `disc02-control` từ `ci.yml` hiện tại để có mẫu native, hoặc thêm lần chạy so sánh), mà ràng buộc ở trên cấm khi chưa có duyệt riêng, và mỗi lần thử tốn ~20 phút CI. Giữ mở, chờ duyệt thay đổi workflow.
+
+## Control dispatch mới (2026-11-17, run `44061376500`, commit `d0dc0764`, no tracer)
+- 4 job: 3 xanh (`133963842367` run 4, `133963842805` run 1, `133963842879` run 2), 1 hang/timeout (`133963842747` run 3; integration-test step hết 20 phút). Không phải setup/compile failure.
+- Hang evidence: emulator boot xong (`emulator-5554` online); app pid `4573` còn sống ở state `S`; `[consumer-smoke] main-entered` và `binding-initialized` có, nhưng không có `test-start`/`app-main-start`; logcat sau đó chỉ có Impeller OpenGLES + VM-service URL, không có Flutter frame/GETX/app checkpoint; native sample phút 9 ghi `Total frames rendered: 1`, `Janky frames: 1 (100%)`. ADB và emulator vẫn sẵn sàng tới timeout.
+- Kết luận cập nhật: thêm một hang no-tracer, phù hợp stall trong khởi động Flutter/engine/app trước test body, không do tracer attach. Tuy vậy mẫu nhỏ: control no-tracer hiện 2 hang/12 job (đợt 1: 1/8, đợt này: 1/4); không đủ kết luận tỷ lệ khác với early-tracer hay DDS. 3/4 job xanh cho thấy lỗi không phải deterministic.
+- Không đổi AVD, timeout, Flutter pin hay workflow. Bằng chứng tăng nhưng nguyên nhân gốc còn chưa rõ; giữ task mở.

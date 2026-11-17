@@ -26,10 +26,7 @@ class GameOverCardTemplate extends StatelessWidget {
     this.secondaryActionLabel,
     this.onSecondaryAction,
     this.accentColor,
-  }) : assert(
-         (secondaryActionLabel == null) == (onSecondaryAction == null),
-         'secondaryActionLabel and onSecondaryAction must be supplied together',
-       );
+  });
 
   /// Caller-supplied headline, e.g. "Out of moves!" — no i18n baked in.
   final String title;
@@ -58,6 +55,11 @@ class GameOverCardTemplate extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if ((secondaryActionLabel == null) != (onSecondaryAction == null)) {
+      throw ArgumentError(
+        'secondaryActionLabel and onSecondaryAction must be supplied together',
+      );
+    }
     final accent = accentColor ?? NeonTheme.muted;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),

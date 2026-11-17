@@ -68,7 +68,7 @@ class CoinFlyOverlay extends StatefulWidget {
     this.stagger = const Duration(milliseconds: 70),
     this.onArrive,
     this.onDone,
-  }) : assert(coinCount > 0, 'coinCount must be > 0');
+  });
 
   /// Source point, in the [Overlay]'s coordinate space (global).
   final Offset from;
@@ -172,6 +172,9 @@ class _CoinFlyOverlayState extends State<CoinFlyOverlay>
     // same effect as "skip the burst entirely", reusing the existing
     // zero-duration machinery instead of a separate code path.
     if (_startedOnce) return;
+    if (widget.coinCount <= 0) {
+      throw ArgumentError.value(widget.coinCount, 'coinCount', 'must be > 0');
+    }
     _startedOnce = true;
     final reduced = NeonTheme.reducedMotion(context);
     _reducedMotion = reduced;
