@@ -730,6 +730,67 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2bf: animated grid and wheel spinner', () {
+    Widget staggeredGrid() => SizedBox(
+      height: 300,
+      child: StaggeredAnimatedGrid(
+        itemCount: 6,
+        crossAxisCount: 3,
+        stagger: const Duration(milliseconds: 40),
+        animationDuration: const Duration(milliseconds: 120),
+        itemBuilder: (_, index) =>
+            ColoredBox(key: ValueKey('sweep-grid-$index'), color: Colors.amber),
+      ),
+    );
+
+    Widget wheelSpinner() => WheelSpinner(
+      segments: const [
+        WheelSegment(label: '10 coins', color: Colors.red, value: 10),
+        WheelSegment(label: '50 coins', color: Colors.blue, value: 50),
+        WheelSegment(label: '100 coins', color: Colors.green, value: 100),
+        WheelSegment(label: 'Jackpot', color: Colors.amber, value: 1000),
+      ],
+      controller: WheelSpinnerController(),
+      onSpinEnd: (_) {},
+    );
+
+    testWidgets('StaggeredAnimatedGrid', (tester) async {
+      await runViewportSweep(tester, staggeredGrid);
+    });
+
+    testWidgets('StaggeredAnimatedGrid at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        staggeredGrid,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('WheelSpinner', (tester) async {
+      await runViewportSweep(tester, wheelSpinner);
+    });
+
+    testWidgets('WheelSpinner at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        wheelSpinner,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2aw: scratch card and reward sequence', () {
     testWidgets('ScratchCard', (tester) async {
       await runViewportSweep(
