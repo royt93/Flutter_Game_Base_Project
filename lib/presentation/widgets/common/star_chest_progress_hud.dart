@@ -126,6 +126,10 @@ class _StarChestProgressHudState extends State<StarChestProgressHud>
   @override
   Widget build(BuildContext context) {
     final reducedMotion = NeonTheme.reducedMotion(context);
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final effectiveHeight = widget.height * textScale;
+    final baseWidth = widget.width ?? 160.0;
+    final effectiveWidth = baseWidth * textScale;
     final gold = widget.chestColor ?? NeonTheme.gold;
     final track = widget.trackColor ?? NeonTheme.cardAlt;
     final ready = _isReady;
@@ -133,7 +137,7 @@ class _StarChestProgressHudState extends State<StarChestProgressHud>
       widget.currentStars,
       widget.targetStars,
     );
-    final radius = BorderRadius.circular(widget.height / 2);
+    final radius = BorderRadius.circular(effectiveHeight / 2);
 
     final String defaultSemantics;
     if (ready) {
@@ -155,8 +159,8 @@ class _StarChestProgressHudState extends State<StarChestProgressHud>
           key: const ValueKey('starChestPulseScale'),
           scale: pulseScale,
           child: Container(
-            width: widget.width,
-            height: widget.height,
+            width: effectiveWidth,
+            height: effectiveHeight,
             padding: const EdgeInsetsDirectional.only(start: 4, end: 12),
             decoration: BoxDecoration(
               color: NeonTheme.card,
