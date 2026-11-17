@@ -626,6 +626,72 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2aw: scratch card and reward sequence', () {
+    testWidgets('ScratchCard', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const ScratchCard(
+          columns: 8,
+          rows: 5,
+          cover: ColoredBox(color: Color(0xFFCCCCCC)),
+          prize: Text('Surprise prize'),
+        ),
+      );
+    });
+
+    testWidgets('ScratchCard at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const ScratchCard(
+          columns: 8,
+          rows: 5,
+          cover: ColoredBox(color: Color(0xFFCCCCCC)),
+          prize: Text('Surprise prize'),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('RewardSequenceCoordinator idle', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => RewardSequenceCoordinator(
+          banner: const Text('Victory!'),
+          content: const Text('Three stars earned'),
+          actionButton: const Text('Continue'),
+          autoStart: false,
+          stepDuration: const Duration(milliseconds: 300),
+        ),
+      );
+    });
+
+    testWidgets('RewardSequenceCoordinator at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => RewardSequenceCoordinator(
+          banner: const Text('Victory!'),
+          content: const Text('Three stars earned'),
+          actionButton: const Text('Continue'),
+          autoStart: false,
+          stepDuration: const Duration(milliseconds: 300),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ap: radial menu and level-up overlay', () {
     testWidgets('RadialActionMenu', (tester) async {
       await runViewportSweep(
