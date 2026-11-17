@@ -49,3 +49,9 @@ Bổ sung FEAT-201 (lint tĩnh màu cố định): lint bắt chỗ viết, audi
 - Đo token accent trên `cardAlt`/`card`: cyan 1.77/2.04, orange 1.77/2.04, lime 1.66/1.92, gold 1.56/1.79, yellow 1.25/1.44, magenta 2.20/2.53, blue 2.22/2.56, red 2.41/2.78, purple 2.82/3.25. Không accent nào đạt 4.5:1 ở light; ví dụ nút `CommonButton.secondary` dùng `c` làm màu chữ trên `cardAlt`.
 - Dark: các ca 1.03 ở `PrestigeReadinessCard`, `RewardedAdResultCard`, `SyncStatusCard`, `ReminderPreferencesPanel` là artifact fixture probe (chữ không đặt màu lấy mặc định Material), không phải lỗi. Còn thật: "Lv 42" 3.25, "All" 3.25, "Send Life" 2.14.
 - Chưa sửa: cần quyết định thiết kế (token chữ tối cho accent, hay đổi chữ sang `ink`), vì ảnh hưởng nhiều widget và golden.
+
+## Sửa chữ accent (2026-11-17, quyết định người dùng: token chữ tối)
+- Thêm `NeonTheme.accentText(Color)` (một hàm theo theme thay vì chín token): tối/sáng accent vừa đủ để đạt 4.5:1 trên cả `card` và `cardAlt`; giữ nguyên nếu đã đạt (mọi accent ở dark). Test: 18 ca (9 accent x light/dark) + giữ nguyên dark cyan.
+- Áp cho chữ (không đụng icon/viền/nền) ở 9 widget: `CommonButton` secondary, `OfflineEarningsPopup`, `SeasonEventBanner`, `VipPerkProgressRow`, `ProfileStatsCard`, `EventCalendarCard`, `TeamRosterList`, `CollectionAlbumPanel`.
+- Probe lại 2c/2d: 12 widget vi phạm xuống 4. Hai ca accent còn lại (`_rarityColor`, `roleColor`) đã sửa sau đó.
+- **Còn lại, khác loại:** chữ trắng trên nền accent đặc, `ProfileStatsCard` "Lv 42" 3.25, `CollectionAlbumPanel` "All" 3.25, `GiftLivesRequestCard` "Send Life" 2.14. Sửa cần đổi màu nền nút/badge hoặc màu chữ, là quyết định thiết kế riêng.

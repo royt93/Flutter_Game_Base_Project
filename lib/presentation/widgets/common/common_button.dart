@@ -145,7 +145,7 @@ class CommonButton extends StatelessWidget {
                               fontSize: 17,
                               fontWeight: FontWeight.w800,
                               letterSpacing: 1.0,
-                              color: c,
+                              color: _enabled ? NeonTheme.accentText(c) : c,
                             ),
                           )
                         : StrokeText(

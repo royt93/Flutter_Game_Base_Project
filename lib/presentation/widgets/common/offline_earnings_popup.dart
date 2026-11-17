@@ -263,7 +263,7 @@ class _OfflineEarningsPopupState extends State<OfflineEarningsPopup>
                         fmtNum(_displayedCoins),
                         key: const ValueKey('offlineEarningsCoinCount'),
                         style: TextStyle(
-                          color: NeonTheme.gold,
+                          color: NeonTheme.accentText(NeonTheme.gold),
                           fontSize: 34,
                           fontWeight: FontWeight.w900,
                           shadows: NeonTheme.glow(NeonTheme.gold, blur: 10),

@@ -208,7 +208,7 @@ class VipPerkProgressRow extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
-                      color: NeonTheme.gold,
+                      color: NeonTheme.accentText(NeonTheme.gold),
                     ),
                   ),
                 ),

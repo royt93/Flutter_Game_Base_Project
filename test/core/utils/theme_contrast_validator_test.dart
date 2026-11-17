@@ -4,6 +4,7 @@ import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/utils/theme_contrast_validator.dart';
 
 void main() {
+  accentTextTests();
   test(
     'contrast diagnostic includes token, state, ratio, threshold and kind',
     () {
@@ -99,12 +100,15 @@ void main() {
       expect(inkIssues, isEmpty, reason: '$inkIssues');
     });
 
-    test('inkSoft (chữ phụ) đạt AA normal text trên card/cardAlt ở cả light '
-        'lẫn dark (FEAT-205: token light được tối lại từ #8579B0, 3.92/3.40)', () {
-      final issues = validateNeonThemeContrast();
-      final inkSoft = issues.where((i) => i.token.startsWith('inkSoft on'));
-      expect(inkSoft, isEmpty, reason: '$inkSoft');
-    });
+    test(
+      'inkSoft (chữ phụ) đạt AA normal text trên card/cardAlt ở cả light '
+      'lẫn dark (FEAT-205: token light được tối lại từ #8579B0, 3.92/3.40)',
+      () {
+        final issues = validateNeonThemeContrast();
+        final inkSoft = issues.where((i) => i.token.startsWith('inkSoft on'));
+        expect(inkSoft, isEmpty, reason: '$inkSoft');
+      },
+    );
 
     test('ENH-103: lockedBorder/lockedFill đạt ngưỡng UI-component 3.0 ở cả '
         'light lẫn dark (mỗi theme một cặp màu riêng)', () {
@@ -261,4 +265,38 @@ void main() {
       );
     },
   );
+}
+
+void accentTextTests() {
+  group('NeonTheme.accentText (FEAT-205)', () {
+    tearDown(() => NeonTheme.dark = false);
+    final accents = {
+      'cyan': () => NeonTheme.cyan,
+      'magenta': () => NeonTheme.magenta,
+      'lime': () => NeonTheme.lime,
+      'yellow': () => NeonTheme.yellow,
+      'orange': () => NeonTheme.orange,
+      'red': () => NeonTheme.red,
+      'purple': () => NeonTheme.purple,
+      'gold': () => NeonTheme.gold,
+      'blue': () => NeonTheme.blue,
+    };
+    for (final dark in [false, true]) {
+      for (final e in accents.entries) {
+        test('dark=$dark ${e.key} reaches AA on card and cardAlt', () {
+          NeonTheme.dark = dark;
+          final c = NeonTheme.accentText(e.value());
+          expect(contrastRatio(c, NeonTheme.card), greaterThanOrEqualTo(4.5));
+          expect(
+            contrastRatio(c, NeonTheme.cardAlt),
+            greaterThanOrEqualTo(4.5),
+          );
+        });
+      }
+    }
+    test('keeps an accent that already passes unchanged (dark cyan)', () {
+      NeonTheme.dark = true;
+      expect(NeonTheme.accentText(NeonTheme.cyan), NeonTheme.cyan);
+    });
+  });
 }

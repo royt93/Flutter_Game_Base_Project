@@ -265,7 +265,9 @@ class _SeasonEventBannerState extends State<SeasonEventBanner> {
                             timeText,
                             key: const ValueKey('seasonEventCountdownText'),
                             style: TextStyle(
-                              color: primary,
+                              color: ended
+                                  ? primary
+                                  : NeonTheme.accentText(primary),
                               fontSize: 11,
                               fontWeight: FontWeight.w800,
                             ),

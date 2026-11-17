@@ -145,12 +145,40 @@ class NeonTheme {
 
   // --- Mực chữ trên nền/thẻ ---
   static Color _inkLight = const Color(0xFF3A2E6B); // tím đậm, đọc rõ
-  static Color _inkSoftLight = const Color(0xFF6F639E); // phụ/mô tả, AA trên card/cardAlt
+  static Color _inkSoftLight = const Color(
+    0xFF6F639E,
+  ); // phụ/mô tả, AA trên card/cardAlt
   static Color _inkDark = const Color(0xFFEDEBFF); // trắng ngà trên nền tối
   static Color _inkSoftDark = const Color(0xFFA7A0D9);
 
   static Color get ink => dark ? _inkDark : _inkLight;
   static Color get inkSoft => dark ? _inkSoftDark : _inkSoftLight;
+
+  /// [accent] adjusted to be readable as *text* (>= 4.5:1, WCAG AA) on both
+  /// [card] and [cardAlt] in the current theme. Returns [accent] unchanged
+  /// when it already passes (the dark theme for all candy accents); otherwise
+  /// darkens it (light theme) or lightens it (dark theme) just enough. Use
+  /// for labels and numbers; keep the raw accent for fills, borders and icons.
+  static Color accentText(Color accent) {
+    final surfaces = [card, cardAlt];
+    bool readable(Color c) {
+      final l = c.computeLuminance();
+      return surfaces.every((s) {
+        final o = s.computeLuminance();
+        final hi = l > o ? l : o;
+        final lo = l > o ? o : l;
+        return (hi + 0.05) / (lo + 0.05) >= 4.5;
+      });
+    }
+
+    if (readable(accent)) return accent;
+    final target = dark ? const Color(0xFFFFFFFF) : const Color(0xFF000000);
+    for (var t = 0.05; t < 1.0; t += 0.05) {
+      final c = Color.lerp(accent, target, t)!;
+      if (readable(c)) return c;
+    }
+    return target;
+  }
 
   // --- 7 màu block kiểu kẹo (saturated, thân thiện, dễ phân biệt) ---
   static Color cyan = const Color(0xFF35C4F0); // xanh dương kẹo

@@ -1,5 +1,7 @@
 ## Unreleased
 
+- Added `NeonTheme.accentText(Color)`: returns an accent adjusted to be readable as text (>= 4.5:1) on both `card` and `cardAlt` in the current theme; unchanged when it already passes (all candy accents in dark mode). Use it for labels and numbers, keep the raw accent for fills, borders and icons.
+- **Behavior change:** accent-colored text in the light theme is darker in `CommonButton` (secondary label), `OfflineEarningsPopup` (coin count), `SeasonEventBanner` (countdown), `VipPerkProgressRow` (points), `ProfileStatsCard` (title), `EventCalendarCard` (day and status), `TeamRosterList` (count, "you" and role badges) and `CollectionAlbumPanel` (completion reward, view link, owned count). These measured 1.6:1 to 2.8:1 on `card`/`cardAlt`. Dark mode and fills/borders/icons are unchanged.
 - **Behavior change:** `NeonTheme.inkSoft` in the light theme is darker, `#8579B0` to `#6F639E` (also the `inkSoftLight` entry of `exportPalette()` and the built-in palette). The old color measured 3.92:1 on `card` and 3.40:1 on `cardAlt`, below the 4.5:1 WCAG AA bar for normal text; the new one measures 5.31:1 and 4.61:1. Every secondary label that uses `inkSoft` looks slightly darker in light mode; dark mode is unchanged. A consumer that imported its own palette is unaffected.
 
 ## 0.6.12

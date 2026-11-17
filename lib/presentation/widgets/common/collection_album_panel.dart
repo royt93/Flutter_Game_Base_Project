@@ -166,7 +166,7 @@ class _CollectionAlbumPanelState extends State<CollectionAlbumPanel> {
                   Text(
                     'Complete · ${widget.completionRewardLabel}',
                     style: TextStyle(
-                      color: NeonTheme.lime,
+                      color: NeonTheme.accentText(NeonTheme.lime),
                       fontSize: 12,
                       fontWeight: FontWeight.w900,
                     ),
@@ -190,7 +190,7 @@ class _CollectionAlbumPanelState extends State<CollectionAlbumPanel> {
                               child: Text(
                                 widget.viewRewardLabel,
                                 style: TextStyle(
-                                  color: NeonTheme.cyan,
+                                  color: NeonTheme.accentText(NeonTheme.cyan),
                                   fontSize: 12,
                                   fontWeight: FontWeight.w900,
                                 ),
@@ -356,7 +356,7 @@ class _CollectionCell extends StatelessWidget {
                 Text(
                   '${item.ownedCount}/${item.requiredCount}',
                   style: TextStyle(
-                    color: _rarityColor,
+                    color: NeonTheme.accentText(_rarityColor),
                     fontSize: 10,
                     fontWeight: FontWeight.w900,
                   ),

@@ -194,7 +194,7 @@ class _EventRow extends StatelessWidget {
                       Text(
                         event.dayLabel,
                         style: TextStyle(
-                          color: color,
+                          color: NeonTheme.accentText(color),
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
                         ),
@@ -229,7 +229,7 @@ class _EventRow extends StatelessWidget {
               Text(
                 statusLabel,
                 style: TextStyle(
-                  color: color,
+                  color: NeonTheme.accentText(color),
                   fontSize: 10,
                   fontWeight: FontWeight.w900,
                 ),

@@ -1110,6 +1110,7 @@
     "core/memory_lifecycle_watchdog.dart:MemoryWatchdog.reset(): void",
     "core/memory_lifecycle_watchdog.dart:MemoryWatchdog.track(WatchdogKind kind, {required String owner, String? label}): int",
     "core/memory_lifecycle_watchdog.dart:WatchdogEntry.new({ required this.id, required this.kind, required this.owner, required this.label, required this.createdAtMs, })",
+    "core/neon_theme.dart:NeonTheme.accentText(Color accent): Color",
     "core/neon_theme.dart:NeonTheme.drop({double y = 4, double blur = 10}): List<BoxShadow>",
     "core/neon_theme.dart:NeonTheme.exportPalette(): Map<String, String>",
     "core/neon_theme.dart:NeonTheme.glow(Color color, { double blur = 18, double spread = 1, // roy93~fix: BoxShadow vẽ 1 hình đặc cùng dạng box, không chỉ viền cạnh — // với box có fill trong suốt (vd panel bàn chơi alpha 0.25) thì phần lớn // shadow xuyên qua fill, nhuộm kín cả nội thất thay vì chỉ toả nhẹ ở // mép. `intensity` cho phép hạ alpha 3 lớp shadow ở nơi cần fill mờ mà // không đổi 14+ chỗ gọi khác đang dùng mặc định 1.0. double intensity = 1.0, }): List<BoxShadow>",

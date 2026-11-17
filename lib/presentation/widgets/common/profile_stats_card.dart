@@ -179,7 +179,7 @@ class ProfileStatsCard extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: NeonTheme.purple,
+              color: NeonTheme.accentText(NeonTheme.purple),
               fontSize: 13,
               fontWeight: FontWeight.w700,
             ),

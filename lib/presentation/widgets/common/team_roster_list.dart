@@ -172,7 +172,7 @@ class TeamRosterList extends StatelessWidget {
                 child: Text(
                   countText,
                   style: TextStyle(
-                    color: NeonTheme.cyan,
+                    color: NeonTheme.accentText(NeonTheme.cyan),
                     fontSize: 12,
                     fontWeight: FontWeight.w800,
                   ),
@@ -336,7 +336,7 @@ class TeamRosterList extends StatelessWidget {
                             child: Text(
                               youLabel,
                               style: TextStyle(
-                                color: NeonTheme.cyan,
+                                color: NeonTheme.accentText(NeonTheme.cyan),
                                 fontSize: 8,
                                 fontWeight: FontWeight.w900,
                               ),
@@ -366,7 +366,7 @@ class TeamRosterList extends StatelessWidget {
                           child: Text(
                             member.role.name.toUpperCase(),
                             style: TextStyle(
-                              color: roleColor,
+                              color: NeonTheme.accentText(roleColor),
                               fontSize: 8,
                               fontWeight: FontWeight.w900,
                             ),
