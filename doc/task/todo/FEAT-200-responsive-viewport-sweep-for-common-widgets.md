@@ -84,7 +84,8 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 - [x] Pha 2bf (2026-11-17): thêm `StaggeredAnimatedGrid` và `WheelSpinner` idle state ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 313 tests pass; grid/wheel suites, tap-target, contrast và analyzer pass. Tổng coverage 162/170 widget.
 - [x] Pha 2bg (2026-11-17): thêm `SwipeableActionTile` và `ShimmerPlaceholder` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 317 tests pass; swipe/shimmer suites, tap-target, contrast và analyzer pass. Tổng coverage 164/170 widget.
 - [x] Pha 2bh (2026-11-17): thêm `ItemFlyOverlay` và `RewardPlanPreviewCard` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 321 tests pass; item-flight/reward-plan suites, tap-target, contrast và analyzer pass. Tổng coverage 166/170 widget.
-- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 4 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- [x] Pha 2bi (2026-11-17): thêm `RewardAuditTrailPanel` và `SaveRestorePreviewPanel` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 325 tests pass; reward-audit/save-restore suites, tap-target, contrast và analyzer pass. Tổng coverage 168/170 widget.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 2 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 
 ## Tiêu chí xong

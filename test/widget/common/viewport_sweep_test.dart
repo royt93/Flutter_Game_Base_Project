@@ -730,6 +730,72 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2bj: reward audit and save restore', () {
+    Widget rewardAudit() => RewardAuditTrailPanel(
+      rows: [
+        RewardAuditRow(
+          sourceLabel: 'Daily reward',
+          timeText: 'Today',
+          summaryText: '1 currency line',
+          status: RewardAuditStatus.committed,
+        ),
+        RewardAuditRow(
+          sourceLabel: 'Weekly quest',
+          timeText: 'Yesterday',
+          summaryText: '2 currency lines',
+          status: RewardAuditStatus.partial,
+        ),
+      ],
+    );
+
+    Widget saveRestore() => SaveRestorePreviewPanel(
+      slots: [
+        RestoreSlotPreview(
+          slotName: 'Main campaign',
+          lastPlayedText: 'Yesterday, 16:05',
+          keyCount: 42,
+        ),
+      ],
+      onConfirmRestore: () async {},
+    );
+
+    testWidgets('RewardAuditTrailPanel', (tester) async {
+      await runViewportSweep(tester, rewardAudit);
+    });
+
+    testWidgets('RewardAuditTrailPanel at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        rewardAudit,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('SaveRestorePreviewPanel', (tester) async {
+      await runViewportSweep(tester, saveRestore);
+    });
+
+    testWidgets('SaveRestorePreviewPanel at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        saveRestore,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2bf: animated grid and wheel spinner', () {
     Widget staggeredGrid() => SizedBox(
       height: 300,
