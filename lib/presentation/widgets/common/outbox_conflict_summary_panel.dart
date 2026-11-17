@@ -103,30 +103,32 @@ class OutboxConflictSummaryPanel extends StatelessWidget {
       container: true,
       explicitChildNodes: true,
       child: PanelCard(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(title, style: TextStyle(color: NeonTheme.ink, fontSize: 18)),
-            if (conflicts.isEmpty)
-              Text(emptyLabel)
-            else
-              for (final conflict in conflicts)
-                _OutboxConflictRow(
-                  key: ValueKey('outboxConflict_${conflict.reference}'),
-                  conflict: conflict,
-                  busy: busy,
-                  keepLocalLabel: keepLocalLabel,
-                  acceptRemoteLabel: acceptRemoteLabel,
-                  confirmLabel: confirmLabel,
-                  cancelLabel: cancelLabel,
-                  keepLocalConfirmation: keepLocalConfirmation,
-                  acceptRemoteConfirmation: acceptRemoteConfirmation,
-                  errorLabel: errorLabel,
-                  remoteLabel: remoteLabel,
-                  onResolve: onResolve,
-                ),
-          ],
+        child: SingleChildScrollView(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(title, style: TextStyle(color: NeonTheme.ink, fontSize: 18)),
+              if (conflicts.isEmpty)
+                Text(emptyLabel)
+              else
+                for (final conflict in conflicts)
+                  _OutboxConflictRow(
+                    key: ValueKey('outboxConflict_${conflict.reference}'),
+                    conflict: conflict,
+                    busy: busy,
+                    keepLocalLabel: keepLocalLabel,
+                    acceptRemoteLabel: acceptRemoteLabel,
+                    confirmLabel: confirmLabel,
+                    cancelLabel: cancelLabel,
+                    keepLocalConfirmation: keepLocalConfirmation,
+                    acceptRemoteConfirmation: acceptRemoteConfirmation,
+                    errorLabel: errorLabel,
+                    remoteLabel: remoteLabel,
+                    onResolve: onResolve,
+                  ),
+            ],
+          ),
         ),
       ),
     );

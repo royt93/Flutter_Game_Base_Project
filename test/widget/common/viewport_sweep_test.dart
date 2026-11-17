@@ -362,6 +362,71 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2at: outbox conflicts and inventory animation', () {
+    Widget outboxConflict() => OutboxConflictSummaryPanel(
+      conflicts: [
+        OutboxConflictSummary(
+          reference: 'progress-1',
+          localLabel: 'Level progress',
+          remoteLabel: 'Cloud progress',
+          timestampText: 'A minute ago',
+        ),
+      ],
+      onResolve: (_, _) async {},
+    );
+
+    Widget animatedInventory() => AnimatedInventoryGrid(
+      snapshot: const InventorySnapshot(
+        slots: [
+          InventorySlot(slotId: 1, itemId: 'potion', quantity: 2),
+          InventorySlot(slotId: 2, itemId: 'shield', quantity: 1),
+          InventorySlot(slotId: 3, itemId: 'key', quantity: 3),
+        ],
+        capacity: 6,
+      ),
+      itemBuilder: _defaultSweepInventoryItemBuilder,
+      animationDuration: const Duration(milliseconds: 250),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+    );
+
+    testWidgets('OutboxConflictSummaryPanel', (tester) async {
+      await runViewportSweep(tester, outboxConflict);
+    });
+
+    testWidgets('OutboxConflictSummaryPanel at 2.0x text, 320dp landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        outboxConflict,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('AnimatedInventoryGrid', (tester) async {
+      await runViewportSweep(tester, animatedInventory);
+    });
+
+    testWidgets('AnimatedInventoryGrid at 2.0x text, 320dp landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        animatedInventory,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2as: retry state and save slots', () {
     Widget retryError() => const RetryErrorState(
       icon: Icons.cloud_off_rounded,
