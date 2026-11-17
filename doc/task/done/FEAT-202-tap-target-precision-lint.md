@@ -19,7 +19,7 @@ Rule `tapTargetSemantics` chỉ đòi file có `Semantics(` ở đâu đó. Mộ
 ## Đã làm (2026-11-12): pha 1, rule theo vị trí
 `AuditRuleId.tapTargetSite`: mỗi `GestureDetector(`/`InkWell(` cần Semantics/MergeSemantics/semanticLabel/ExcludeSemantics trong cửa sổ 8 dòng trước và 30 dòng sau. Thử nghiệm trên repo: rule theo file cũ báo 0 vị trí, rule mới báo 24 vị trí ở 16 file; đã đọc từng vị trí và ghi baseline có lý do (wrapper dùng chung, barrier, debug-only) hoặc trỏ ENH-107 cho lỗi thật. 3 test cho rule; test cũ và fixture CLI cập nhật (cô lập rule bằng `_only`, kỳ vọng hai vi phạm cho một GestureDetector trần).
 Giới hạn đã biết: heuristic theo cửa sổ dòng (một wrapper cách xa hơn 30 dòng sẽ bị báo nhầm), và theo file thì mỗi file chỉ hiện một vi phạm dù nhiều vị trí.
-- [ ] Pha 2 chưa làm: rule kích thước (`width:`/`height:` literal < 48) với `// a11y-ok:`.
+- [x] Pha 2 (rule kích thước `width:`/`height:` literal < 48 với `// a11y-ok:`) đã làm ngày 2026-11-14, xem mục "Pha 2" bên dưới.
 
 ## Tiêu chí xong
 - Chạy trên repo: các vi phạm đã ghi ở ENH-106 (toggle_switch 30, segmented_tab_bar 36) xuất hiện; baseline cập nhật.
