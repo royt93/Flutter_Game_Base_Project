@@ -43,3 +43,9 @@ Bổ sung FEAT-201 (lint tĩnh màu cố định): lint bắt chỗ viết, audi
 - Probe `Text` không màu trong `PanelCard`/`TooltipBubble` dark báo 1.03:1 là artifact của fixture probe (chữ lấy màu mặc định Material), không phải lỗi widget.
 - Golden light có dùng `inkSoft` đổi pixel; baseline phải sinh lại bằng workflow `regenerate-goldens` (Linux), không từ macOS.
 - Chưa làm: ngưỡng icon 3.0:1, quét các nhóm widget còn lại.
+
+## Probe nhóm 2c/2d (2026-11-17, 26 widget, light + dark)
+- Light: 12 widget có chữ dưới AA, gốc chung là **màu accent dùng làm màu chữ trên `card`/`cardAlt`**: `OfflineEarningsPopup` "74,663" 1.79; `SeasonEventBanner` "3d 0h" 2.82; `VipPerkProgressRow` "View Perks" 2.82, "300 / 500 pts" 1.79; `PlayerDataRightsPanel` "Export my data" 1.77; `ProfileStatsCard` "Lv 42" 3.25; `CheckpointResumeCard` "Start new game" 1.77; `EventCalendarCard` "Fri"/"Live" 1.69; `GiftLivesRequestCard` "Send Life" 2.14; `TeamRosterList` 1.59 đến 1.77; `CollectionAlbumPanel` 1.67 đến 3.25; `BackupRestorePanel` "Export save" 1.77; `ConsentPreferencesPanel` "Allow" 1.77.
+- Đo token accent trên `cardAlt`/`card`: cyan 1.77/2.04, orange 1.77/2.04, lime 1.66/1.92, gold 1.56/1.79, yellow 1.25/1.44, magenta 2.20/2.53, blue 2.22/2.56, red 2.41/2.78, purple 2.82/3.25. Không accent nào đạt 4.5:1 ở light; ví dụ nút `CommonButton.secondary` dùng `c` làm màu chữ trên `cardAlt`.
+- Dark: các ca 1.03 ở `PrestigeReadinessCard`, `RewardedAdResultCard`, `SyncStatusCard`, `ReminderPreferencesPanel` là artifact fixture probe (chữ không đặt màu lấy mặc định Material), không phải lỗi. Còn thật: "Lv 42" 3.25, "All" 3.25, "Send Life" 2.14.
+- Chưa sửa: cần quyết định thiết kế (token chữ tối cho accent, hay đổi chữ sang `ink`), vì ảnh hưởng nhiều widget và golden.

@@ -1,3 +1,7 @@
+## Unreleased
+
+- **Behavior change:** `NeonTheme.inkSoft` in the light theme is darker, `#8579B0` to `#6F639E` (also the `inkSoftLight` entry of `exportPalette()` and the built-in palette). The old color measured 3.92:1 on `card` and 3.40:1 on `cardAlt`, below the 4.5:1 WCAG AA bar for normal text; the new one measures 5.31:1 and 4.61:1. Every secondary label that uses `inkSoft` looks slightly darker in light mode; dark mode is unchanged. A consumer that imported its own palette is unaffected.
+
 ## 0.6.12
 
 - **Behavior change:** `StorageService.eraseAll`, `importAll`, `importWithPrefix` and `removeAllWithPrefix` now wait for writes that were already in flight before they run. Before, a service write issued just before an erase could finish after it and bring the erased data back (the erase receipt said "done" but the data returned). Writes issued while the replace runs are not waited for.
