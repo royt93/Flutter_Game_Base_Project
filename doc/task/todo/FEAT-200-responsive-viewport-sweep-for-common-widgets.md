@@ -71,7 +71,8 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 - [x] Pha 2as (2026-11-16): thêm `RetryErrorState` và `SaveSlotPicker` ở sweep mặc định và 320dp/landscape với text 2.0x. Lộ overflow 80px và 98px tương ứng ở 320×480/text 2×; bọc error state và picker bằng scroll container, giữ danh sách slot shrink-wrap. Full sweep 265 tests pass; existing suites, tap-target, contrast và analyzer pass. Tổng coverage 138/170 widget.
 - [x] Pha 2at (2026-11-16): thêm `OutboxConflictSummaryPanel` và `AnimatedInventoryGrid` ở sweep mặc định và 320dp/landscape với text 2.0x. Lộ overflow 101px ở conflict panel tại 320×480/text 2×; thêm cuộn toàn panel. Full sweep 269 tests pass; offline-delivery/inventory suites, tap-target, contrast và analyzer pass. Tổng coverage 140/170 widget.
 - [x] Pha 2au (2026-11-16): thêm `MemoryWatchdogPanel` và `PauseOverlay` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 273 tests pass; watchdog/pause suites, tap-target, contrast và analyzer pass. Tổng coverage 142/170 widget.
-- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 28 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- [x] Pha 2av (2026-11-16): thêm `ScreenShake` và `LevelPathMap` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 277 tests pass; screen-shake/level-path suites, tap-target, contrast và analyzer pass. Tổng coverage 144/170 widget.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 26 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 
 ## Tiêu chí xong

@@ -559,6 +559,73 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2av: screen shake and level path', () {
+    Widget screenShake() {
+      final controller = ScreenShakeController();
+      controller.shake(
+        intensity: 8,
+        frequency: 20,
+        decay: const Duration(milliseconds: 400),
+      );
+      return ScreenShake(
+        controller: controller,
+        child: const SizedBox(width: 80, height: 80),
+      );
+    }
+
+    Widget levelPath() => LevelPathMap(
+      width: 300,
+      nodes: [
+        for (var level = 1; level <= 4; level++)
+          LevelPathNode(
+            level: level,
+            state: level < 3
+                ? LevelState.completed
+                : level == 3
+                ? LevelState.unlocked
+                : LevelState.locked,
+            starsEarned: level == 1 ? 3 : 2,
+          ),
+      ],
+    );
+
+    testWidgets('ScreenShake', (tester) async {
+      await runViewportSweep(tester, screenShake);
+    });
+
+    testWidgets('ScreenShake at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        screenShake,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('LevelPathMap', (tester) async {
+      await runViewportSweep(tester, levelPath);
+    });
+
+    testWidgets('LevelPathMap at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        levelPath,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ap: radial menu and level-up overlay', () {
     testWidgets('RadialActionMenu', (tester) async {
       await runViewportSweep(
