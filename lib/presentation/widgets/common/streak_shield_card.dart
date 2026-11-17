@@ -279,7 +279,7 @@ class StreakShieldCard extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w900,
-                  color: color,
+                  color: NeonTheme.accentText(color),
                 ),
               ),
             ),
