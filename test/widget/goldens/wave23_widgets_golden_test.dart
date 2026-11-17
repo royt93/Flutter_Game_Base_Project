@@ -68,6 +68,7 @@ void main() {
             child: build(state),
           ),
           matrix: [variant],
+          goldenBaseName: 'wave23_widgets_state',
         );
         if (state == 'rights_confirm') {
           final erase = find.byKey(const ValueKey('dataRightsErase'));

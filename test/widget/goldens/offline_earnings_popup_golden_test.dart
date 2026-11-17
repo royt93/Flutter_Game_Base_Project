@@ -17,6 +17,7 @@ void main() {
         onDoubleTap: () {},
       ),
       guidelines: const [],
+      goldenBaseName: 'offline_earnings_popup',
     );
   });
 }

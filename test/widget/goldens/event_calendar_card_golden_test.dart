@@ -38,6 +38,7 @@ void main() {
         child: EventCalendarCard(events: _events, onOpen: (_) {}),
       ),
       guidelines: const [],
+      goldenBaseName: 'eventcalendarcard_week_schedule',
     );
   });
 
@@ -48,6 +49,7 @@ void main() {
         child: EventCalendarCard(events: const [], onOpen: (_) {}),
       ),
       guidelines: const [],
+      goldenBaseName: 'eventcalendarcard_empty',
     );
   });
 }

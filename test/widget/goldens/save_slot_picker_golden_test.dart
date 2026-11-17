@@ -33,6 +33,7 @@ void main() {
         onDelete: (_) {},
       ),
       guidelines: const [],
+      goldenBaseName: 'save_slot_picker',
     );
   });
 }

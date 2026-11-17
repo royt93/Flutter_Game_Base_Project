@@ -43,6 +43,7 @@ void main() {
         child: CommunityLeaderboardCard(entries: _entries),
       ),
       guidelines: const [],
+      goldenBaseName: 'communityleaderboardcard_entries',
     );
   });
 
@@ -55,6 +56,7 @@ void main() {
         child: CommunityLeaderboardCard(entries: const []),
       ),
       guidelines: const [],
+      goldenBaseName: 'communityleaderboardcard_empty',
     );
   });
 }

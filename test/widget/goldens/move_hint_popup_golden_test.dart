@@ -16,6 +16,7 @@ void main() {
         onDismiss: () {},
       ),
       guidelines: const [],
+      goldenBaseName: 'move_hint_popup',
     );
   });
 }

@@ -20,6 +20,7 @@ void main() {
         onTap: () {},
         avatar: const CircleAvatar(child: Text('AC')),
       ),
+      goldenBaseName: 'tiered_leaderboard_row',
     );
   });
 }

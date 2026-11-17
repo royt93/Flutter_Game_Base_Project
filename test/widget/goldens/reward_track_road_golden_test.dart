@@ -32,6 +32,7 @@ void main() {
       (context) =>
           RewardTrackRoad(tiers: _tiers, currentXp: 250, onClaim: (_, _) {}),
       guidelines: const [],
+      goldenBaseName: 'rewardtrackroad_premium_locked',
     );
   });
 
@@ -48,6 +49,7 @@ void main() {
           onClaim: (_, _) {},
         ),
         guidelines: const [],
+        goldenBaseName: 'rewardtrackroad_premium_unlocked_and_late_progress',
       );
     },
   );

@@ -18,6 +18,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'streakshieldcard_with_shield',
     );
   });
 
@@ -36,6 +37,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'streakshieldcard_out_of_shields',
     );
   });
 }

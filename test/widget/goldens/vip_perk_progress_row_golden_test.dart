@@ -28,6 +28,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'vipperkprogressrow_regular_progress',
     );
   });
 
@@ -45,6 +46,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'vipperkprogressrow_max_tier',
     );
   });
 }

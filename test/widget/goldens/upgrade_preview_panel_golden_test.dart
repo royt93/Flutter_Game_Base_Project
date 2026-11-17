@@ -55,6 +55,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'upgradepreviewpanel_affordable',
     );
   });
 
@@ -77,6 +78,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'upgradepreviewpanel_max_level',
     );
   });
 }

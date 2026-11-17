@@ -34,6 +34,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'inboxmessagecard_unread_with_expiry',
     );
   });
 
@@ -53,6 +54,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'inboxmessagecard_read_and_claimed',
     );
   });
 
@@ -71,6 +73,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'inboxmessagecard_expired',
     );
   });
 }

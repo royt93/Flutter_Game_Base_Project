@@ -46,6 +46,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'collectionalbumpanel_mixed_rarity',
     );
   });
 
@@ -74,6 +75,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'collectionalbumpanel_complete_reward',
     );
   });
 }

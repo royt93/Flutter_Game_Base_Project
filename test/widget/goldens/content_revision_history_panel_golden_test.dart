@@ -48,6 +48,7 @@ void main() {
             ),
           ),
           matrix: [variant],
+          goldenBaseName: 'content_revision_state_golden_matrix',
         );
         if (state == 'confirmation') {
           final select = find.byKey(

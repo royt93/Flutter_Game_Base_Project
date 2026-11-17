@@ -45,6 +45,7 @@ void main() {
           ),
         ),
         guidelines: const [],
+        goldenBaseName: 'guildcontributioncard_progress_with_milestone',
       );
     },
   );
@@ -77,6 +78,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'guildcontributioncard_complete_goal',
     );
   });
 }

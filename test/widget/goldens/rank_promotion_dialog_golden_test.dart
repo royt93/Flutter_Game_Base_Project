@@ -19,6 +19,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'rankpromotiondialog_bronze_to_silver',
     );
   });
 
@@ -47,6 +48,7 @@ void main() {
           ),
         ),
         guidelines: const [],
+        goldenBaseName: 'rankpromotiondialog_gold_to_diamond_with_rewards',
       );
     },
   );

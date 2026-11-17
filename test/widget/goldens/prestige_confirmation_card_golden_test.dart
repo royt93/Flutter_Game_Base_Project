@@ -33,6 +33,8 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName:
+          'prestigeconfirmationcard_qua_toan_bo_ma_tran_golden_matrix',
     );
   });
 }

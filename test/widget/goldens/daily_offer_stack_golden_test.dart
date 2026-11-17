@@ -31,6 +31,7 @@ void main() {
         child: DailyOfferStack(offers: _offers, onOpen: (_) {}),
       ),
       guidelines: const [],
+      goldenBaseName: 'dailyofferstack_active_offers',
     );
   });
 
@@ -59,6 +60,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'dailyofferstack_mix_expired_offers',
     );
   });
 
@@ -69,6 +71,7 @@ void main() {
         child: DailyOfferStack(offers: const [], onOpen: (_) {}),
       ),
       guidelines: const [],
+      goldenBaseName: 'dailyofferstack_empty',
     );
   });
 }

@@ -44,6 +44,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'friendinviteprogresscard_progress_with_code',
     );
   });
 
@@ -70,6 +71,7 @@ void main() {
           ),
         ),
         guidelines: const [],
+        goldenBaseName: 'friendinviteprogresscard_complete_without_code',
       );
     },
   );

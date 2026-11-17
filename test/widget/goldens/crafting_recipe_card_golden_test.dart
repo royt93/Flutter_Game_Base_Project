@@ -47,6 +47,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'craftingrecipecard_craftable',
     );
   });
 
@@ -82,6 +83,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'craftingrecipecard_missing_and_locked',
     );
   });
 }

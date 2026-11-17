@@ -37,6 +37,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'comebackbundlecard_active_bundle',
     );
   });
 
@@ -58,6 +59,7 @@ void main() {
         ),
       ),
       guidelines: const [],
+      goldenBaseName: 'comebackbundlecard_expired_bundle',
     );
   });
 }

@@ -11,6 +11,7 @@ void main() {
       tester,
       (context) => WinStreakFlameHud(streakCount: 5, multiplierLabel: 'x3'),
       guidelines: const [],
+      goldenBaseName: 'win_streak_flame_hud',
     );
   });
 }

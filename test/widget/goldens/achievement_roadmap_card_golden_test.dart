@@ -45,6 +45,7 @@ void main() {
         child: AchievementRoadmapCard(items: _items, onClaim: (_) {}),
       ),
       guidelines: const [],
+      goldenBaseName: 'achievementroadmapcard_mixed_progress',
     );
   });
 
@@ -55,6 +56,7 @@ void main() {
         child: AchievementRoadmapCard(items: const [], onClaim: (_) {}),
       ),
       guidelines: const [],
+      goldenBaseName: 'achievementroadmapcard_empty',
     );
   });
 }

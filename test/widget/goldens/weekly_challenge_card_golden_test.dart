@@ -25,6 +25,7 @@ void main() {
         ),
       ),
       guidelines: const [], // thẻ chứa chip mốc nhỏ
+      goldenBaseName: 'weekly_challenge_card',
     );
   });
 }
