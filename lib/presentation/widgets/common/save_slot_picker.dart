@@ -145,62 +145,64 @@ class SaveSlotPicker extends StatelessWidget {
           ),
           boxShadow: NeonTheme.drop(y: 8, blur: 20),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Row(
-              children: [
-                Icon(Icons.save_rounded, color: NeonTheme.cyan, size: 26),
-                const SizedBox(width: NeonTheme.s8),
-                Expanded(
-                  child: Text(
-                    title,
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w900,
-                      color: NeonTheme.ink,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-                if (maxSlots != null)
-                  Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 2,
-                    ),
-                    decoration: BoxDecoration(
-                      color: NeonTheme.cardAlt,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: NeonTheme.inkSoft.withValues(alpha: 0.2),
-                      ),
-                    ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Icon(Icons.save_rounded, color: NeonTheme.cyan, size: 26),
+                  const SizedBox(width: NeonTheme.s8),
+                  Expanded(
                     child: Text(
-                      '${slots.length}/$maxSlots',
+                      title,
                       style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: NeonTheme.inkSoft,
+                        fontSize: 20,
+                        fontWeight: FontWeight.w900,
+                        color: NeonTheme.ink,
+                        letterSpacing: 0.5,
                       ),
                     ),
                   ),
-              ],
-            ),
-            const SizedBox(height: NeonTheme.s16),
-            Flexible(child: _buildBody(context)),
-            if (onCreate != null) ...[
-              const SizedBox(height: NeonTheme.s16),
-              CommonButton(
-                key: const ValueKey('saveSlotCreateBtn'),
-                label: createLabel,
-                variant: CommonButtonVariant.primary,
-                color: NeonTheme.cyan,
-                onTap: _canCreate ? onCreate : null,
+                  if (maxSlots != null)
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 2,
+                      ),
+                      decoration: BoxDecoration(
+                        color: NeonTheme.cardAlt,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: NeonTheme.inkSoft.withValues(alpha: 0.2),
+                        ),
+                      ),
+                      child: Text(
+                        '${slots.length}/$maxSlots',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w700,
+                          color: NeonTheme.inkSoft,
+                        ),
+                      ),
+                    ),
+                ],
               ),
+              const SizedBox(height: NeonTheme.s16),
+              _buildBody(context),
+              if (onCreate != null) ...[
+                const SizedBox(height: NeonTheme.s16),
+                CommonButton(
+                  key: const ValueKey('saveSlotCreateBtn'),
+                  label: createLabel,
+                  variant: CommonButtonVariant.primary,
+                  color: NeonTheme.cyan,
+                  onTap: _canCreate ? onCreate : null,
+                ),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

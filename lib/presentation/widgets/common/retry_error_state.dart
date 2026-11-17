@@ -185,10 +185,12 @@ class RetryErrorState extends StatelessWidget {
       child: placeholder,
     );
     if (compact) return announced;
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(NeonTheme.s24),
-        child: announced,
+    return SingleChildScrollView(
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(NeonTheme.s24),
+          child: announced,
+        ),
       ),
     );
   }

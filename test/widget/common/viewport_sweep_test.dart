@@ -15,6 +15,7 @@ import 'package:roy_casual_kit/core/inventory_service.dart'
     show ItemRarity, InventorySlot, InventorySnapshot;
 import 'package:roy_casual_kit/core/onboarding_coordinator_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/save_slot_manager.dart' show SaveSlotMeta;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/viewport_sweep.dart';
@@ -22,6 +23,8 @@ import '../../support/viewport_sweep.dart';
 String _achievementViewportLabel(String id) => id;
 
 void _noop() {}
+
+Future<void> _asyncNoop() async {}
 
 void _onJoystickDirectionChanged(
   GameJoystickDirection direction,
@@ -350,6 +353,69 @@ void main() {
       await runViewportSweep(
         tester,
         frameGraph,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
+  group('FEAT-200 phase 2as: retry state and save slots', () {
+    Widget retryError() => const RetryErrorState(
+      icon: Icons.cloud_off_rounded,
+      title: 'Connection unavailable',
+      message: 'Check the network and try again.',
+      retryLabel: 'Retry connection',
+      onRetry: _asyncNoop,
+    );
+
+    Widget saveSlots() => SaveSlotPicker(
+      slots: [
+        for (var index = 1; index <= 3; index++)
+          SaveSlotMeta(
+            id: 'slot-$index',
+            displayName: 'Campaign $index',
+            createdAtMs: index * 1000,
+            lastPlayedAtMs: index * 2000,
+          ),
+      ],
+      activeSlotId: 'slot-1',
+      onSelect: (_) {},
+      onCreate: _noop,
+      onDelete: (_) {},
+      maxSlots: 5,
+    );
+
+    testWidgets('RetryErrorState', (tester) async {
+      await runViewportSweep(tester, retryError);
+    });
+
+    testWidgets('RetryErrorState at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        retryError,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('SaveSlotPicker', (tester) async {
+      await runViewportSweep(tester, saveSlots);
+    });
+
+    testWidgets('SaveSlotPicker at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        saveSlots,
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),
