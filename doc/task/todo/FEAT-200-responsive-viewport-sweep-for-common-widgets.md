@@ -77,7 +77,9 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 - [x] Pha 2ay (2026-11-16): thêm `CommonButton` và `AsyncCommonButton` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 289 tests pass; button suites, tap-target, contrast và analyzer pass. Tổng coverage 150/170 widget.
 - [x] Pha 2az (2026-11-16): thêm `ReviewPromptTrigger` và `SceneTransitionOverlay` idle states ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 293 tests pass; existing review/transition suites, tap-target, contrast và analyzer pass. Tổng coverage 152/170 widget.
 - [x] Pha 2ba (2026-11-16): thêm `FloatingEmojiBurst` và `PooledParticleBurst` idle states ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 297 tests pass; existing particle suites, tap-target, contrast và analyzer pass. Tổng coverage 154/170 widget.
-- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 16 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- [x] Pha 2bb (2026-11-16): phase 2ba CI xanh trên ba jobs (`quality-gate`, `analyze-test`, `consumer-smoke`). TECNO smoke chứng minh Example app mở tới Widget Kit và Async Save chuyển loading→success checkmark. Không thêm viewport batch trong pha này.
+- [x] Pha 2bc (2026-11-17): thêm `ScratchCard` và `RewardSequenceCoordinator` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 301 tests pass; scratch/reward suites, tap-target, contrast và analyzer pass. Tổng coverage 156/170 widget.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 14 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 
 ## Tiêu chí xong

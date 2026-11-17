@@ -844,6 +844,58 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2bc: streak milestones and reward chest', () {
+    Widget streakMilestones() => StreakMilestoneStrip(
+      milestones: const [
+        StreakMilestone(days: 3, rewardLabel: '50 coins'),
+        StreakMilestone(days: 7, rewardLabel: 'Mystery chest'),
+        StreakMilestone(days: 14, rewardLabel: 'Rare skin'),
+        StreakMilestone(days: 30, rewardLabel: 'Legendary hero'),
+      ],
+      currentStreak: 8,
+      onClaim: (_) {},
+    );
+
+    Widget rewardChest() =>
+        TieredRewardChest(currentTier: ChestTier.gold, onOpen: _noop);
+
+    testWidgets('StreakMilestoneStrip', (tester) async {
+      await runViewportSweep(tester, streakMilestones);
+    });
+
+    testWidgets('StreakMilestoneStrip at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        streakMilestones,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('TieredRewardChest', (tester) async {
+      await runViewportSweep(tester, rewardChest);
+    });
+
+    testWidgets('TieredRewardChest at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        rewardChest,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ap: review prompt and scene transition', () {
     testWidgets('ReviewPromptTrigger idle', (tester) async {
       SharedPreferences.setMockInitialValues({});
