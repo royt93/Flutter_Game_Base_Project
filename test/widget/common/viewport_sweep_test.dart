@@ -794,6 +794,74 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2ap: review prompt and scene transition', () {
+    testWidgets('ReviewPromptTrigger idle', (tester) async {
+      SharedPreferences.setMockInitialValues({});
+      Get.put(StorageService(await SharedPreferences.getInstance()));
+      addTearDown(Get.reset);
+      await runViewportSweep(
+        tester,
+        () => ReviewPromptTrigger(
+          winStreakEvents: const Stream<int>.empty(),
+          showReview: () async {},
+          child: const Text('Game content'),
+        ),
+      );
+    });
+
+    testWidgets('ReviewPromptTrigger at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      SharedPreferences.setMockInitialValues({});
+      Get.put(StorageService(await SharedPreferences.getInstance()));
+      addTearDown(Get.reset);
+      await runViewportSweep(
+        tester,
+        () => ReviewPromptTrigger(
+          winStreakEvents: const Stream<int>.empty(),
+          showReview: () async {},
+          child: const Text('Game content'),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('SceneTransitionOverlay idle', (tester) async {
+      final controller = SceneTransitionController();
+      addTearDown(controller.dispose);
+      await runViewportSweep(
+        tester,
+        () => SceneTransitionOverlay(
+          controller: controller,
+          child: const Text('Game content'),
+        ),
+      );
+    });
+
+    testWidgets('SceneTransitionOverlay at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      final controller = SceneTransitionController();
+      addTearDown(controller.dispose);
+      await runViewportSweep(
+        tester,
+        () => SceneTransitionOverlay(
+          controller: controller,
+          child: const Text('Game content'),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ap: radial menu and level-up overlay', () {
     testWidgets('RadialActionMenu', (tester) async {
       await runViewportSweep(
