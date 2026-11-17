@@ -857,6 +857,67 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2bh: item flight and reward plan', () {
+    testWidgets('ItemFlyOverlay', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => ItemFlyOverlay(
+          from: Offset(24, 24),
+          to: Offset(260, 220),
+          itemCount: 2,
+          flightDuration: Duration(milliseconds: 240),
+          stagger: Duration(milliseconds: 30),
+        ),
+      );
+    });
+
+    testWidgets('ItemFlyOverlay at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => ItemFlyOverlay(
+          from: Offset(24, 24),
+          to: Offset(260, 220),
+          itemCount: 2,
+          flightDuration: Duration(milliseconds: 240),
+          stagger: Duration(milliseconds: 30),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    Widget rewardPlan() => RewardPlanPreviewCard(
+      lines: [
+        RewardPlanPreviewLine(label: 'Coins', amountText: '+50'),
+        RewardPlanPreviewLine(label: 'Energy', amountText: '+1'),
+      ],
+      status: RewardPlanPreviewStatus.ready,
+    );
+
+    testWidgets('RewardPlanPreviewCard', (tester) async {
+      await runViewportSweep(tester, rewardPlan);
+    });
+
+    testWidgets('RewardPlanPreviewCard at 2.0x text, 320dp landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        rewardPlan,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ba: emoji burst and pooled particles', () {
     testWidgets('FloatingEmojiBurst idle', (tester) async {
       await runViewportSweep(
