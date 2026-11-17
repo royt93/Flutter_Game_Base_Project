@@ -19,3 +19,6 @@ Xác nhận nhu cầu với partner (có ai đang tích hợp thật không), v�
 
 ## Trạng thái (2026-11-17): chờ xác nhận đối tác, chưa xây
 Mục "Làm gì trước khi bắt tay" chưa được đáp ứng: chưa có bằng chứng một đối tác đang tích hợp thật. Người dùng chọn giữ task ở trạng thái chờ thay vì xây bản thu gọn (lệnh `doctor` là bề mặt CLI công khai mới). Mở lại khi có đối tác xác nhận nhu cầu; bản thu gọn khả thi là các kiểm tra tĩnh rẻ (đã gọi `RoyCasualKit.initialize`, font Baloo2 trong pubspec, khoá orientation, seam còn `Noop`).
+
+## Kết luận khi đọc mã (2026-11-17, người dùng chọn: không xây)
+Hai trong bốn kiểm tra của ý tưởng gốc không chạy được: (1) font Baloo2 do package tự đóng gói (`NeonTheme.fontFamily = 'packages/roy_casual_kit/Baloo2'`), consumer không phải khai báo; (2) seam `PurchaseSeam`/`CrashReporter`/`AnalyticsProvider` đăng ký lúc chạy bằng `Get.put`, phân tích tĩnh không đọc được. Còn đứng được: có gọi `RoyCasualKit.initialize`, có phụ thuộc `roy_casual_kit`, khoá orientation; ba mục này gần như đã được `consumer-smoke` và `tool/create_consumer_app.dart` phủ. Nếu mở lại, hướng ít dương tính giả hơn là hàm runtime gọi sau `initialize` báo seam nào còn `Noop` hoặc chưa đăng ký (là API công khai mới: cần snapshot và CHANGELOG), và chỉ khi có đối tác xác nhận nhu cầu.
