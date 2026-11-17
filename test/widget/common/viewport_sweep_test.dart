@@ -36,6 +36,8 @@ void _onJoystickDirectionChanged(
 
 void _onCheckboxChanged(bool value) {}
 
+void _onToggleChanged(bool value) {}
+
 Widget _defaultSweepInventoryItemBuilder(
   BuildContext context,
   InventorySlot slot,
@@ -887,6 +889,63 @@ void main() {
       await runViewportSweep(
         tester,
         rewardChest,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
+  group('FEAT-200 phase 2bd: toggle and title picker', () {
+    testWidgets('CandyToggleSwitch', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => CandyToggleSwitch(value: true, onChanged: _onToggleChanged),
+      );
+    });
+
+    testWidgets('CandyToggleSwitch at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => CandyToggleSwitch(value: true, onChanged: _onToggleChanged),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    Widget titlePicker() => TitleChipPicker(
+      options: [
+        TitleOption(id: 'explorer', label: 'Explorer'),
+        TitleOption(id: 'streak', label: 'Streak Master'),
+        TitleOption(
+          id: 'legend',
+          label: 'Legendary Champion of Realm',
+          locked: true,
+          unlockHint: 'Reach level 50',
+        ),
+      ],
+      selectedId: 'explorer',
+      onSelect: (_) {},
+      onLockedTap: (_) {},
+    );
+
+    testWidgets('TitleChipPicker', (tester) async {
+      await runViewportSweep(tester, titlePicker);
+    });
+
+    testWidgets('TitleChipPicker at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        titlePicker,
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),
