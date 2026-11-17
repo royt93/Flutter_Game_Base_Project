@@ -178,6 +178,106 @@ class Foo {
       });
     }
 
+    group('IDEA-91: giá trị palette mặc định của NeonTheme', () {
+      Future<void> writeTheme(String cyan) => writeFile(
+        'lib/core/neon_theme.dart',
+        "class NeonTheme {\n"
+            "  static const Map<String, String> _defaultPalette = {\n"
+            "    'cyan': '$cyan',\n"
+            "    'inkSoftLight': '#6F639E',\n"
+            "  };\n"
+            "}\n",
+      );
+
+      Future<void> baseline() async {
+        await writeEntrypoint(['foo.dart']);
+        await writeFile('lib/foo.dart', 'class Foo {}\n');
+        await writePubspec('1.0.0');
+        await writeTheme('#35C4F0');
+        await writeChangelog('1.0.0', '- initial');
+        await snapshotFixture();
+      }
+
+      test('snapshot ghi tokens từ _defaultPalette', () async {
+        await baseline();
+        final snap =
+            jsonDecode(
+                  File(
+                    '${tempDir.path}/tool/api_snapshot.json',
+                  ).readAsStringSync(),
+                )
+                as Map<String, dynamic>;
+        expect(snap['tokens'], {'cyan': '#35C4F0', 'inkSoftLight': '#6F639E'});
+      });
+
+      test(
+        'đổi giá trị mà CHANGELOG không có Behavior change: exit != 0',
+        () async {
+          await baseline();
+          await writeTheme('#35C4F1');
+          final result = await _runCheck(['check', '--root=${tempDir.path}']);
+          expect(result.exitCode, isNot(0));
+          expect(
+            '${result.stderr}${result.stdout}',
+            contains('Behavior change'),
+          );
+          expect('${result.stderr}${result.stdout}', contains('cyan'));
+        },
+      );
+
+      test(
+        'Behavior change có nhắc đúng token: exit 0 và báo Token changes',
+        () async {
+          await baseline();
+          await writeTheme('#35C4F1');
+          await writeFile(
+            'CHANGELOG.md',
+            '## Unreleased\n\n- **Behavior change:** `NeonTheme.cyan` is lighter.\n\n'
+                '## 1.0.0\n- initial\n',
+          );
+          final result = await _runCheck(['check', '--root=${tempDir.path}']);
+          expect(
+            result.exitCode,
+            0,
+            reason: '${result.stdout}\n${result.stderr}',
+          );
+          expect('${result.stdout}', contains('Token changes: {cyan}'));
+        },
+      );
+
+      test('Behavior change nhưng không nhắc token đổi: exit != 0', () async {
+        await baseline();
+        await writeTheme('#35C4F1');
+        await writeFile(
+          'CHANGELOG.md',
+          '## Unreleased\n\n- **Behavior change:** something else.\n\n'
+              '## 1.0.0\n- initial\n',
+        );
+        final result = await _runCheck(['check', '--root=${tempDir.path}']);
+        expect(result.exitCode, isNot(0));
+      });
+
+      test('snapshot cũ không có tokens: bỏ qua, không lỗi', () async {
+        await baseline();
+        final snap =
+            jsonDecode(
+                    File(
+                      '${tempDir.path}/tool/api_snapshot.json',
+                    ).readAsStringSync(),
+                  )
+                  as Map<String, dynamic>
+              ..remove('tokens');
+        await writeSnapshot(snap);
+        await writeTheme('#35C4F1');
+        final result = await _runCheck(['check', '--root=${tempDir.path}']);
+        expect(
+          result.exitCode,
+          0,
+          reason: '${result.stdout}\n${result.stderr}',
+        );
+      });
+    });
+
     test('export mới thêm (additive), changelog có mục cho version hiện tại: '
         'exit code 0, "additive", Added đúng symbol mới', () async {
       await writeEntrypoint(['foo.dart', 'bar.dart']);

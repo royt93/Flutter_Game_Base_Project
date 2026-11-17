@@ -3,6 +3,7 @@ import 'dart:io';
 
 const _entrypointRelPath = 'lib/roy_casual_kit.dart';
 const _snapshotRelPath = 'tool/api_snapshot.json';
+const _paletteRelPath = 'lib/core/neon_theme.dart';
 
 /// [args] usage: `[snapshot|check] [--root=.]`. `--root` (default `.`,
 /// the real repo when invoked normally) exists so
@@ -82,14 +83,49 @@ Future<Map<String, Object>> collectApiSnapshot(String root) async {
   }
   symbols.sort();
   members.sort();
+  final tokens = await _readDefaultPalette(root);
   final result = <String, Object>{
     'version': ?version,
     'entrypoint': _entrypointRelPath,
     'exports': exports,
     'symbols': symbols,
     'members': members,
+    'tokens': ?tokens,
   };
   return result;
+}
+
+/// IDEA-91: `NeonTheme`'s built-in palette (`_defaultPalette`, the same key
+/// space as `exportPalette()`), as `key -> #RRGGBB`. A changed value or key
+/// is visible to consumers without touching any signature, so it is part of
+/// the snapshot. Null when the file or table is absent (synthetic test roots).
+Future<Map<String, String>?> _readDefaultPalette(String root) async {
+  final file = File('$root/$_paletteRelPath');
+  if (!file.existsSync()) return null;
+  final source = await file.readAsString();
+  final start = source.indexOf(
+    'static const Map<String, String> _defaultPalette',
+  );
+  if (start < 0) return null;
+  final end = source.indexOf('};', start);
+  if (end < 0) return null;
+  final tokens = {
+    for (final m in RegExp(
+      r"'([A-Za-z0-9]+)':\s*'(#[0-9A-Fa-f]{6})'",
+    ).allMatches(source.substring(start, end)))
+      m.group(1)!: m.group(2)!.toUpperCase(),
+  };
+  return tokens.isEmpty ? null : tokens;
+}
+
+/// Keys whose value differs (or that exist on one side only). Empty when
+/// either snapshot predates `tokens` (same optional-field rule as `members`).
+Set<String> _changedTokens(Map? baseline, Map? current) {
+  if (baseline == null || current == null) return {};
+  return {
+    for (final k in {...baseline.keys, ...current.keys})
+      if (baseline[k] != current[k]) k as String,
+  };
 }
 
 /// Top-level declared names in [source] — the same three regex passes
@@ -541,7 +577,11 @@ Future<void> checkCompatibility(String root) async {
     ...currentMembers.difference(baselineMembers),
   };
 
-  if (removed.isEmpty && added.isEmpty) {
+  final tokenChanges = _changedTokens(
+    baseline['tokens'] as Map?,
+    current['tokens'] as Map?,
+  );
+  if (removed.isEmpty && added.isEmpty && tokenChanges.isEmpty) {
     stdout.writeln('API compatibility: unchanged');
     return;
   }
@@ -557,9 +597,28 @@ Future<void> checkCompatibility(String root) async {
   if (added.isNotEmpty && section.isEmpty) {
     throw StateError('API additions require a changelog section for $version.');
   }
+  if (tokenChanges.isNotEmpty) {
+    // Release notes the change will ship under: `## Unreleased` if present,
+    // else the current version's section.
+    final unreleased = _currentChangelogSection(changelog, 'Unreleased');
+    final notes = unreleased.isNotEmpty ? unreleased : section;
+    final unmentioned = tokenChanges.where(
+      (k) => !RegExp(
+        '\\b${k.replaceFirst(RegExp(r'(Light|Dark)\$'), '')}(Light|Dark)?\\b',
+      ).hasMatch(notes),
+    );
+    if (!notes.contains('Behavior change') || unmentioned.isNotEmpty) {
+      throw StateError(
+        'NeonTheme palette values changed ($tokenChanges); the changelog '
+        '(Unreleased, else $version) needs a "Behavior change" entry naming '
+        '${unmentioned.isEmpty ? 'them' : unmentioned.toSet()}.',
+      );
+    }
+  }
   stdout.writeln(
     'API compatibility: ${removed.isEmpty ? 'additive' : 'breaking'}',
   );
+  if (tokenChanges.isNotEmpty) stdout.writeln('Token changes: $tokenChanges');
   stdout.writeln('Added: $added');
   stdout.writeln('Removed: $removed');
 }
