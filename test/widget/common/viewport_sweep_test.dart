@@ -626,6 +626,64 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2ax: ribbon badge and segmented tabs', () {
+    testWidgets('RibbonBadge', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => RibbonBadge(
+          text: 'NEW RECORD',
+          child: const SizedBox(width: 120, height: 80),
+        ),
+      );
+    });
+
+    testWidgets('RibbonBadge at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => RibbonBadge(
+          text: 'NEW RECORD',
+          child: const SizedBox(width: 120, height: 80),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('SegmentedTabBar', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => SegmentedTabBar(
+          labels: const ['Casual', 'Balanced', 'Competitive'],
+          selectedIndex: 1,
+          onChanged: (_) {},
+        ),
+      );
+    });
+
+    testWidgets('SegmentedTabBar at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => SegmentedTabBar(
+          labels: const ['Casual', 'Balanced', 'Competitive'],
+          selectedIndex: 1,
+          onChanged: (_) {},
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2aw: scratch card and reward sequence', () {
     testWidgets('ScratchCard', (tester) async {
       await runViewportSweep(
