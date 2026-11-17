@@ -8,6 +8,19 @@ Color wheelPaintedSectorColor(Color color, {double opacity = 1.0}) =>
 Color wheelLabelEffectiveBackground(Color sectorColor, Color backgroundColor) =>
     Color.alphaBlend(sectorColor, backgroundColor);
 
+Color wheelLabelForeground({
+  required Color sectorColor,
+  required Color backgroundColor,
+}) {
+  final background = wheelLabelEffectiveBackground(
+    sectorColor,
+    backgroundColor,
+  );
+  final whiteRatio = contrastRatio(Colors.white, background);
+  final blackRatio = contrastRatio(Colors.black, background);
+  return whiteRatio >= blackRatio ? Colors.white : Colors.black;
+}
+
 double wheelLabelContrastRatio({
   Color foreground = Colors.white,
   required Color sectorColor,

@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/haptics.dart';
@@ -170,6 +171,35 @@ class WheelSpinner extends StatefulWidget {
   final WheelSpinnerController controller;
   final ValueChanged<WheelSegment> onSpinEnd;
 
+  List<({int index, String label, Color foreground, double ratio})>
+  labelContrasts() {
+    final results =
+        <({int index, String label, Color foreground, double ratio})>[];
+    for (var i = 0; i < segments.length; i++) {
+      final foreground = wheelLabelForeground(
+        sectorColor: segments[i].color,
+        backgroundColor: backgroundColor,
+      );
+      results.add((
+        index: i,
+        label: segments[i].label,
+        foreground: foreground,
+        ratio: wheelLabelContrastRatio(
+          foreground: foreground,
+          sectorColor: segments[i].color,
+          backgroundColor: backgroundColor,
+        ),
+      ));
+    }
+    return results;
+  }
+
+  List<({int index, String label, double ratio})> get contrastFindings => [
+    for (final result in labelContrasts())
+      if (result.ratio < 4.5)
+        (index: result.index, label: result.label, ratio: result.ratio),
+  ];
+
   /// Called once for every segment boundary crossed during the spin. A host
   /// app can use this seam to play its own tick sound.
   final VoidCallback? onTick;
@@ -182,20 +212,6 @@ class WheelSpinner extends StatefulWidget {
 
   /// Validates inputs at runtime so release builds keep the same contract as
   /// debug builds (where constructor assertions are enabled).
-  List<({int index, String label, double ratio})> get contrastFindings {
-    final findings = <({int index, String label, double ratio})>[];
-    for (var i = 0; i < segments.length; i++) {
-      final ratio = wheelLabelContrastRatio(
-        sectorColor: segments[i].color,
-        backgroundColor: backgroundColor,
-      );
-      if (ratio < 4.5) {
-        findings.add((index: i, label: segments[i].label, ratio: ratio));
-      }
-    }
-    return findings;
-  }
-
   static void validateConfiguration({
     required List<WheelSegment> segments,
     required double size,
@@ -434,9 +450,13 @@ class _WheelSpinnerState extends State<WheelSpinner>
               child: CustomPaint(
                 key: const Key('wheelSpinnerPainter'),
                 size: Size.square(widget.size),
-                painter: WheelSpinnerPainter(
+                painter: _WheelSpinnerContrastPainter(
                   segments: widget.segments,
                   backgroundColor: widget.backgroundColor,
+                  labelForegrounds: widget
+                      .labelContrasts()
+                      .map((result) => result.foreground)
+                      .toList(growable: false),
                   textDirection: Directionality.of(context),
                 ),
               ),
@@ -466,10 +486,13 @@ class WheelSpinnerPainter extends CustomPainter {
   final List<WheelSegment> segments;
   final Color backgroundColor;
 
+  Color _labelForeground(int index) => Colors.white;
+
   List<({int index, String label, double ratio})> get contrastFindings {
     final findings = <({int index, String label, double ratio})>[];
     for (var i = 0; i < segments.length; i++) {
       final ratio = wheelLabelContrastRatio(
+        foreground: _labelForeground(i),
         sectorColor: segments[i].color,
         backgroundColor: backgroundColor,
       );
@@ -507,8 +530,8 @@ class WheelSpinnerPainter extends CustomPainter {
       final label = TextPainter(
         text: TextSpan(
           text: segments[i].label,
-          style: const TextStyle(
-            color: Colors.white,
+          style: TextStyle(
+            color: _labelForeground(i),
             fontSize: 13,
             fontWeight: FontWeight.w800,
           ),
@@ -556,4 +579,24 @@ class WheelSpinnerPainter extends CustomPainter {
       oldDelegate.segments != segments ||
       oldDelegate.backgroundColor != backgroundColor ||
       oldDelegate.textDirection != textDirection;
+}
+
+class _WheelSpinnerContrastPainter extends WheelSpinnerPainter {
+  const _WheelSpinnerContrastPainter({
+    required super.segments,
+    required super.backgroundColor,
+    required this.labelForegrounds,
+    super.textDirection,
+  });
+
+  final List<Color> labelForegrounds;
+
+  @override
+  Color _labelForeground(int index) => labelForegrounds[index];
+
+  @override
+  bool shouldRepaint(covariant WheelSpinnerPainter oldDelegate) =>
+      oldDelegate is! _WheelSpinnerContrastPainter ||
+      super.shouldRepaint(oldDelegate) ||
+      !listEquals(labelForegrounds, oldDelegate.labelForegrounds);
 }

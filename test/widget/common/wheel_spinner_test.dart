@@ -32,6 +32,7 @@ void main() {
         );
         expect(
           wheelLabelContrastRatio(
+            foreground: Colors.white,
             sectorColor: fill,
             backgroundColor: background,
           ),
@@ -158,6 +159,7 @@ void main() {
                   .painter!
               as WheelSpinnerPainter;
       expect(painter.backgroundColor, background);
+      expect(painter.contrastFindings, isEmpty);
       expect(
         painter.shouldRepaint(
           WheelSpinnerPainter(
@@ -170,21 +172,72 @@ void main() {
       );
     });
 
-    test('reports low contrast for caller-provided light segment colors', () {
-      final wheel = WheelSpinner(
+    test('selects readable foreground for caller-provided segments', () {
+      final whiteBackground = WheelSpinner(
         backgroundColor: Colors.white,
         segments: const [
-          WheelSegment(label: 'No contrast', color: Colors.white),
-          WheelSegment(label: 'Readable', color: Colors.black),
+          WheelSegment(label: 'White', color: Colors.white),
+          WheelSegment(label: 'Black', color: Colors.black),
         ],
         controller: WheelSpinnerController(),
         onSpinEnd: (_) {},
       );
+      expect(whiteBackground.contrastFindings, isEmpty);
+      expect(whiteBackground.labelContrasts().map((item) => item.foreground), [
+        Colors.black,
+        Colors.white,
+      ]);
 
-      expect(wheel.contrastFindings, hasLength(1));
-      expect(wheel.contrastFindings.single.index, 0);
-      expect(wheel.contrastFindings.single.label, 'No contrast');
-      expect(wheel.contrastFindings.single.ratio, lessThan(4.5));
+      final darkBackground = WheelSpinner(
+        backgroundColor: Colors.black,
+        segments: const [
+          WheelSegment(label: 'White', color: Colors.white),
+          WheelSegment(label: 'Black', color: Colors.black),
+        ],
+        controller: WheelSpinnerController(),
+        onSpinEnd: (_) {},
+      );
+      expect(darkBackground.contrastFindings, isEmpty);
+      expect(darkBackground.labelContrasts().map((item) => item.foreground), [
+        Colors.black,
+        Colors.white,
+      ]);
+    });
+
+    test('keeps caller fills while adapting translucent labels', () {
+      const choices = [
+        WheelSegment(label: 'Transparent', color: Colors.transparent),
+        WheelSegment(label: 'Half white', color: Color(0x80FFFFFF)),
+        WheelSegment(label: 'Half black', color: Color(0x80000000)),
+        WheelSegment(label: 'Mid gray', color: Color(0xFF757575)),
+      ];
+      final controller = WheelSpinnerController();
+      addTearDown(controller.dispose);
+      for (final background in [
+        Colors.white,
+        Colors.black,
+        NeonTheme.cardAlt,
+      ]) {
+        final wheel = WheelSpinner(
+          backgroundColor: background,
+          segments: choices,
+          controller: controller,
+          onSpinEnd: (_) {},
+        );
+        expect(wheel.segments, same(choices));
+        expect(wheel.contrastFindings, isEmpty);
+        for (final result in wheel.labelContrasts()) {
+          expect(result.ratio, greaterThanOrEqualTo(4.5));
+          expect(
+            result.ratio,
+            wheelLabelContrastRatio(
+              foreground: result.foreground,
+              sectorColor: choices[result.index].color,
+              backgroundColor: background,
+            ),
+          );
+        }
+      }
     });
 
     testWidgets(

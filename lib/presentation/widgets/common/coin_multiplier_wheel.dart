@@ -171,31 +171,48 @@ class CoinMultiplierWheel extends StatefulWidget {
   final bool autoStart;
   final String? semanticLabel;
 
+  List<
+    ({int index, int multiplier, bool winning, Color foreground, double ratio})
+  >
+  labelContrasts({int? stoppedIndex}) => [
+    for (var i = 0; i < multipliers.length; i++)
+      _multiplierLabelContrast(i, multipliers[i], winning: stoppedIndex == i),
+  ];
+
   List<({int index, int multiplier, bool winning, double ratio})>
-  contrastFindings({int? stoppedIndex}) {
-    final findings =
-        <({int index, int multiplier, bool winning, double ratio})>[];
-    for (var i = 0; i < multipliers.length; i++) {
-      final winning = stoppedIndex == i;
-      final sectorColor = _multiplierSectorColor(multipliers[i]);
-      final paintedColor = wheelPaintedSectorColor(
-        sectorColor,
-        opacity: winning ? 1.0 : 0.85,
-      );
-      final ratio = wheelLabelContrastRatio(
+  contrastFindings({int? stoppedIndex}) => [
+    for (final result in labelContrasts(stoppedIndex: stoppedIndex))
+      if (result.ratio < 4.5)
+        (
+          index: result.index,
+          multiplier: result.multiplier,
+          winning: result.winning,
+          ratio: result.ratio,
+        ),
+  ];
+
+  ({int index, int multiplier, bool winning, Color foreground, double ratio})
+  _multiplierLabelContrast(int index, int multiplier, {required bool winning}) {
+    final sectorColor = _multiplierSectorColor(multiplier);
+    final paintedColor = wheelPaintedSectorColor(
+      sectorColor,
+      opacity: winning ? 1.0 : 0.85,
+    );
+    final foreground = wheelLabelForeground(
+      sectorColor: paintedColor,
+      backgroundColor: backgroundColor,
+    );
+    return (
+      index: index,
+      multiplier: multiplier,
+      winning: winning,
+      foreground: foreground,
+      ratio: wheelLabelContrastRatio(
+        foreground: foreground,
         sectorColor: paintedColor,
         backgroundColor: backgroundColor,
-      );
-      if (ratio < 4.5) {
-        findings.add((
-          index: i,
-          multiplier: multipliers[i],
-          winning: winning,
-          ratio: ratio,
-        ));
-      }
-    }
-    return findings;
+      ),
+    );
   }
 
   @override
@@ -402,6 +419,10 @@ class _CoinMultiplierWheelState extends State<CoinMultiplierWheel>
                         stoppedIndex: _stoppedIndex,
                         needleColor: widget.needleColor ?? NeonTheme.ink,
                         backgroundColor: widget.backgroundColor,
+                        labelForegrounds: widget
+                            .labelContrasts(stoppedIndex: _stoppedIndex)
+                            .map((result) => result.foreground)
+                            .toList(growable: false),
                         sectorColorFn: (index, total, multiplier) =>
                             _multiplierSectorColor(multiplier),
                       ),
@@ -425,6 +446,7 @@ class _MultiplierArcPainter extends CustomPainter {
     required this.stoppedIndex,
     required this.needleColor,
     required this.backgroundColor,
+    required this.labelForegrounds,
     required this.sectorColorFn,
   });
 
@@ -434,6 +456,7 @@ class _MultiplierArcPainter extends CustomPainter {
   final int? stoppedIndex;
   final Color needleColor;
   final Color backgroundColor;
+  final List<Color> labelForegrounds;
   final Color Function(int index, int total, int multiplier) sectorColorFn;
 
   @override
@@ -490,10 +513,11 @@ class _MultiplierArcPainter extends CustomPainter {
             math.sin(midAngle) * labelRadius,
           );
 
+      final labelForeground = labelForegrounds[i];
       final textSpan = TextSpan(
         text: 'x${multipliers[i]}',
         style: TextStyle(
-          color: Colors.white,
+          color: labelForeground,
           fontSize: isWinning ? 16 : 14,
           fontWeight: FontWeight.w900,
           shadows: [
@@ -565,5 +589,6 @@ class _MultiplierArcPainter extends CustomPainter {
       needleAngle != oldDelegate.needleAngle ||
       stoppedIndex != oldDelegate.stoppedIndex ||
       needleColor != oldDelegate.needleColor ||
-      backgroundColor != oldDelegate.backgroundColor;
+      backgroundColor != oldDelegate.backgroundColor ||
+      !listEquals(labelForegrounds, oldDelegate.labelForegrounds);
 }

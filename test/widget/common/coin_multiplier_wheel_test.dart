@@ -75,25 +75,51 @@ void main() {
       );
     });
 
-    test('reports text contrast for winning and translucent sectors', () {
-      final wheel = CoinMultiplierWheel(
-        backgroundColor: Colors.white,
-        multipliers: const [2, 3, 5, 10],
-        autoStart: false,
-      );
-
-      final findings = wheel.contrastFindings();
-      expect(findings, hasLength(4));
-      expect(findings.map((finding) => finding.multiplier), [2, 3, 5, 10]);
-      expect(findings.every((finding) => !finding.winning), isTrue);
-      expect(findings.every((finding) => finding.ratio < 4.5), isTrue);
-
-      final winningFindings = wheel.contrastFindings(stoppedIndex: 3);
-      expect(winningFindings, hasLength(4));
-      expect(
-        winningFindings.singleWhere((finding) => finding.index == 3).winning,
-        isTrue,
-      );
+    test('selects AA foreground for all sectors and alpha states', () {
+      final previousDark = NeonTheme.dark;
+      addTearDown(() => NeonTheme.dark = previousDark);
+      for (final dark in [false, true]) {
+        NeonTheme.dark = dark;
+        final colors = [
+          NeonTheme.cyan,
+          NeonTheme.lime,
+          NeonTheme.gold,
+          NeonTheme.orange,
+        ];
+        for (final background in [
+          Colors.white,
+          Colors.black,
+          NeonTheme.card,
+          NeonTheme.cardAlt,
+        ]) {
+          final wheel = CoinMultiplierWheel(
+            backgroundColor: background,
+            multipliers: const [2, 3, 5, 10],
+            autoStart: false,
+          );
+          for (final stoppedIndex in <int?>[null, 0, 1, 2, 3]) {
+            final contrasts = wheel.labelContrasts(stoppedIndex: stoppedIndex);
+            expect(contrasts, hasLength(4));
+            expect(contrasts.map((result) => result.multiplier), [2, 3, 5, 10]);
+            for (final result in contrasts) {
+              expect(result.winning, result.index == stoppedIndex);
+              final fill = result.winning
+                  ? colors[result.index]
+                  : colors[result.index].withValues(alpha: 0.85);
+              expect(
+                result.ratio,
+                wheelLabelContrastRatio(
+                  foreground: result.foreground,
+                  sectorColor: fill,
+                  backgroundColor: background,
+                ),
+              );
+              expect(result.ratio, greaterThanOrEqualTo(4.5));
+            }
+            expect(wheel.contrastFindings(stoppedIndex: stoppedIndex), isEmpty);
+          }
+        }
+      }
       expect(
         wheelLabelEffectiveBackground(const Color(0x80FF0000), Colors.white),
         const Color(0xFFFF7F7F),
