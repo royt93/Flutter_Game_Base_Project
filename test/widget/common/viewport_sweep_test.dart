@@ -794,6 +794,56 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2ba: emoji burst and pooled particles', () {
+    testWidgets('FloatingEmojiBurst idle', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => FloatingEmojiBurst(duration: const Duration(seconds: 2)),
+      );
+    });
+
+    testWidgets('FloatingEmojiBurst at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => FloatingEmojiBurst(duration: const Duration(seconds: 2)),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('PooledParticleBurst idle', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => const PooledParticleBurst(
+          particleCount: 16,
+          duration: Duration(milliseconds: 400),
+        ),
+      );
+    });
+
+    testWidgets('PooledParticleBurst at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => const PooledParticleBurst(
+          particleCount: 16,
+          duration: Duration(milliseconds: 400),
+        ),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ap: review prompt and scene transition', () {
     testWidgets('ReviewPromptTrigger idle', (tester) async {
       SharedPreferences.setMockInitialValues({});
