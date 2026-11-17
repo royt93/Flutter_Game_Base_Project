@@ -180,6 +180,19 @@ class NeonTheme {
     return target;
   }
 
+  /// [accent] darkened just enough that white text on it reaches 4.5:1
+  /// (WCAG AA); unchanged when it already does. For a solid accent fill
+  /// (badge, selected chip, filled pill) carrying white text.
+  static Color fillForWhiteText(Color accent) {
+    bool readable(Color c) => 1.05 / (c.computeLuminance() + 0.05) >= 4.5;
+    if (readable(accent)) return accent;
+    for (var t = 0.05; t < 1.0; t += 0.05) {
+      final c = Color.lerp(accent, const Color(0xFF000000), t)!;
+      if (readable(c)) return c;
+    }
+    return const Color(0xFF000000);
+  }
+
   // --- 7 màu block kiểu kẹo (saturated, thân thiện, dễ phân biệt) ---
   static Color cyan = const Color(0xFF35C4F0); // xanh dương kẹo
   static Color magenta = const Color(0xFFFF6FC1); // hồng kẹo

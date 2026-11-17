@@ -195,7 +195,7 @@ class _GiftLivesRequestCardState extends State<GiftLivesRequestCard> {
                       ),
                       decoration: BoxDecoration(
                         color: enabled
-                            ? accent
+                            ? NeonTheme.fillForWhiteText(accent)
                             : accent.withValues(alpha: 0.25),
                         borderRadius: BorderRadius.circular(16),
                       ),

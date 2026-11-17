@@ -128,7 +128,7 @@ class _XpLevelHeaderState extends State<XpLevelHeader> {
             alignment: Alignment.center,
             padding: const EdgeInsets.symmetric(horizontal: 6),
             decoration: BoxDecoration(
-              color: accent,
+              color: NeonTheme.fillForWhiteText(accent),
               borderRadius: BorderRadius.circular(14),
             ),
             child: FittedBox(

@@ -270,11 +270,13 @@ class _CollectionAlbumPanelState extends State<CollectionAlbumPanel> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
           decoration: BoxDecoration(
-            color: selected ? NeonTheme.purple : NeonTheme.cardAlt,
+            color: selected
+                ? NeonTheme.fillForWhiteText(NeonTheme.purple)
+                : NeonTheme.cardAlt,
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
               color: selected
-                  ? NeonTheme.purple
+                  ? NeonTheme.fillForWhiteText(NeonTheme.purple)
                   : NeonTheme.inkSoft.withValues(alpha: 0.25),
             ),
           ),

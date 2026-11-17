@@ -55,3 +55,8 @@ Bổ sung FEAT-201 (lint tĩnh màu cố định): lint bắt chỗ viết, audi
 - Áp cho chữ (không đụng icon/viền/nền) ở 9 widget: `CommonButton` secondary, `OfflineEarningsPopup`, `SeasonEventBanner`, `VipPerkProgressRow`, `ProfileStatsCard`, `EventCalendarCard`, `TeamRosterList`, `CollectionAlbumPanel`.
 - Probe lại 2c/2d: 12 widget vi phạm xuống 4. Hai ca accent còn lại (`_rarityColor`, `roleColor`) đã sửa sau đó.
 - **Còn lại, khác loại:** chữ trắng trên nền accent đặc, `ProfileStatsCard` "Lv 42" 3.25, `CollectionAlbumPanel` "All" 3.25, `GiftLivesRequestCard` "Send Life" 2.14. Sửa cần đổi màu nền nút/badge hoặc màu chữ, là quyết định thiết kế riêng.
+
+## Chữ trắng trên nền accent (2026-11-17)
+- Thêm `NeonTheme.fillForWhiteText(Color)`: tối nền accent vừa đủ để chữ trắng đạt 4.5:1, giữ nguyên nếu đã đạt. Test 10 ca (9 accent + giữ nguyên nền đã đủ tối).
+- Áp cho `XpLevelHeader` (badge cấp, hiển thị "Lv 42" ở `ProfileStatsCard`), `CollectionAlbumPanel` (chip lọc đang chọn, "All") và `GiftLivesRequestCard` (nút "Send Life"). Probe lại: 3 widget sạch. Nhóm 2c/2d hết vi phạm nền phẳng đã đo ở light.
+- Còn lại: ngưỡng icon 3.0:1 và các nhóm widget chưa quét.

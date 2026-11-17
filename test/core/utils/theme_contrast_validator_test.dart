@@ -5,6 +5,7 @@ import 'package:roy_casual_kit/core/utils/theme_contrast_validator.dart';
 
 void main() {
   accentTextTests();
+  fillForWhiteTextTests();
   test(
     'contrast diagnostic includes token, state, ratio, threshold and kind',
     () {
@@ -297,6 +298,32 @@ void accentTextTests() {
     test('keeps an accent that already passes unchanged (dark cyan)', () {
       NeonTheme.dark = true;
       expect(NeonTheme.accentText(NeonTheme.cyan), NeonTheme.cyan);
+    });
+  });
+}
+
+void fillForWhiteTextTests() {
+  group('NeonTheme.fillForWhiteText (FEAT-205)', () {
+    final accents = {
+      'cyan': () => NeonTheme.cyan,
+      'magenta': () => NeonTheme.magenta,
+      'lime': () => NeonTheme.lime,
+      'yellow': () => NeonTheme.yellow,
+      'orange': () => NeonTheme.orange,
+      'red': () => NeonTheme.red,
+      'purple': () => NeonTheme.purple,
+      'gold': () => NeonTheme.gold,
+      'blue': () => NeonTheme.blue,
+    };
+    for (final e in accents.entries) {
+      test('${e.key} fill gives white text AA', () {
+        final f = NeonTheme.fillForWhiteText(e.value());
+        expect(contrastRatio(Colors.white, f), greaterThanOrEqualTo(4.5));
+      });
+    }
+    test('keeps a fill that already passes (very dark color)', () {
+      const dark = Color(0xFF202040);
+      expect(NeonTheme.fillForWhiteText(dark), dark);
     });
   });
 }
