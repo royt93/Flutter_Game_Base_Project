@@ -626,6 +626,50 @@ void main() {
     });
   });
 
+  group('FEAT-200 phase 2ay: buttons', () {
+    testWidgets('CommonButton', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => CommonButton(label: 'Continue to next level', onTap: _noop),
+      );
+    });
+
+    testWidgets('CommonButton at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => CommonButton(label: 'Continue to next level', onTap: _noop),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('AsyncCommonButton', (tester) async {
+      await runViewportSweep(
+        tester,
+        () => AsyncCommonButton(label: 'Save progress', onPressed: () async {}),
+      );
+    });
+
+    testWidgets('AsyncCommonButton at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        () => AsyncCommonButton(label: 'Save progress', onPressed: () async {}),
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
   group('FEAT-200 phase 2ax: ribbon badge and segmented tabs', () {
     testWidgets('RibbonBadge', (tester) async {
       await runViewportSweep(
