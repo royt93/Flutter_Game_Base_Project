@@ -417,4 +417,61 @@ void main() {
       );
     }
   });
+
+  group('FEAT-205 contrast_audit icon harness', () {
+    testWidgets('báo icon accent nhạt trên nền trắng, bỏ qua icon đủ đậm', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            backgroundColor: Colors.white,
+            body: Row(
+              children: const [
+                Icon(Icons.star, key: Key('pale'), color: Color(0xFFFFD23F)),
+                Icon(Icons.star, key: Key('dark'), color: Color(0xFF3A2E6B)),
+              ],
+            ),
+          ),
+        ),
+      );
+      final issues = auditRenderedIconContrast(
+        tester,
+        find.byType(Scaffold),
+        defaultBackground: Colors.white,
+      );
+      expect(issues, hasLength(1));
+      expect(issues.single.ratio, lessThan(3.0));
+    });
+
+    testWidgets('icon mờ (alpha < 1) và nền gradient bị bỏ qua', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DecoratedBox(
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(colors: [Colors.white, Colors.white]),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.star, color: Colors.white.withValues(alpha: 0.5)),
+                  const Icon(Icons.star, color: Color(0xFFFFD23F)),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+      expect(
+        auditRenderedIconContrast(
+          tester,
+          find.byType(Scaffold),
+          defaultBackground: Colors.white,
+        ),
+        isEmpty,
+      );
+    });
+  });
 }

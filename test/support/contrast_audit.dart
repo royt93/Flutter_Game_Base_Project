@@ -43,7 +43,9 @@ List<RenderedTextContrastIssue> auditRenderedTextContrast(
   for (final element in elements) {
     if (_isInsideIcon(element)) continue;
     final widget = element.widget as RichText;
-    final baseStyle = DefaultTextStyle.of(element).style.merge(widget.text.style);
+    final baseStyle = DefaultTextStyle.of(
+      element,
+    ).style.merge(widget.text.style);
     final spans = <(String, TextStyle)>[];
     _collectTextSpans(widget.text, baseStyle, spans);
     final background = _flatBackground(element, defaultBackground);
@@ -56,7 +58,8 @@ List<RenderedTextContrastIssue> auditRenderedTextContrast(
 
       final fontSize = style.fontSize ?? 14.0;
       final isBold =
-          (style.fontWeight ?? FontWeight.normal).value >= FontWeight.w700.value;
+          (style.fontWeight ?? FontWeight.normal).value >=
+          FontWeight.w700.value;
       final isLarge = fontSize >= 24.0 || (fontSize >= 18.67 && isBold);
       final threshold = isLarge ? largeThreshold : normalThreshold;
       final ratio = contrastRatio(foreground, background);
@@ -72,6 +75,60 @@ List<RenderedTextContrastIssue> auditRenderedTextContrast(
           ),
         );
       }
+    }
+  }
+  return issues;
+}
+
+class RenderedIconContrastIssue {
+  const RenderedIconContrastIssue({
+    required this.icon,
+    required this.foreground,
+    required this.background,
+    required this.ratio,
+  });
+
+  final IconData? icon;
+  final Color foreground;
+  final Color background;
+  final double ratio;
+
+  @override
+  String toString() =>
+      'Icon(${icon?.codePoint.toRadixString(16)}): ${ratio.toStringAsFixed(2)}:1 < 3.0:1';
+}
+
+/// Audits [Icon] glyphs against flat backgrounds (WCAG 1.4.11 non-text, 3:1).
+///
+/// Icons are checked only when the color is explicit on the widget or comes
+/// from an enclosing [IconTheme]; transparent/translucent icon colors and
+/// non-flat backgrounds (gradient, image) are skipped, like the text audit.
+List<RenderedIconContrastIssue> auditRenderedIconContrast(
+  WidgetTester tester,
+  Finder scope, {
+  double threshold = 3.0,
+  Color? defaultBackground,
+}) {
+  final issues = <RenderedIconContrastIssue>[];
+  for (final element in tester.elementList(
+    find.descendant(of: scope, matching: find.byType(Icon)),
+  )) {
+    final widget = element.widget as Icon;
+    final foreground = widget.color ?? IconTheme.of(element).color;
+    if (foreground == null || foreground.a < 1.0) continue;
+    if ((widget.size ?? 24) <= 0) continue;
+    final background = _flatBackground(element, defaultBackground);
+    if (background == null) continue;
+    final ratio = contrastRatio(foreground, background);
+    if (ratio < threshold) {
+      issues.add(
+        RenderedIconContrastIssue(
+          icon: widget.icon,
+          foreground: foreground,
+          background: background,
+          ratio: ratio,
+        ),
+      );
     }
   }
   return issues;
