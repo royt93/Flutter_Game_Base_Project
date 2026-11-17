@@ -1,5 +1,7 @@
 ## Unreleased
 
+- **BREAKING Behavior change:** `WheelSpinner` and `CoinMultiplierWheel` now require an opaque `backgroundColor`; painters render it only beneath wheel sectors so text contrast can be reported against the actual composited fill. `WheelSpinner` constructor is no longer `const`. Existing call sites must pass the background they want behind sectors. Low-contrast labels are reported by `contrastFindings`; sector and label colors are not changed automatically.
+
 - **Behavior change:** `SegmentedTabBar`, `PaginatedDotsIndicator`, `GameOverCardTemplate`, `CommonButton` and `CoinFlyOverlay` now throw `ArgumentError` in release builds when passed invalid constructor values (segment count outside 2–4, non-positive page count/coin count, only one secondary action argument, or a missing label/icon for the selected button variant). The checks run during build/state initialization to preserve their `const` constructors. `RewardChoicePanel` throws `ArgumentError` at construction for duplicate option IDs instead of relying on `assert`.
 
 - Added `NeonTheme.accentText(Color)`: returns an accent adjusted to be readable as text (>= 4.5:1) on both `card` and `cardAlt` in the current theme; unchanged when it already passes (all candy accents in dark mode). Use it for labels and numbers, keep the raw accent for fills, borders and icons.

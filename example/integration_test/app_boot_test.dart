@@ -5493,6 +5493,7 @@ void main() {
         home: Scaffold(
           body: Center(
             child: WheelSpinner(
+              backgroundColor: NeonTheme.card,
               controller: controller,
               segments: const [
                 WheelSegment(label: 'A', color: Colors.red),

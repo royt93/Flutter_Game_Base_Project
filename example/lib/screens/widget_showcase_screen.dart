@@ -3091,6 +3091,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                   crossAxisAlignment: CrossAxisAlignment.center,
                                   children: [
                                     WheelSpinner(
+                                      backgroundColor: NeonTheme.card,
                                       segments: _wheelSegments,
                                       controller: _wheelController,
                                       onTick: () =>
@@ -7859,6 +7860,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 child: Column(
                                   children: [
                                     CoinMultiplierWheel(
+                                      backgroundColor: NeonTheme.card,
                                       controller: _multiplierWheelController,
                                       onStopped: (m) => setState(() {
                                         _multiplierWheelWon = m;

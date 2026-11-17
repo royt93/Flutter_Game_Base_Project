@@ -18,6 +18,7 @@ import 'package:roy_casual_kit/core/inventory_service.dart'
     show ItemRarity, InventorySlot, InventorySnapshot;
 import 'package:roy_casual_kit/core/onboarding_coordinator_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/save_slot_manager.dart' show SaveSlotMeta;
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -882,6 +883,7 @@ void main() {
     );
 
     Widget wheelSpinner() => WheelSpinner(
+      backgroundColor: NeonTheme.card,
       segments: const [
         WheelSegment(label: '10 coins', color: Colors.red, value: 10),
         WheelSegment(label: '50 coins', color: Colors.blue, value: 50),
@@ -3132,7 +3134,10 @@ void main() {
     testWidgets('CoinMultiplierWheel', (tester) async {
       await runViewportSweep(
         tester,
-        () => CoinMultiplierWheel(autoStart: false),
+        () => CoinMultiplierWheel(
+          backgroundColor: NeonTheme.card,
+          autoStart: false,
+        ),
       );
     });
 
@@ -3141,7 +3146,10 @@ void main() {
     ) async {
       await runViewportSweep(
         tester,
-        () => CoinMultiplierWheel(autoStart: false),
+        () => CoinMultiplierWheel(
+          backgroundColor: NeonTheme.card,
+          autoStart: false,
+        ),
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),

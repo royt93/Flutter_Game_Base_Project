@@ -1,8 +1,17 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
+import 'wheel_label_contrast.dart';
+
+Color _multiplierSectorColor(int multiplier) {
+  if (multiplier >= 10) return NeonTheme.orange;
+  if (multiplier >= 5) return NeonTheme.gold;
+  if (multiplier >= 3) return NeonTheme.lime;
+  return NeonTheme.cyan;
+}
 
 /// Pure math helper: maps normalized progress [0.0..1.0] across an arc to a sector index [0..count-1] (FEAT-132).
 int multiplierIndexAtNormalizedProgress(double progress, int count) {
@@ -104,6 +113,7 @@ class CoinMultiplierWheel extends StatefulWidget {
   CoinMultiplierWheel({
     super.key,
     this.multipliers = const [2, 3, 5, 10, 5, 3, 2],
+    required this.backgroundColor,
     this.controller,
     this.onStopped,
     this.radius = 130,
@@ -112,6 +122,13 @@ class CoinMultiplierWheel extends StatefulWidget {
     this.autoStart = true,
     this.semanticLabel,
   }) {
+    if (backgroundColor.a != 1.0) {
+      throw ArgumentError.value(
+        backgroundColor,
+        'backgroundColor',
+        'must be opaque',
+      );
+    }
     if (multipliers.length < 2) {
       throw ArgumentError.value(
         multipliers.length,
@@ -145,6 +162,7 @@ class CoinMultiplierWheel extends StatefulWidget {
   }
 
   final List<int> multipliers;
+  final Color backgroundColor;
   final CoinMultiplierWheelController? controller;
   final void Function(int multiplier)? onStopped;
   final double radius;
@@ -152,6 +170,33 @@ class CoinMultiplierWheel extends StatefulWidget {
   final Duration swingDuration;
   final bool autoStart;
   final String? semanticLabel;
+
+  List<({int index, int multiplier, bool winning, double ratio})>
+  contrastFindings({int? stoppedIndex}) {
+    final findings =
+        <({int index, int multiplier, bool winning, double ratio})>[];
+    for (var i = 0; i < multipliers.length; i++) {
+      final winning = stoppedIndex == i;
+      final sectorColor = _multiplierSectorColor(multipliers[i]);
+      final paintedColor = wheelPaintedSectorColor(
+        sectorColor,
+        opacity: winning ? 1.0 : 0.85,
+      );
+      final ratio = wheelLabelContrastRatio(
+        sectorColor: paintedColor,
+        backgroundColor: backgroundColor,
+      );
+      if (ratio < 4.5) {
+        findings.add((
+          index: i,
+          multiplier: multipliers[i],
+          winning: winning,
+          ratio: ratio,
+        ));
+      }
+    }
+    return findings;
+  }
 
   @override
   State<CoinMultiplierWheel> createState() => _CoinMultiplierWheelState();
@@ -296,13 +341,6 @@ class _CoinMultiplierWheelState extends State<CoinMultiplierWheel>
     super.dispose();
   }
 
-  Color _sectorColor(int index, int total, int multiplier) {
-    if (multiplier >= 10) return NeonTheme.orange;
-    if (multiplier >= 5) return NeonTheme.gold;
-    if (multiplier >= 3) return NeonTheme.lime;
-    return NeonTheme.cyan;
-  }
-
   @override
   Widget build(BuildContext context) {
     final reducedMotion = NeonTheme.reducedMotion(context);
@@ -363,7 +401,9 @@ class _CoinMultiplierWheelState extends State<CoinMultiplierWheel>
                         needleAngle: angle,
                         stoppedIndex: _stoppedIndex,
                         needleColor: widget.needleColor ?? NeonTheme.ink,
-                        sectorColorFn: _sectorColor,
+                        backgroundColor: widget.backgroundColor,
+                        sectorColorFn: (index, total, multiplier) =>
+                            _multiplierSectorColor(multiplier),
                       ),
                     ),
                   );
@@ -384,6 +424,7 @@ class _MultiplierArcPainter extends CustomPainter {
     required this.needleAngle,
     required this.stoppedIndex,
     required this.needleColor,
+    required this.backgroundColor,
     required this.sectorColorFn,
   });
 
@@ -392,6 +433,7 @@ class _MultiplierArcPainter extends CustomPainter {
   final double needleAngle;
   final int? stoppedIndex;
   final Color needleColor;
+  final Color backgroundColor;
   final Color Function(int index, int total, int multiplier) sectorColorFn;
 
   @override
@@ -409,6 +451,9 @@ class _MultiplierArcPainter extends CustomPainter {
     final arcRect = Rect.fromCircle(center: center, radius: outerRadius);
     final innerArcRect = Rect.fromCircle(center: center, radius: innerRadius);
 
+    final backgroundPaint = Paint()
+      ..color = backgroundColor
+      ..style = PaintingStyle.fill;
     final sectorPaint = Paint()..style = PaintingStyle.fill;
     final borderPaint = Paint()
       ..color = NeonTheme.cardAlt
@@ -421,13 +466,17 @@ class _MultiplierArcPainter extends CustomPainter {
       final color = sectorColorFn(i, totalSectors, multipliers[i]);
       final isWinning = stoppedIndex == i;
 
-      sectorPaint.color = isWinning ? color : color.withValues(alpha: 0.85);
+      sectorPaint.color = wheelPaintedSectorColor(
+        color,
+        opacity: isWinning ? 1.0 : 0.85,
+      );
 
       final path = Path()
         ..arcTo(arcRect, sectorStart, sectorSweep, false)
         ..arcTo(innerArcRect, sectorStart + sectorSweep, -sectorSweep, false)
         ..close();
 
+      canvas.drawPath(path, backgroundPaint);
       canvas.drawPath(path, sectorPaint);
       canvas.drawPath(path, borderPaint);
 
@@ -511,7 +560,10 @@ class _MultiplierArcPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _MultiplierArcPainter oldDelegate) =>
+      !listEquals(multipliers, oldDelegate.multipliers) ||
+      maxAngle != oldDelegate.maxAngle ||
       needleAngle != oldDelegate.needleAngle ||
       stoppedIndex != oldDelegate.stoppedIndex ||
-      needleColor != oldDelegate.needleColor;
+      needleColor != oldDelegate.needleColor ||
+      backgroundColor != oldDelegate.backgroundColor;
 }

@@ -3,6 +3,8 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/wheel_label_contrast.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/wheel_spinner.dart';
 
 Widget _wrap(Widget child, {bool reducedMotion = false}) => MediaQuery(
@@ -13,6 +15,32 @@ Widget _wrap(Widget child, {bool reducedMotion = false}) => MediaQuery(
 );
 
 void main() {
+  group('wheel label contrast', () {
+    test(
+      'composites translucent sector fill on the declared opaque background',
+      () {
+        const background = Color(0xFFFFFFFF);
+        const fill = Color(0x80FF0000);
+        expect(wheelPaintedSectorColor(Colors.red, opacity: 1), Colors.red);
+        expect(
+          wheelPaintedSectorColor(Colors.red, opacity: 0.85).a,
+          closeTo(0.85, 0.01),
+        );
+        expect(
+          wheelLabelEffectiveBackground(fill, background),
+          const Color(0xFFFF7F7F),
+        );
+        expect(
+          wheelLabelContrastRatio(
+            sectorColor: fill,
+            backgroundColor: background,
+          ),
+          lessThan(4.5),
+        );
+      },
+    );
+  });
+
   group('WheelPointerClicker math', () {
     test('counts crossed segment boundaries in either direction', () {
       final step = math.pi / 2;
@@ -87,6 +115,78 @@ void main() {
   });
 
   group('WheelSpinner', () {
+    test('requires an opaque declared background', () {
+      expect(
+        () => WheelSpinner(
+          backgroundColor: Colors.white.withValues(alpha: 0.5),
+          segments: const [
+            WheelSegment(label: 'A', color: Colors.red),
+            WheelSegment(label: 'B', color: Colors.blue),
+          ],
+          controller: WheelSpinnerController(),
+          onSpinEnd: (_) {},
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    testWidgets('passes declared opaque background to the custom painter', (
+      tester,
+    ) async {
+      const background = Color(0xFF123456);
+      final controller = WheelSpinnerController();
+      addTearDown(controller.dispose);
+      await tester.pumpWidget(
+        _wrap(
+          WheelSpinner(
+            backgroundColor: background,
+            segments: const [
+              WheelSegment(label: 'A', color: Colors.red),
+              WheelSegment(label: 'B', color: Colors.blue),
+            ],
+            controller: controller,
+            onSpinEnd: (_) {},
+          ),
+        ),
+      );
+
+      final painter =
+          tester
+                  .widget<CustomPaint>(
+                    find.byKey(const Key('wheelSpinnerPainter')),
+                  )
+                  .painter!
+              as WheelSpinnerPainter;
+      expect(painter.backgroundColor, background);
+      expect(
+        painter.shouldRepaint(
+          WheelSpinnerPainter(
+            backgroundColor: Colors.white,
+            segments: painter.segments,
+            textDirection: painter.textDirection,
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test('reports low contrast for caller-provided light segment colors', () {
+      final wheel = WheelSpinner(
+        backgroundColor: Colors.white,
+        segments: const [
+          WheelSegment(label: 'No contrast', color: Colors.white),
+          WheelSegment(label: 'Readable', color: Colors.black),
+        ],
+        controller: WheelSpinnerController(),
+        onSpinEnd: (_) {},
+      );
+
+      expect(wheel.contrastFindings, hasLength(1));
+      expect(wheel.contrastFindings.single.index, 0);
+      expect(wheel.contrastFindings.single.label, 'No contrast');
+      expect(wheel.contrastFindings.single.ratio, lessThan(4.5));
+    });
+
     testWidgets(
       'controller swap removes old listener and new controller spins',
       (tester) async {
@@ -101,6 +201,7 @@ void main() {
         final results = <WheelSegment>[];
         Widget build(WheelSpinnerController c) => _wrap(
           WheelSpinner(
+            backgroundColor: NeonTheme.card,
             segments: choices,
             controller: c,
             onSpinEnd: results.add,
@@ -188,6 +289,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           WheelSpinner(
+            backgroundColor: NeonTheme.card,
             segments: segments,
             controller: controller,
             onSpinEnd: (_) {},
@@ -206,6 +308,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           WheelSpinner(
+            backgroundColor: NeonTheme.card,
             segments: segments,
             controller: controller,
             onSpinEnd: (_) {},
@@ -232,6 +335,7 @@ void main() {
         await tester.pumpWidget(
           _wrap(
             WheelSpinner(
+              backgroundColor: NeonTheme.card,
               segments: segments,
               controller: controller,
               onSpinEnd: (s) => result = s,
@@ -259,6 +363,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           WheelSpinner(
+            backgroundColor: NeonTheme.card,
             segments: segments,
             controller: controller,
             onSpinEnd: (segment) => landed = segment,
@@ -296,6 +401,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           WheelSpinner(
+            backgroundColor: NeonTheme.card,
             segments: segments,
             controller: controller,
             onSpinEnd: (_) {},
@@ -323,6 +429,7 @@ void main() {
         await tester.pumpWidget(
           _wrap(
             WheelSpinner(
+              backgroundColor: NeonTheme.card,
               segments: segments,
               controller: controller,
               onSpinEnd: (s) => result = s,
@@ -336,6 +443,7 @@ void main() {
         await tester.pumpWidget(
           _wrap(
             WheelSpinner(
+              backgroundColor: NeonTheme.card,
               segments: segments,
               controller: controller,
               onSpinEnd: (s) => result = s,
@@ -364,6 +472,7 @@ void main() {
         await tester.pumpWidget(
           _wrap(
             WheelSpinner(
+              backgroundColor: NeonTheme.card,
               segments: segments,
               controller: controller,
               onSpinEnd: (s) => result = s,
@@ -389,6 +498,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           WheelSpinner(
+            backgroundColor: NeonTheme.card,
             segments: segments,
             controller: controller,
             onSpinEnd: results.add,
@@ -406,14 +516,15 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
-    testWidgets('ít hơn 2 segment thì throw assert', (tester) async {
+    test('ít hơn 2 segment thì ném ArgumentError', () {
       expect(
         () => WheelSpinner(
+          backgroundColor: NeonTheme.card,
           segments: const [WheelSegment(label: 'Only', color: Colors.red)],
           controller: WheelSpinnerController(),
           onSpinEnd: (_) {},
         ),
-        throwsAssertionError,
+        throwsArgumentError,
       );
     });
 
@@ -423,6 +534,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           WheelSpinner(
+            backgroundColor: NeonTheme.card,
             segments: segments,
             controller: WheelSpinnerController(),
             onSpinEnd: (_) {},
@@ -449,6 +561,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           WheelSpinner(
+            backgroundColor: NeonTheme.card,
             segments: segments,
             controller: WheelSpinnerController(),
             onSpinEnd: (_) {},
@@ -482,6 +595,7 @@ void main() {
         await tester.pumpWidget(
           _wrap(
             WheelSpinner(
+              backgroundColor: NeonTheme.card,
               segments: segments,
               controller: WheelSpinnerController(),
               onSpinEnd: (_) {},
@@ -503,6 +617,7 @@ void main() {
                   child: Directionality(
                     textDirection: TextDirection.rtl,
                     child: WheelSpinner(
+                      backgroundColor: NeonTheme.card,
                       segments: segments,
                       controller: WheelSpinnerController(),
                       onSpinEnd: (_) {},
@@ -526,6 +641,7 @@ void main() {
           await tester.pumpWidget(
             _wrap(
               WheelSpinner(
+                backgroundColor: NeonTheme.card,
                 segments: segments,
                 controller: WheelSpinnerController(),
                 onSpinEnd: (_) {},
@@ -544,6 +660,7 @@ void main() {
         await tester.pumpWidget(
           _wrap(
             WheelSpinner(
+              backgroundColor: NeonTheme.card,
               segments: segments,
               controller: controller,
               onSpinEnd: (_) {},
@@ -572,6 +689,7 @@ void main() {
             await tester.pumpWidget(
               _wrap(
                 WheelSpinner(
+                  backgroundColor: NeonTheme.card,
                   segments: segments,
                   controller: controller,
                   onSpinEnd: (s) => landed = s,
@@ -598,6 +716,7 @@ void main() {
           await tester.pumpWidget(
             _wrap(
               WheelSpinner(
+                backgroundColor: NeonTheme.card,
                 segments: segments,
                 controller: controller,
                 onSpinEnd: (_) {},

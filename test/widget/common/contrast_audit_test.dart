@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
+import 'package:roy_casual_kit/presentation/widgets/stroke_text.dart';
 
 import '../../support/contrast_audit.dart';
 
@@ -203,6 +204,60 @@ void main() {
         expect(candidates, isEmpty, reason: '$candidates');
       });
     }
+  });
+
+  group('FEAT-210 StrokeText fill contrast and semantics', () {
+    testWidgets('audits fill color without treating outline as text', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            backgroundColor: Colors.white,
+            body: StrokeText(
+              'Warning',
+              fontSize: 24,
+              color: Colors.yellow,
+              stroke: Colors.black,
+            ),
+          ),
+        ),
+      );
+
+      final issues = auditRenderedTextContrast(
+        tester,
+        find.byType(Scaffold),
+        defaultBackground: Colors.white,
+      );
+
+      expect(issues, hasLength(1), reason: '$issues');
+      expect(issues.single.text, 'Warning');
+      expect(issues.single.foreground, Colors.yellow);
+      expect(issues.single.ratio, closeTo(1.22, 0.02));
+    });
+
+    testWidgets('exposes one semantics label for both text layers', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: StrokeText('Warning', fontSize: 24)),
+        ),
+      );
+
+      expect(find.bySemanticsLabel('Warning'), findsOneWidget);
+      expect(tester.getSemantics(find.byType(StrokeText)).label, 'Warning');
+      expect(
+        tester
+            .renderObject(find.byType(StrokeText))
+            .debugSemantics
+            ?.childrenCount,
+        0,
+      );
+      handle.dispose();
+    });
   });
 
   group('FEAT-205 contrast_audit harness', () {

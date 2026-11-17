@@ -2,6 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:roy_casual_kit/core/neon_theme.dart';
+import 'package:roy_casual_kit/presentation/widgets/common/wheel_label_contrast.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/coin_multiplier_wheel.dart';
 
 Widget _wrap(Widget child, {bool reduced = false}) => MediaQuery(
@@ -63,21 +65,68 @@ void main() {
   });
 
   group('CoinMultiplierWheel validation', () {
+    test('requires an opaque declared background', () {
+      expect(
+        () => CoinMultiplierWheel(
+          backgroundColor: Colors.white.withValues(alpha: 0.5),
+          autoStart: false,
+        ),
+        throwsArgumentError,
+      );
+    });
+
+    test('reports text contrast for winning and translucent sectors', () {
+      final wheel = CoinMultiplierWheel(
+        backgroundColor: Colors.white,
+        multipliers: const [2, 3, 5, 10],
+        autoStart: false,
+      );
+
+      final findings = wheel.contrastFindings();
+      expect(findings, hasLength(4));
+      expect(findings.map((finding) => finding.multiplier), [2, 3, 5, 10]);
+      expect(findings.every((finding) => !finding.winning), isTrue);
+      expect(findings.every((finding) => finding.ratio < 4.5), isTrue);
+
+      final winningFindings = wheel.contrastFindings(stoppedIndex: 3);
+      expect(winningFindings, hasLength(4));
+      expect(
+        winningFindings.singleWhere((finding) => finding.index == 3).winning,
+        isTrue,
+      );
+      expect(
+        wheelLabelEffectiveBackground(const Color(0x80FF0000), Colors.white),
+        const Color(0xFFFF7F7F),
+      );
+    });
+
     test('rejects fewer than 2 sectors or multiplier < 1', () {
       expect(
-        () => CoinMultiplierWheel(multipliers: const [2]),
+        () => CoinMultiplierWheel(
+          backgroundColor: NeonTheme.card,
+          multipliers: const [2],
+        ),
         throwsArgumentError,
       );
       expect(
-        () => CoinMultiplierWheel(multipliers: const [2, 0, 3]),
+        () => CoinMultiplierWheel(
+          backgroundColor: NeonTheme.card,
+          multipliers: const [2, 0, 3],
+        ),
         throwsArgumentError,
       );
     });
 
     test('rejects non-positive radius or invalid duration', () {
-      expect(() => CoinMultiplierWheel(radius: 0), throwsArgumentError);
       expect(
-        () => CoinMultiplierWheel(swingDuration: Duration.zero),
+        () => CoinMultiplierWheel(backgroundColor: NeonTheme.card, radius: 0),
+        throwsArgumentError,
+      );
+      expect(
+        () => CoinMultiplierWheel(
+          backgroundColor: NeonTheme.card,
+          swingDuration: Duration.zero,
+        ),
         throwsArgumentError,
       );
     });
@@ -86,7 +135,12 @@ void main() {
   group('CoinMultiplierWheel interactions & controller', () {
     testWidgets('renders all multiplier text labels', (tester) async {
       await tester.pumpWidget(
-        _wrap(CoinMultiplierWheel(multipliers: const [2, 3, 5, 10, 5, 3, 2])),
+        _wrap(
+          CoinMultiplierWheel(
+            backgroundColor: NeonTheme.card,
+            multipliers: const [2, 3, 5, 10, 5, 3, 2],
+          ),
+        ),
       );
 
       expect(find.byType(CoinMultiplierWheel), findsOneWidget);
@@ -104,6 +158,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           CoinMultiplierWheel(
+            backgroundColor: NeonTheme.card,
             multipliers: const [2, 3, 5, 10, 5, 3, 2],
             onStopped: (m) => won = m,
           ),
@@ -134,6 +189,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           CoinMultiplierWheel(
+            backgroundColor: NeonTheme.card,
             controller: ctrl,
             multipliers: const [2, 5, 10, 5, 2],
             onStopped: (m) => stoppedCallbackMultiplier = m,
@@ -167,7 +223,10 @@ void main() {
     ) async {
       await tester.pumpWidget(
         _wrap(
-          CoinMultiplierWheel(multipliers: const [2, 3, 5, 10, 5, 3, 2]),
+          CoinMultiplierWheel(
+            backgroundColor: NeonTheme.card,
+            multipliers: const [2, 3, 5, 10, 5, 3, 2],
+          ),
           reduced: true,
         ),
       );
@@ -179,6 +238,7 @@ void main() {
       await tester.pumpWidget(
         _wrap(
           CoinMultiplierWheel(
+            backgroundColor: NeonTheme.card,
             multipliers: const [2, 3, 5, 10, 5, 3, 2],
             onStopped: (m) => won = m,
           ),
@@ -201,7 +261,11 @@ void main() {
 
       await tester.pumpWidget(
         _wrap(
-          CoinMultiplierWheel(controller: ctrl, multipliers: const [2, 4, 8]),
+          CoinMultiplierWheel(
+            backgroundColor: NeonTheme.card,
+            controller: ctrl,
+            multipliers: const [2, 4, 8],
+          ),
         ),
       );
 

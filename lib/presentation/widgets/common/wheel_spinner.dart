@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../../../core/haptics.dart';
 import '../../../core/neon_theme.dart';
 import '../../../core/storage_service.dart';
+import 'wheel_label_contrast.dart';
 
 /// Number of segment boundaries a wheel passed between two unwrapped
 /// rotations (radians). Boundaries sit every `2π / segmentCount`; the
@@ -137,19 +138,35 @@ class WheelSpinnerController extends ChangeNotifier {
 /// [onSpinEnd]. A fixed pointer marks the winning slice at the top; the
 /// wheel itself is the only thing that rotates.
 class WheelSpinner extends StatefulWidget {
-  const WheelSpinner({
+  WheelSpinner({
     super.key,
     required this.segments,
     required this.controller,
     required this.onSpinEnd,
+    required this.backgroundColor,
     this.onTick,
     this.enableHaptics = true,
     this.size = 260,
     this.spinDuration = const Duration(seconds: 3),
     this.extraTurns = 4,
-  }) : assert(segments.length >= 2, 'WheelSpinner needs at least 2 segments');
+  }) {
+    if (backgroundColor.a != 1.0) {
+      throw ArgumentError.value(
+        backgroundColor,
+        'backgroundColor',
+        'must be opaque',
+      );
+    }
+    validateConfiguration(
+      segments: segments,
+      size: size,
+      spinDuration: spinDuration,
+      extraTurns: extraTurns,
+    );
+  }
 
   final List<WheelSegment> segments;
+  final Color backgroundColor;
   final WheelSpinnerController controller;
   final ValueChanged<WheelSegment> onSpinEnd;
 
@@ -165,6 +182,20 @@ class WheelSpinner extends StatefulWidget {
 
   /// Validates inputs at runtime so release builds keep the same contract as
   /// debug builds (where constructor assertions are enabled).
+  List<({int index, String label, double ratio})> get contrastFindings {
+    final findings = <({int index, String label, double ratio})>[];
+    for (var i = 0; i < segments.length; i++) {
+      final ratio = wheelLabelContrastRatio(
+        sectorColor: segments[i].color,
+        backgroundColor: backgroundColor,
+      );
+      if (ratio < 4.5) {
+        findings.add((index: i, label: segments[i].label, ratio: ratio));
+      }
+    }
+    return findings;
+  }
+
   static void validateConfiguration({
     required List<WheelSegment> segments,
     required double size,
@@ -405,6 +436,7 @@ class _WheelSpinnerState extends State<WheelSpinner>
                 size: Size.square(widget.size),
                 painter: WheelSpinnerPainter(
                   segments: widget.segments,
+                  backgroundColor: widget.backgroundColor,
                   textDirection: Directionality.of(context),
                 ),
               ),
@@ -427,10 +459,26 @@ class _WheelSpinnerState extends State<WheelSpinner>
 class WheelSpinnerPainter extends CustomPainter {
   const WheelSpinnerPainter({
     required this.segments,
+    required this.backgroundColor,
     this.textDirection = TextDirection.ltr,
   });
 
   final List<WheelSegment> segments;
+  final Color backgroundColor;
+
+  List<({int index, String label, double ratio})> get contrastFindings {
+    final findings = <({int index, String label, double ratio})>[];
+    for (var i = 0; i < segments.length; i++) {
+      final ratio = wheelLabelContrastRatio(
+        sectorColor: segments[i].color,
+        backgroundColor: backgroundColor,
+      );
+      if (ratio < 4.5) {
+        findings.add((index: i, label: segments[i].label, ratio: ratio));
+      }
+    }
+    return findings;
+  }
 
   /// Passed down from the ambient `Directionality` (ENH-38) instead of a
   /// hardcoded `TextDirection.ltr` — a `Canvas` has no directionality
@@ -444,6 +492,7 @@ class WheelSpinnerPainter extends CustomPainter {
     final radius = size.shortestSide / 2;
     final rect = Rect.fromCircle(center: center, radius: radius);
     final segmentAngle = 2 * math.pi / segments.length;
+    canvas.drawCircle(center, radius, Paint()..color = backgroundColor);
 
     for (var i = 0; i < segments.length; i++) {
       final startAngle = -math.pi / 2 + i * segmentAngle;
@@ -505,5 +554,6 @@ class WheelSpinnerPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant WheelSpinnerPainter oldDelegate) =>
       oldDelegate.segments != segments ||
+      oldDelegate.backgroundColor != backgroundColor ||
       oldDelegate.textDirection != textDirection;
 }
