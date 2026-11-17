@@ -730,7 +730,7 @@ void main() {
     });
   });
 
-  group('FEAT-200 phase 2bj: reward audit and save restore', () {
+  group('FEAT-200 phase 2bi: reward audit and save restore', () {
     Widget rewardAudit() => RewardAuditTrailPanel(
       rows: [
         RewardAuditRow(
@@ -787,6 +787,78 @@ void main() {
       await runViewportSweep(
         tester,
         saveRestore,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+  });
+
+  group('FEAT-200 phase 2bj: upgrade panel and squash wrapper', () {
+    Widget upgradePanel() => UpgradePreviewPanel(
+      title: 'Dragon Sword',
+      currentLevel: 3,
+      nextLevel: 4,
+      statChanges: const [
+        UpgradeStatChange(
+          label: 'Attack',
+          currentValue: '25',
+          nextValue: '32',
+          icon: Icons.flash_on_rounded,
+        ),
+        UpgradeStatChange(
+          label: 'Defense',
+          currentValue: '10',
+          nextValue: '14',
+          icon: Icons.shield_rounded,
+        ),
+      ],
+      costs: const [
+        UpgradeCost(label: 'Coins', currentAmount: 1000, requiredAmount: 750),
+        UpgradeCost(
+          label: 'Gems',
+          currentAmount: 15,
+          requiredAmount: 10,
+          icon: Icons.diamond_rounded,
+        ),
+      ],
+      onUpgrade: _noop,
+    );
+
+    Widget squash() => const SquashStretch(
+      child: SizedBox(width: 160, height: 72, child: Text('Press to claim')),
+    );
+
+    testWidgets('UpgradePreviewPanel', (tester) async {
+      await runViewportSweep(tester, upgradePanel);
+    });
+
+    testWidgets('UpgradePreviewPanel at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        upgradePanel,
+        viewports: const [
+          ViewportCase('320x480', Size(320, 480)),
+          ViewportCase('568x320-landscape', Size(568, 320)),
+        ],
+        textScale: 2.0,
+      );
+    });
+
+    testWidgets('SquashStretch', (tester) async {
+      await runViewportSweep(tester, squash);
+    });
+
+    testWidgets('SquashStretch at 2.0x text, 320dp and landscape', (
+      tester,
+    ) async {
+      await runViewportSweep(
+        tester,
+        squash,
         viewports: const [
           ViewportCase('320x480', Size(320, 480)),
           ViewportCase('568x320-landscape', Size(568, 320)),
@@ -4473,6 +4545,119 @@ void main() {
           await runViewportSweep(
             tester,
             () => SingleChildScrollView(child: e.value()),
+            viewports: const [
+              ViewportCase('320x480', Size(320, 480)),
+              ViewportCase('568x320-landscape', Size(568, 320)),
+            ],
+            textScale: 2.0,
+          );
+        });
+      }
+    });
+
+    group('FEAT-200 phase 2bk: remaining public widgets', () {
+      testWidgets('WheelPointerClicker', (tester) async {
+        await runViewportSweep(
+          tester,
+          () => const Center(child: WheelPointerClicker(angle: 0)),
+          targetFinder: find.byType(WheelPointerClicker),
+        );
+      });
+
+      testWidgets('WheelPointerClicker at 2.0x text, 320dp and landscape', (
+        tester,
+      ) async {
+        await runViewportSweep(
+          tester,
+          () => const Center(child: WheelPointerClicker(angle: 0)),
+          targetFinder: find.byType(WheelPointerClicker),
+          viewports: const [
+            ViewportCase('320x480', Size(320, 480)),
+            ViewportCase('568x320-landscape', Size(568, 320)),
+          ],
+          textScale: 2.0,
+        );
+      });
+
+      Widget sessionTimeline() => SessionTimelineInspector(
+        rows: [
+          SessionTimelineRow(
+            offsetText: '00:00',
+            phaseLabel: 'Playing',
+            detailText: 'Session started',
+          ),
+          SessionTimelineRow(offsetText: '00:30', phaseLabel: 'Paused'),
+        ],
+        durationText: '00:30',
+        terminalLabel: 'Paused',
+      );
+
+      Widget remoteKillSwitches() => RemoteKillSwitchPanel(
+        items: [
+          KillSwitchItem(
+            id: 'offers',
+            label: 'Offers',
+            killed: false,
+            sourceLabel: 'Remote config',
+          ),
+          KillSwitchItem(
+            id: 'leaderboard',
+            label: 'Leaderboard',
+            killed: true,
+            sourceLabel: 'Remote config',
+            reasonText: 'Maintenance',
+          ),
+        ],
+        onKillLocally: (_) async {},
+        onClearOverride: (_) async {},
+      );
+
+      Widget saveConflict() => SaveConflictPicker(
+        local: SaveConflictSummary(
+          revision: 'local-3',
+          savedAtText: 'Today, 10:30',
+          progressText: 'Level 12',
+        ),
+        cloud: SaveConflictSummary(
+          revision: 'cloud-4',
+          savedAtText: 'Today, 10:45',
+          progressText: 'Level 14',
+        ),
+        onResolve: (_, _, _) async {},
+      );
+
+      Widget tutorialSequence() => TutorialSequence(
+        controller: TutorialSequenceController(),
+        child: const Material(child: Text('Game content')),
+      );
+
+      Widget tapHint() => Stack(
+        children: [
+          Positioned.fill(
+            child: TapHintPointer(position: const Offset(160, 120)),
+          ),
+        ],
+      );
+
+      final cases = <String, Widget Function()>{
+        'SessionTimelineInspector': sessionTimeline,
+        'RemoteKillSwitchPanel': remoteKillSwitches,
+        'SaveConflictPicker': saveConflict,
+        'TutorialSequence': tutorialSequence,
+        'TapHintPointer': tapHint,
+      };
+
+      for (final entry in cases.entries) {
+        testWidgets(entry.key, (tester) async {
+          await runViewportSweep(tester, entry.value);
+        });
+
+        testWidgets('${entry.key} at 2.0x text, 320dp and landscape', (
+          tester,
+        ) async {
+          await runViewportSweep(
+            tester,
+            entry.value,
             viewports: const [
               ViewportCase('320x480', Size(320, 480)),
               ViewportCase('568x320-landscape', Size(568, 320)),

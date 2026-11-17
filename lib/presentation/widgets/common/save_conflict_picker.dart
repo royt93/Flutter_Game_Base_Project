@@ -137,89 +137,91 @@ class _SaveConflictPickerState extends State<SaveConflictPicker> {
       container: true,
       explicitChildNodes: true,
       child: PanelCard(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              widget.title,
-              style: TextStyle(color: NeonTheme.ink, fontSize: 18),
-            ),
-            for (final choice in SaveConflictChoice.values) ...[
-              const SizedBox(height: 8),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Text(
-                choice == SaveConflictChoice.local
-                    ? widget.localLabel
-                    : widget.cloudLabel,
+                widget.title,
+                style: TextStyle(color: NeonTheme.ink, fontSize: 18),
               ),
-              Text(
-                choice == SaveConflictChoice.local
-                    ? widget.local.savedAtText
-                    : widget.cloud.savedAtText,
-              ),
-              Text(
-                choice == SaveConflictChoice.local
-                    ? widget.local.progressText
-                    : widget.cloud.progressText,
-              ),
-              Semantics(
-                selected: _selected == choice,
-                child: CommonButton(
-                  key: ValueKey('saveConflict_${choice.name}'),
-                  label: choice == SaveConflictChoice.local
+              for (final choice in SaveConflictChoice.values) ...[
+                const SizedBox(height: 8),
+                Text(
+                  choice == SaveConflictChoice.local
                       ? widget.localLabel
                       : widget.cloudLabel,
-                  icon: _selected == choice ? Icons.check : null,
+                ),
+                Text(
+                  choice == SaveConflictChoice.local
+                      ? widget.local.savedAtText
+                      : widget.cloud.savedAtText,
+                ),
+                Text(
+                  choice == SaveConflictChoice.local
+                      ? widget.local.progressText
+                      : widget.cloud.progressText,
+                ),
+                Semantics(
+                  selected: _selected == choice,
+                  child: CommonButton(
+                    key: ValueKey('saveConflict_${choice.name}'),
+                    label: choice == SaveConflictChoice.local
+                        ? widget.localLabel
+                        : widget.cloudLabel,
+                    icon: _selected == choice ? Icons.check : null,
+                    variant: CommonButtonVariant.secondary,
+                    width: double.infinity,
+                    onTap: _busy || _selected != null
+                        ? null
+                        : () => setState(() {
+                            _selected = choice;
+                            _failed = false;
+                          }),
+                  ),
+                ),
+              ],
+              if (_failed) Text(widget.errorLabel),
+              if (_selected != null) ...[
+                const SizedBox(height: 8),
+                Text(widget.confirmationText),
+                Text(
+                  '${widget.keepLabel}: ${_selected == SaveConflictChoice.local ? widget.localLabel : widget.cloudLabel}',
+                ),
+                Text(
+                  '${widget.replaceLabel}: ${_selected == SaveConflictChoice.local ? widget.cloudLabel : widget.localLabel}',
+                ),
+                CommonButton(
+                  key: const ValueKey('saveConflictConfirm'),
+                  label: widget.confirmLabel,
+                  variant: CommonButtonVariant.danger,
+                  width: double.infinity,
+                  onTap: _busy ? null : _resolve,
+                ),
+                const SizedBox(height: 8),
+                CommonButton(
+                  key: const ValueKey('saveConflictCancel'),
+                  label: widget.cancelLabel,
                   variant: CommonButtonVariant.secondary,
                   width: double.infinity,
-                  onTap: _busy || _selected != null
+                  onTap: _busy
                       ? null
                       : () => setState(() {
-                          _selected = choice;
+                          _selected = null;
                           _failed = false;
                         }),
                 ),
-              ),
+              ],
+              if (_running)
+                CommonButton(
+                  label: widget.confirmLabel,
+                  loading: true,
+                  width: double.infinity,
+                  onTap: null,
+                ),
             ],
-            if (_failed) Text(widget.errorLabel),
-            if (_selected != null) ...[
-              const SizedBox(height: 8),
-              Text(widget.confirmationText),
-              Text(
-                '${widget.keepLabel}: ${_selected == SaveConflictChoice.local ? widget.localLabel : widget.cloudLabel}',
-              ),
-              Text(
-                '${widget.replaceLabel}: ${_selected == SaveConflictChoice.local ? widget.cloudLabel : widget.localLabel}',
-              ),
-              CommonButton(
-                key: const ValueKey('saveConflictConfirm'),
-                label: widget.confirmLabel,
-                variant: CommonButtonVariant.danger,
-                width: double.infinity,
-                onTap: _busy ? null : _resolve,
-              ),
-              const SizedBox(height: 8),
-              CommonButton(
-                key: const ValueKey('saveConflictCancel'),
-                label: widget.cancelLabel,
-                variant: CommonButtonVariant.secondary,
-                width: double.infinity,
-                onTap: _busy
-                    ? null
-                    : () => setState(() {
-                        _selected = null;
-                        _failed = false;
-                      }),
-              ),
-            ],
-            if (_running)
-              CommonButton(
-                label: widget.confirmLabel,
-                loading: true,
-                width: double.infinity,
-                onTap: null,
-              ),
-          ],
+          ),
         ),
       ),
     );

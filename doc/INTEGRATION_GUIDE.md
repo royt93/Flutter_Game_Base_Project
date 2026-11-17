@@ -24,6 +24,10 @@ Sau đó:
 flutter pub get
 ```
 
+## Orientation cho widget `common/`
+
+Widget được export từ `common_widgets.dart` có viewport sweep ở landscape 568×320 và 640×320; text scale 2.0 được kiểm ở 568×320 cùng viewport compact 320×480. Sweep kiểm layout/overflow, không kiểm thao tác xoay thiết bị thật. Consumer app có thể khóa orientation bằng `SystemChrome.setPreferredOrientations`; cần cho phép landscape trong cấu hình nền tảng nếu muốn xoay trên thiết bị.
+
 ## 2. Bootstrap một lần
 
 ```dart

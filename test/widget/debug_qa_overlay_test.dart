@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/connectivity_coordinator.dart';
@@ -19,6 +20,59 @@ void main() {
   tearDown(() async {
     Get.reset();
     await RoyCasualKit.resetForTesting();
+  });
+
+  testWidgets('orientation control defaults to portrait and allows landscape', (
+    tester,
+  ) async {
+    final calls = <List<String>>[];
+    tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+      SystemChannels.platform,
+      (call) async {
+        if (call.method == 'SystemChrome.setPreferredOrientations') {
+          calls.add((call.arguments as List<dynamic>).cast<String>());
+        }
+        return null;
+      },
+    );
+    addTearDown(
+      () => tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
+        SystemChannels.platform,
+        null,
+      ),
+    );
+
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: DebugQaOverlay(child: Material(child: Text('app content'))),
+      ),
+    );
+    await tester.longPress(find.byKey(const Key('debugQaOverlayTrigger')));
+    await tester.pump();
+
+    final toggle = tester.widget<SwitchListTile>(
+      find.byKey(const Key('debugQaAllowLandscape')),
+    );
+    expect(toggle.value, isFalse);
+
+    await tester.tap(find.byKey(const Key('debugQaAllowLandscape')));
+    await tester.pump();
+    expect(calls.single, [
+      'DeviceOrientation.landscapeLeft',
+      'DeviceOrientation.landscapeRight',
+    ]);
+    expect(
+      tester
+          .widget<SwitchListTile>(
+            find.byKey(const Key('debugQaAllowLandscape')),
+          )
+          .value,
+      isTrue,
+    );
+
+    await tester.tap(find.byKey(const Key('debugQaAllowLandscape')));
+    await tester.pump();
+    expect(calls.last, ['DeviceOrientation.portraitUp']);
   });
 
   testWidgets('child always renders, closed panel shows nothing', (

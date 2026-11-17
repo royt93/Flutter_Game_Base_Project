@@ -155,86 +155,88 @@ class UpgradePreviewPanel extends StatelessWidget {
           ),
           boxShadow: NeonTheme.drop(y: 4, blur: 12),
         ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children: [
-            Text(
-              title,
-              style: TextStyle(
-                color: NeonTheme.ink,
-                fontSize: 18,
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            if (subtitle != null) ...[
-              const SizedBox(height: 3),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
               Text(
-                subtitle!,
+                title,
                 style: TextStyle(
-                  color: NeonTheme.inkSoft,
-                  fontSize: 12,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-            const SizedBox(height: NeonTheme.s8),
-            Wrap(
-              alignment: WrapAlignment.spaceBetween,
-              crossAxisAlignment: WrapCrossAlignment.center,
-              spacing: NeonTheme.s8,
-              runSpacing: 4,
-              children: [
-                _levelBadge('LV $currentLevel', NeonTheme.inkSoft),
-                Icon(
-                  Icons.arrow_forward_rounded,
-                  color: NeonTheme.cyan,
-                  size: 18,
-                ),
-                _levelBadge('LV $nextLevel', NeonTheme.purple),
-              ],
-            ),
-            const SizedBox(height: NeonTheme.s8),
-            for (final stat in statChanges) _statRow(stat),
-            if (costs.isNotEmpty) ...[
-              const SizedBox(height: NeonTheme.s8),
-              Text(
-                costHeader,
-                style: TextStyle(
-                  color: NeonTheme.inkSoft,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w800,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Wrap(
-                spacing: NeonTheme.s8,
-                runSpacing: 6,
-                children: [for (final cost in costs) _costChip(cost)],
-              ),
-            ],
-            if (status != null) ...[
-              const SizedBox(height: NeonTheme.s8),
-              Text(
-                status,
-                key: const ValueKey('upgradePreviewStatus'),
-                textAlign: TextAlign.center,
-                style: TextStyle(
-                  color: isMaxLevel ? NeonTheme.gold : NeonTheme.orange,
-                  fontSize: 12,
+                  color: NeonTheme.ink,
+                  fontSize: 18,
                   fontWeight: FontWeight.w900,
                 ),
               ),
+              if (subtitle != null) ...[
+                const SizedBox(height: 3),
+                Text(
+                  subtitle!,
+                  style: TextStyle(
+                    color: NeonTheme.inkSoft,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+              const SizedBox(height: NeonTheme.s8),
+              Wrap(
+                alignment: WrapAlignment.spaceBetween,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                spacing: NeonTheme.s8,
+                runSpacing: 4,
+                children: [
+                  _levelBadge('LV $currentLevel', NeonTheme.inkSoft),
+                  Icon(
+                    Icons.arrow_forward_rounded,
+                    color: NeonTheme.cyan,
+                    size: 18,
+                  ),
+                  _levelBadge('LV $nextLevel', NeonTheme.purple),
+                ],
+              ),
+              const SizedBox(height: NeonTheme.s8),
+              for (final stat in statChanges) _statRow(stat),
+              if (costs.isNotEmpty) ...[
+                const SizedBox(height: NeonTheme.s8),
+                Text(
+                  costHeader,
+                  style: TextStyle(
+                    color: NeonTheme.inkSoft,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Wrap(
+                  spacing: NeonTheme.s8,
+                  runSpacing: 6,
+                  children: [for (final cost in costs) _costChip(cost)],
+                ),
+              ],
+              if (status != null) ...[
+                const SizedBox(height: NeonTheme.s8),
+                Text(
+                  status,
+                  key: const ValueKey('upgradePreviewStatus'),
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: isMaxLevel ? NeonTheme.gold : NeonTheme.orange,
+                    fontSize: 12,
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+              ],
+              const SizedBox(height: NeonTheme.s16),
+              CommonButton(
+                key: const ValueKey('upgradePreviewButton'),
+                label: isMaxLevel ? maxLevelLabel : upgradeLabel,
+                color: NeonTheme.purple,
+                loading: isUpgrading,
+                onTap: _canUpgrade ? onUpgrade : null,
+              ),
             ],
-            const SizedBox(height: NeonTheme.s16),
-            CommonButton(
-              key: const ValueKey('upgradePreviewButton'),
-              label: isMaxLevel ? maxLevelLabel : upgradeLabel,
-              color: NeonTheme.purple,
-              loading: isUpgrading,
-              onTap: _canUpgrade ? onUpgrade : null,
-            ),
-          ],
+          ),
         ),
       ),
     );

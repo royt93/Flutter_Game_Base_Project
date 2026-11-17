@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../../core/app_info.dart';
 import '../../core/audio_manager.dart';
@@ -50,6 +51,19 @@ class _DebugQaOverlayState extends State<DebugQaOverlay> {
   bool _open = false;
   Timer? _refreshTimer;
   int _tab = 0;
+  bool _allowLandscape = false;
+
+  Future<void> _setAllowLandscape(bool enabled) async {
+    await SystemChrome.setPreferredOrientations(
+      enabled
+          ? const [
+              DeviceOrientation.landscapeLeft,
+              DeviceOrientation.landscapeRight,
+            ]
+          : const [DeviceOrientation.portraitUp],
+    );
+    if (mounted) setState(() => _allowLandscape = enabled);
+  }
 
   // IDEA-39 Playground state — same sample colors/label already used by
   // `example/lib/screens/widget_showcase_screen.dart`'s own CommonButton
@@ -127,6 +141,8 @@ class _DebugQaOverlayState extends State<DebugQaOverlay> {
             onClose: _toggle,
             tab: _tab,
             onTabChanged: _setTab,
+            allowLandscape: _allowLandscape,
+            onAllowLandscapeChanged: _setAllowLandscape,
             onQaChanged: _refreshQa,
             playgroundVariant: _playgroundVariant,
             playgroundColor: _playgroundColor,
@@ -163,6 +179,8 @@ class _Panel extends StatelessWidget {
     required this.onClose,
     required this.tab,
     required this.onTabChanged,
+    required this.allowLandscape,
+    required this.onAllowLandscapeChanged,
     required this.onQaChanged,
     required this.playgroundVariant,
     required this.playgroundColor,
@@ -178,6 +196,8 @@ class _Panel extends StatelessWidget {
   final VoidCallback onClose;
   final int tab;
   final ValueChanged<int> onTabChanged;
+  final bool allowLandscape;
+  final ValueChanged<bool> onAllowLandscapeChanged;
   final VoidCallback onQaChanged;
   final CommonButtonVariant playgroundVariant;
   final Color playgroundColor;
@@ -309,7 +329,10 @@ class _Panel extends StatelessWidget {
                       const SizedBox(height: 8),
                       Flexible(
                         child: switch (tab) {
-                          0 => const _StateTab(),
+                          0 => _StateTab(
+                            allowLandscape: allowLandscape,
+                            onAllowLandscapeChanged: onAllowLandscapeChanged,
+                          ),
                           1 => _PlaygroundTab(
                             variant: playgroundVariant,
                             color: playgroundColor,
@@ -386,7 +409,13 @@ class _TabButton extends StatelessWidget {
 }
 
 class _StateTab extends StatelessWidget {
-  const _StateTab();
+  const _StateTab({
+    required this.allowLandscape,
+    required this.onAllowLandscapeChanged,
+  });
+
+  final bool allowLandscape;
+  final ValueChanged<bool> onAllowLandscapeChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -410,6 +439,13 @@ class _StateTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SwitchListTile.adaptive(
+            key: const Key('debugQaAllowLandscape'),
+            contentPadding: EdgeInsets.zero,
+            title: const Text('Allow landscape'),
+            value: allowLandscape,
+            onChanged: onAllowLandscapeChanged,
+          ),
           Text('Audio muted: ${audioMuted?.toString() ?? "not registered"}'),
           Text('Locale: ${locale?.toString() ?? "not registered"}'),
           Text('Clock rewind blocked: $clockRewindBlockedCount'),
