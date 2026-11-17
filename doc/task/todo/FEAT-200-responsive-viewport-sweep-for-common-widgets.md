@@ -82,7 +82,8 @@ source: "BUG-103, BUG-104 + PauseOverlay overflow cùng một lớp lỗi; chưa
 - [x] Pha 2bd (2026-11-17): thêm `CandyToggleSwitch` và `TitleChipPicker` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 305 tests pass; toggle/title suites, tap-target, contrast và analyzer pass. Tổng coverage 158/170 widget.
 - [x] Pha 2be (2026-11-17): thêm `StarChestProgressHud` và `WeeklyChallengeCard` ở sweep mặc định và 320dp/landscape với text 2.0x. Lộ overflow StarChestProgressHud ở text scale 2×; scale HUD width theo text scale, giữ width 1× mặc định và vùng tap hiện có. Full sweep 309 tests pass; widget suites, tap-target, contrast và analyzer pass. Tổng coverage 160/170 widget.
 - [x] Pha 2bf (2026-11-17): thêm `StaggeredAnimatedGrid` và `WheelSpinner` idle state ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 313 tests pass; grid/wheel suites, tap-target, contrast và analyzer pass. Tổng coverage 162/170 widget.
-- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 8 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
+- [x] Pha 2bg (2026-11-17): thêm `SwipeableActionTile` và `ShimmerPlaceholder` ở sweep mặc định và 320dp/landscape với text 2.0x. Full sweep 317 tests pass; swipe/shimmer suites, tap-target, contrast và analyzer pass. Tổng coverage 164/170 widget.
+- [ ] Mở rộng sang phần còn lại của `common/` (khoảng 6 widget): làm theo nhóm, widget cố tình không hỗ trợ viewport nhỏ phải có lý do trong allowlist.
 - Ghi chú: `PauseOverlay` đã có test landscape riêng; `showConfirmDialog` là route, không phải widget nên ngoài phạm vi sweep.
 
 ## Tiêu chí xong
