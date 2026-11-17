@@ -1576,6 +1576,9 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
     WheelSegment(label: '5', color: NeonTheme.red),
   ];
   final _wheelController = WheelSpinnerController();
+  // Each press mounts a ConsentBanner under a fresh flowId so the demo can be
+  // repeated (a flow id is only shown once per install).
+  int _consentBannerDemoRuns = 0;
   int _wheelTicks = 0;
 
   void _spinWheel() {
@@ -5233,6 +5236,150 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                     Text(
                                       'Path Level selected: $_lastSelectedPathLevel',
                                       key: const Key('levelPathMapStatus'),
+                                    ),
+                                  ],
+                                ),
+                              ),
+
+                              const SizedBox(height: NeonTheme.s24),
+                              const SectionHeader(
+                                title: 'Level nodes, inventory, diagnostics',
+                              ),
+                              const SizedBox(height: NeonTheme.s16),
+                              _Demo(
+                                label: 'LevelNodeButton',
+                                child: Wrap(
+                                  spacing: NeonTheme.s16,
+                                  runSpacing: NeonTheme.s8,
+                                  children: const [
+                                    LevelNodeButton(
+                                      levelNumber: 1,
+                                      state: LevelState.completed,
+                                      starsEarned: 3,
+                                    ),
+                                    LevelNodeButton(
+                                      levelNumber: 2,
+                                      state: LevelState.unlocked,
+                                      pulse: true,
+                                    ),
+                                    LevelNodeButton(
+                                      levelNumber: 3,
+                                      state: LevelState.locked,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'LevelPathMapTile',
+                                child: Wrap(
+                                  spacing: NeonTheme.s16,
+                                  runSpacing: NeonTheme.s8,
+                                  children: [
+                                    LevelPathMapTile(
+                                      node: LevelPathNode(
+                                        level: 101,
+                                        state: LevelState.completed,
+                                        starsEarned: 2,
+                                      ),
+                                      onTap: () {},
+                                    ),
+                                    LevelPathMapTile(
+                                      node: LevelPathNode(
+                                        level: 102,
+                                        state: LevelState.unlocked,
+                                        isCurrent: true,
+                                      ),
+                                      onTap: () {},
+                                    ),
+                                    LevelPathMapTile(
+                                      node: LevelPathNode(
+                                        level: 103,
+                                        state: LevelState.locked,
+                                      ),
+                                      onTap: () {},
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              _Demo(
+                                label: 'WheelPointerClicker',
+                                child: const Center(
+                                  child: WheelPointerClicker(angle: 0.35),
+                                ),
+                              ),
+                              _Demo(
+                                label: 'AnimatedInventoryGrid',
+                                child: AnimatedInventoryGrid(
+                                  snapshot: const InventorySnapshot(
+                                    slots: [
+                                      InventorySlot(
+                                        slotId: 1,
+                                        itemId: 'potion',
+                                        quantity: 2,
+                                      ),
+                                      InventorySlot(
+                                        slotId: 2,
+                                        itemId: 'shield',
+                                        quantity: 1,
+                                      ),
+                                      InventorySlot(
+                                        slotId: 3,
+                                        itemId: 'key',
+                                        quantity: 3,
+                                      ),
+                                    ],
+                                    capacity: 6,
+                                  ),
+                                  itemBuilder: (context, slot, isSelected) =>
+                                      Center(
+                                        child: Text(
+                                          '${slot.itemId} x${slot.quantity}',
+                                          textAlign: TextAlign.center,
+                                          style: TextStyle(
+                                            color: NeonTheme.ink,
+                                            fontSize: 11,
+                                          ),
+                                        ),
+                                      ),
+                                  shrinkWrap: true,
+                                  physics: const NeverScrollableScrollPhysics(),
+                                ),
+                              ),
+                              _Demo(
+                                label: 'LiveFrameGraph (debug diagnostics)',
+                                child: const LiveFrameGraph(capacity: 60),
+                              ),
+                              _Demo(
+                                label: 'ConsentBanner',
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    CommonButton(
+                                      key: const Key('consentBannerDemoButton'),
+                                      label: 'Show consent banner',
+                                      onTap: () => setState(
+                                        () => _consentBannerDemoRuns++,
+                                      ),
+                                    ),
+                                    const SizedBox(height: NeonTheme.s8),
+                                    SizedBox(
+                                      height: 140,
+                                      child: _consentBannerDemoRuns == 0
+                                          ? const Center(
+                                              child: Text(
+                                                'Tap the button to mount the banner.',
+                                              ),
+                                            )
+                                          : ConsentBanner(
+                                              key: ValueKey(
+                                                'consentBannerDemo$_consentBannerDemoRuns',
+                                              ),
+                                              flowId:
+                                                  'consent_banner_demo_$_consentBannerDemoRuns',
+                                              child: const Center(
+                                                child: Text('App content'),
+                                              ),
+                                            ),
                                     ),
                                   ],
                                 ),

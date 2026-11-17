@@ -2762,6 +2762,46 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('FEAT-200 leftovers: six previously undemoed widgets render', (
+    tester,
+  ) async {
+    await _pumpShowcase(tester);
+
+    for (final label in const [
+      'LevelNodeButton',
+      'LevelPathMapTile',
+      'WheelPointerClicker',
+      'AnimatedInventoryGrid',
+      'LiveFrameGraph (debug diagnostics)',
+      'ConsentBanner',
+    ]) {
+      expect(find.text(label), findsOneWidget, reason: label);
+    }
+    expect(find.byType(LevelNodeButton), findsWidgets);
+    expect(find.byType(LevelPathMapTile), findsWidgets);
+    expect(find.byType(WheelPointerClicker), findsWidgets);
+    expect(find.byType(AnimatedInventoryGrid), findsOneWidget);
+    expect(find.byType(LiveFrameGraph), findsOneWidget);
+    expect(find.byType(ConsentBanner), findsNothing);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('ConsentBanner demo mounts the banner only after the tap', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    Get.put(StorageService(await SharedPreferences.getInstance()));
+
+    await _pumpShowcase(tester);
+    expect(find.byType(ConsentBanner), findsNothing);
+
+    await tester.tap(find.byKey(const Key('consentBannerDemoButton')));
+    await tester.pump(const Duration(milliseconds: 600));
+
+    expect(find.byType(ConsentBanner), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'SoundToggleFab demo: renders and toggles when AudioManager exists',
     (tester) async {
