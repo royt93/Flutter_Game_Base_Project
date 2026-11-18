@@ -106,7 +106,6 @@ void main() {
             child: build(state),
           ),
           matrix: [variant],
-          goldenBaseName: 'wave25_widgets_state',
         );
         if (state == 'kill_confirm') {
           final select = find.byKey(const ValueKey('killSwitchSelect_shop'));

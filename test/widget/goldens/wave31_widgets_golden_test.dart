@@ -100,7 +100,6 @@ void main() {
             child: build(state),
           ),
           matrix: [variant],
-          goldenBaseName: 'wave31_widgets_state',
         );
         expect(tester.takeException(), isNull);
         await expectLater(

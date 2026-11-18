@@ -52,8 +52,6 @@ void main() {
             child: build(state),
           ),
           matrix: [variant],
-          goldenBaseName:
-              'event_schema_audit_card_wave_33_schema_audit_state_golden_matrix',
         );
         expect(tester.takeException(), isNull);
         await expectLater(

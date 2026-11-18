@@ -79,7 +79,6 @@ void main() {
             child: build(state),
           ),
           matrix: [variant],
-          goldenBaseName: 'wave26_widgets_state',
         );
         expect(tester.takeException(), isNull);
         await expectLater(
