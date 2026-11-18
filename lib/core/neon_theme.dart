@@ -68,16 +68,23 @@ class NeonTheme {
   static const Curve curveSmooth = Curves.easeInOut;
 
   /// Spring parameters for playful, neutral and crisp interactions.
+  ///
+  /// Lower damping (12) lets this one overshoot and wobble before settling.
   static const SpringDescription springBouncy = SpringDescription(
     mass: 1,
     stiffness: 180,
     damping: 12,
   );
+
+  /// Neutral spring: damping (26) is high enough to settle without a visible
+  /// bounce.
   static const SpringDescription springGentle = SpringDescription(
     mass: 1,
     stiffness: 220,
     damping: 26,
   );
+
+  /// Stiffest spring (500) with firm damping, so it reaches its target quickly.
   static const SpringDescription springSnappy = SpringDescription(
     mass: 1,
     stiffness: 500,
@@ -129,8 +136,14 @@ class NeonTheme {
   static Color _bgMidDark = const Color(0xFF1C1740);
   static Color _bgBotDark = const Color(0xFF1A0A2E); // nền tối gốc trước pivot
 
+  /// Top stop of the vertical background gradient ([bgGradient]); resolves to
+  /// the dark or light variant from [dark] on every read.
   static Color get bgTop => dark ? _bgTopDark : _bgTopLight;
+
+  /// Middle stop of the background gradient; follows [dark].
   static Color get bgMid => dark ? _bgMidDark : _bgMidLight;
+
+  /// Bottom stop of the background gradient; follows [dark].
   static Color get bgBot => dark ? _bgBotDark : _bgBotLight;
 
   // --- Thẻ / panel sáng / tối ---
@@ -139,8 +152,14 @@ class NeonTheme {
   static Color _cardDark = const Color(0xFF1B1B3A); // panel gốc trước pivot
   static Color _cardAltDark = const Color(0xFF14142E);
 
+  /// Primary panel/card surface; follows [dark].
   static Color get card => dark ? _cardDark : _cardLight;
+
+  /// Secondary surface used beside [card] (nested or alternating panels);
+  /// follows [dark].
   static Color get cardAlt => dark ? _cardAltDark : _cardAltLight;
+
+  /// Alias of [card], kept for older call sites.
   static Color get panel => card; // alias tương thích callsite cũ
 
   // --- Mực chữ trên nền/thẻ ---
@@ -151,7 +170,11 @@ class NeonTheme {
   static Color _inkDark = const Color(0xFFEDEBFF); // trắng ngà trên nền tối
   static Color _inkSoftDark = const Color(0xFFA7A0D9);
 
+  /// Primary text color for [card]/[cardAlt] surfaces; follows [dark].
   static Color get ink => dark ? _inkDark : _inkLight;
+
+  /// Secondary text color (descriptions, captions); follows [dark]. The light
+  /// value is tuned for AA contrast on [card] and [cardAlt].
   static Color get inkSoft => dark ? _inkSoftDark : _inkSoftLight;
 
   /// [accent] adjusted to be readable as *text* (>= 4.5:1, WCAG AA) on both
@@ -235,10 +258,18 @@ class NeonTheme {
   static Color _lockedBorderDark = const Color(0xFF7C86A8);
   static Color _lockedFillDark = const Color(0xFF2A2A4A);
 
+  /// Border/icon color for a locked level node; follows [dark].
   static Color get lockedBorder =>
       dark ? _lockedBorderDark : _lockedBorderLight;
+
+  /// Fill color for a locked level node; follows [dark].
   static Color get lockedFill => dark ? _lockedFillDark : _lockedFillLight;
 
+  /// The 7 block/gem colors. With [colorBlindSafe] off these are the live
+  /// candy fields ([cyan], [magenta], [lime], [yellow], [orange], [purple],
+  /// [red]), so a reskin shows up here; with it on, the fixed
+  /// [colorBlindSafeGemColors]. Always 7 entries, so an index modulo 7 never
+  /// aliases two slots.
   static List<Color> get gemColors => colorBlindSafe
       ? colorBlindSafeGemColors
       : [
@@ -437,6 +468,8 @@ class NeonTheme {
   }
 
   /// Bright candy background gradient used across every screen (via NeonBg).
+  /// A top-to-bottom blend of [bgTop], [bgMid] and [bgBot], rebuilt on each
+  /// read so it follows [dark] and any reskin.
   static LinearGradient get bgGradient => LinearGradient(
     begin: Alignment.topCenter,
     end: Alignment.bottomCenter,
@@ -476,7 +509,9 @@ class NeonTheme {
   }
 
   /// "Chunky" drop shadow for casual cards/buttons: a soft shadow cast
-  /// downward to create a raised-block look.
+  /// downward to create a raised-block look. One shadow, [y] logical pixels
+  /// below the widget, tinted with the current [ink] at 18% opacity so it
+  /// follows [dark].
   static List<BoxShadow> drop({double y = 4, double blur = 10}) {
     return [
       BoxShadow(

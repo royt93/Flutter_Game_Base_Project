@@ -13,15 +13,47 @@
 /// (`doc/task/done/FEAT-76-accessibility-audit-cli.md`) for the reasoning.
 library;
 
+/// How serious a finding is. It is a label carried on each [AuditViolation];
+/// [scanAccessibility] reports every severity and does not filter on it, so
+/// what to do with it is up to the caller.
 enum AuditSeverity { info, warning, error }
 
+/// Stable id of an audit rule. [AuditBaseline.fromJson] matches a baseline
+/// entry's `rule` string against these names, so renaming a value breaks
+/// existing baseline files.
 enum AuditRuleId {
+  /// A file creates an `AnimationController` without ever mentioning
+  /// `reducedMotion`.
   reducedMotionCoverage,
+
+  /// Per-file check: `GestureDetector`/`InkWell` is used but the file has no
+  /// `Semantics(`, `semanticLabel` or `ExcludeSemantics` anywhere.
   tapTargetSemantics,
+
+  /// `EdgeInsets.only(`/`Positioned(` whose arguments contain a literal
+  /// `left:`/`right:` instead of a directional (start/end) variant.
   rtlDirectionalSafety,
+
+  /// A fixed `Colors.<name>` or `Color(0x...)` instead of a `NeonTheme` token
+  /// (`Colors.transparent` and any `Colors.white*`/`Colors.black*`, including
+  /// `white70` and `black54`, are exempt).
   hardcodedColor,
+
+  /// Per-site check: a `GestureDetector`/`InkWell` with no `Semantics(`,
+  /// `MergeSemantics(`, `semanticLabel` or `ExcludeSemantics(` within about
+  /// 8 lines before and 30 lines after it (the window is half-open, so the
+  /// far end is one line shorter). Stricter than
+  /// [tapTargetSemantics], which one unrelated marker anywhere in the file
+  /// satisfies.
   tapTargetSite,
+
+  /// A literal `width:`/`height:` below 48 within about 4 lines before or
+  /// 8 lines after (half-open window) a `GestureDetector`/`InkWell`. A `// a11y-ok: <reason>` comment with
+  /// a non-empty reason on that same line suppresses the hit.
   tapTargetSize,
+
+  /// A fixed English display string (`Text('...')`, `label:`, `title:`...) not
+  /// routed through a parameter or `.tr`. Info-level only.
   hardcodedString,
 }
 
@@ -31,6 +63,11 @@ enum AuditRuleId {
 /// [triggerPattern] match is itself always a violation (no "opt out"
 /// companion pattern makes sense for that rule).
 class AuditRule {
+  /// [id] and [severity] label the resulting [AuditViolation]; [description]
+  /// is the message shown for it. [requiredPattern] may be omitted for a rule
+  /// where any [triggerPattern] match is a violation. For
+  /// [AuditRuleId.tapTargetSite] and [AuditRuleId.tapTargetSize] the scan uses
+  /// its own per-site logic instead of these patterns.
   const AuditRule({
     required this.id,
     required this.severity,
@@ -213,6 +250,8 @@ bool _violatesRule(AuditRule rule, String content) {
 /// in (typically repo-relative), not validated against the filesystem
 /// by this pure function.
 class AuditViolation {
+  /// A finding of [ruleId] in [file], carrying that rule's [severity] and
+  /// [description].
   const AuditViolation({
     required this.file,
     required this.ruleId,
@@ -234,6 +273,8 @@ class AuditViolation {
 /// [AuditBaseline.fromJson], which silently drops any entry missing one
 /// rather than let a reason-less suppression through).
 class AuditSuppression {
+  /// Accepts every violation of [ruleId] in [file] (matched by exact path
+  /// string), with [reason] recording why.
   const AuditSuppression({
     required this.file,
     required this.ruleId,
@@ -250,10 +291,14 @@ class AuditSuppression {
 /// silently: [AuditSuppression.reason] stays readable in the baseline
 /// source file itself as the paper trail for "why this one's accepted".
 class AuditBaseline {
+  /// A baseline holding [suppressions]; use [fromJson] to read one from a file.
   const AuditBaseline(this.suppressions);
 
+  /// A baseline that suppresses nothing; the default for [scanAccessibility]'s
+  /// `baseline` argument.
   static const empty = AuditBaseline([]);
 
+  /// The accepted exceptions, each with its recorded reason.
   final List<AuditSuppression> suppressions;
 
   /// Parses a JSON `List` of `{file, rule, reason}` maps — an entry
@@ -284,6 +329,8 @@ class AuditBaseline {
     return AuditBaseline(entries);
   }
 
+  /// Whether some suppression has the same file path and rule id as
+  /// [violation]. The match is exact: no globbing or prefix matching.
   bool suppresses(AuditViolation violation) => suppressions.any(
     (s) => s.file == violation.file && s.ruleId == violation.ruleId,
   );

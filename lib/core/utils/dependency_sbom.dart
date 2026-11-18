@@ -14,12 +14,18 @@
 /// enforces a policy over data someone else produced.
 library;
 
+/// How a package is required, from the `dependency:` field in `pubspec.lock`.
+/// Any value other than `direct main` / `direct dev` is [transitive].
 enum DependencyType { directMain, directDev, transitive }
 
+/// Where a package is resolved from, from the lock file's `source:` field.
+/// A missing or unrecognized value is [unknown].
 enum DependencySource { hosted, sdk, git, path, unknown }
 
 /// One resolved package from `pubspec.lock`.
 class DependencyEntry {
+  /// All fields are required; [version] is the resolved version string from
+  /// the lock file, not a constraint.
   const DependencyEntry({
     required this.name,
     required this.version,
@@ -27,11 +33,19 @@ class DependencyEntry {
     required this.source,
   });
 
+  /// Package name as keyed in `pubspec.lock`.
   final String name;
+
+  /// Resolved version string, exactly as written in the lock file.
   final String version;
+
+  /// Direct main / direct dev / transitive.
   final DependencyType type;
+
+  /// Hosted, SDK, git, path, or unknown.
   final DependencySource source;
 
+  /// JSON form with `type` and `source` as enum names.
   Map<String, Object?> toJson() => {
     'name': name,
     'version': version,
@@ -70,6 +84,9 @@ DependencySource _parseSource(String raw) => switch (raw) {
 /// pub's own lock file format is a stable, first-party contract this
 /// package doesn't control, so surviving a future minor format tweak
 /// (an added field, say) matters more than being maximally strict.
+///
+/// A package block with no `dependency:` or no `version:` line is dropped
+/// rather than reported; a missing `source:` yields [DependencySource.unknown].
 List<DependencyEntry> parsePubspecLock(String content) {
   final entries = <DependencyEntry>[];
   String? currentName;
@@ -133,6 +150,7 @@ List<DependencyEntry> parsePubspecLock(String content) {
 /// already guarantees, so hashing/diffing 2 SBOMs of the same lock file
 /// is meaningful.
 class SbomDocument {
+  /// [generatedAtMs] is a caller-supplied epoch-millisecond timestamp.
   const SbomDocument({
     required this.packageName,
     required this.packageVersion,
@@ -140,13 +158,24 @@ class SbomDocument {
     required this.entries,
   });
 
+  /// Version of this document's JSON shape, written into [toJson].
   static const int schemaVersion = 1;
 
+  /// Name of the package the SBOM describes.
   final String packageName;
+
+  /// Version of that package.
   final String packageVersion;
+
+  /// When the document was generated (epoch ms, as given by the caller).
+  /// It differs between runs, so leave it out when diffing two SBOMs.
   final int generatedAtMs;
+
+  /// Resolved dependencies, name-sorted when built from [parsePubspecLock].
   final List<DependencyEntry> entries;
 
+  /// JSON form: `schemaVersion`, package fields, `generatedAtMs`, and the
+  /// `entries` list in their given order.
   Map<String, Object?> toJson() => {
     'schemaVersion': schemaVersion,
     'packageName': packageName,
@@ -191,6 +220,10 @@ const _copyleftMarkers = [
 /// header text — case-sensitive on purpose (a license file's own actual
 /// wording is what a legal reviewer would look at too, a lowercase
 /// substring match risks matching unrelated prose).
+///
+/// Returns [LicenseCategory.unknown] for `null` or blank text. Copyleft
+/// markers are checked before permissive ones, so a text containing both is
+/// [LicenseCategory.copyleft].
 LicenseCategory classifyLicenseText(String? licenseFileContent) {
   if (licenseFileContent == null || licenseFileContent.trim().isEmpty) {
     return LicenseCategory.unknown;
@@ -204,11 +237,13 @@ LicenseCategory classifyLicenseText(String? licenseFileContent) {
   return LicenseCategory.unknown;
 }
 
+/// How serious an advisory or audit issue is, from [low] up to [critical].
 enum AdvisorySeverity { low, medium, high, critical }
 
 /// One vulnerability advisory — supplied by the CALLER (see this file's
 /// doc comment), never produced by this file itself.
 class VulnerabilityAdvisory {
+  /// An advisory applies to exactly one [package] at one [version].
   const VulnerabilityAdvisory({
     required this.package,
     required this.version,
@@ -216,9 +251,17 @@ class VulnerabilityAdvisory {
     required this.description,
   });
 
+  /// Name of the affected package.
   final String package;
+
+  /// Exact affected version; matched with `==` against a lock entry's version,
+  /// so a range is not understood.
   final String version;
+
+  /// Severity copied onto the resulting [SbomIssue].
   final AdvisorySeverity severity;
+
+  /// Text copied onto the resulting [SbomIssue.detail].
   final String description;
 }
 
@@ -231,6 +274,8 @@ class VulnerabilityAdvisory {
 /// applying — no special "expired" state to handle, the issue just
 /// reappears in the next audit.
 class SbomSuppression {
+  /// Every field is required so an exception always names its package, issue
+  /// kind, justification, owner and expiry.
   const SbomSuppression({
     required this.package,
     required this.kind,
@@ -239,20 +284,41 @@ class SbomSuppression {
     required this.expiresAtMs,
   });
 
+  /// Package the exception applies to.
   final String package;
+
+  /// Which issue kind it silences; other kinds for the same package still
+  /// appear.
   final SbomIssueKind kind;
+
+  /// Why the issue is accepted.
   final String reason;
+
+  /// Person or team accountable for re-reviewing it.
   final String owner;
+
+  /// Epoch ms after which the suppression stops applying. It is active only
+  /// while this is strictly greater than the audit's `nowMs`.
   final int expiresAtMs;
 }
 
+/// The kinds of problem [auditDependencies] can report.
 enum SbomIssueKind {
+  /// No `LICENSE` text, or it matched no known header. Hosted packages only.
   unknownLicense,
+
+  /// License text matched a GPL/LGPL/AGPL header. Hosted packages only.
   copyleftLicense,
+
+  /// A supplied [VulnerabilityAdvisory] matched a package at its exact version.
   vulnerability,
+
+  /// A package named in `unpinnedPackages` has no version constraint.
   unpinnedConstraint,
 }
 
+/// One problem found by [auditDependencies] that no unexpired suppression
+/// covers.
 class SbomIssue {
   const SbomIssue({
     required this.package,
@@ -261,9 +327,17 @@ class SbomIssue {
     required this.detail,
   });
 
+  /// Package the issue is about.
   final String package;
+
+  /// What kind of problem it is.
   final SbomIssueKind kind;
+
+  /// Severity: `high` for copyleft, `low` for unknown license, `medium` for
+  /// unpinned, and the advisory's own severity for a vulnerability.
   final AdvisorySeverity severity;
+
+  /// Human-readable explanation.
   final String detail;
 
   @override
@@ -278,6 +352,14 @@ class SbomIssue {
 /// [classifyLicenseText] result — a package this map has no entry for
 /// (e.g. its `LICENSE` file couldn't be read) is treated as
 /// [LicenseCategory.unknown], same as an empty/unparseable one.
+///
+/// License checks run for [DependencySource.hosted] entries only; SDK, git and
+/// path packages are skipped. An advisory matches when any entry (any source)
+/// has the same name and exact version. [unpinnedPackages] lists package names
+/// whose `pubspec.yaml` constraint is `any`; each yields one issue. A
+/// suppression applies when package and kind match and its expiry is after
+/// [nowMs]. Issues come back license first (in entry order), then
+/// vulnerabilities, then unpinned.
 List<SbomIssue> auditDependencies({
   required List<DependencyEntry> entries,
   required Map<String, LicenseCategory> licenseByPackage,
