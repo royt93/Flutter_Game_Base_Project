@@ -72,6 +72,22 @@ void main() {
   );
 
   test(
+    'generate() mặc định ghi dependency hosted ^0.7.0 vào pubspec',
+    () async {
+      final result = await generate(
+        name: 'hosted_default',
+        outputDir: workDir.path,
+      );
+
+      final pubspec = File('${result.path}/pubspec.yaml').readAsStringSync();
+      expect(pubspec, contains('roy_casual_kit: ^0.7.0'));
+      expect(pubspec, isNot(contains('roy_casual_kit:\n    path:')));
+      expect(readTemplateVersion(result.path), 4);
+    },
+    timeout: const Timeout(Duration(minutes: 2)),
+  );
+
+  test(
     'generate() từ chối ghi đè thư mục đã tồn tại và không rỗng',
     () async {
       final existing = Directory('${workDir.path}/taken');

@@ -1,3 +1,4 @@
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
@@ -17,6 +18,38 @@ void main() {
   });
 
   group('WakeLockService', () {
+    test('init requires registered storage', () async {
+      await Get.delete<StorageService>(force: true);
+      await expectLater(WakeLockService().init(), throwsA(anything));
+    });
+
+    test(
+      'init restores preference even when the platform rejects toggling',
+      () async {
+        const channel =
+            'dev.flutter.pigeon.wakelock_plus_platform_interface.WakelockPlusApi.toggle';
+        final messenger =
+            TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
+        var calls = 0;
+        messenger.setMockMessageHandler(channel, (_) async {
+          calls++;
+          return const StandardMessageCodec().encodeMessage(<Object?>[
+            'unavailable',
+            'Wakelock unsupported',
+            null,
+          ]);
+        });
+        addTearDown(() => messenger.setMockMessageHandler(channel, null));
+        await store.setBool(StorageKeys.wakeLockEnabled, false);
+        final service = WakeLockService();
+
+        await expectLater(service.init(), completes);
+
+        expect(service.enabled.value, isFalse);
+        expect(calls, 1);
+      },
+    );
+
     test('maybe trả về null khi chưa Get.put', () {
       expect(WakeLockService.maybe, isNull);
     });
@@ -81,10 +114,13 @@ void main() {
       expect(service.enabled.value, true);
     });
 
-    test('không throw khi platform wakelock không khả dụng (test env)', () {
-      final service = WakeLockService();
-      expect(() => service.init(), returnsNormally);
-      expect(() => service.setEnabled(false), returnsNormally);
-    });
+    test(
+      'không throw khi platform wakelock không khả dụng (test env)',
+      () async {
+        final service = WakeLockService();
+        await expectLater(service.init(), completes);
+        await expectLater(service.setEnabled(false), completes);
+      },
+    );
   });
 }

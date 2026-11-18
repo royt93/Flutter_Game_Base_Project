@@ -111,7 +111,7 @@ this is the shape, not a full inventory:
   `AudioManager`, `fireHaptic` + `HapticChoreographer`, `NeonTheme` design
   tokens (light-candy default, neon-dark and color-blind-safe variants).
 - **Utilities** (`lib/core/utils/`) — 20+ pure helpers the services above
-  delegate to: clock/replay determinism (`ClampedClock`, `TrustedClockService`,
+  delegate to: clock/replay determinism (`nowMsClamped`, `todayEpochDayClamped`, `TrustedClockService`,
   `SeededRandom`), formatting (`fmtDur`, `fmtNum`, `fitFontSizeForLongestWord`),
   resilience (`AsyncActionGuard`, `RetryPolicy`, `throttled`), and the library
   code behind every `tool/*_check.dart` gate below.
@@ -594,9 +594,11 @@ await reminders.scheduleNext(delay: const Duration(hours: 24), title: 'Come back
 
 #### WakeLockService
 ```dart
-final wakeLock = WakeLockService(); // or the bootstrap `wakeLock` module
+// StorageService must already be registered; alternatively use bootstrap's
+// storage + wakeLock modules.
+final wakeLock = WakeLockService();
+await wakeLock.init(); // restores preference; platform failures are ignored
 Get.put(wakeLock, permanent: true);
-await wakeLock.init(); // restores the saved on/off preference and applies it
 await wakeLock.setEnabled(false); // e.g. a settings toggle
 ```
 Keeps the screen from auto-locking while `enabled` (defaults to `true` —
@@ -729,6 +731,8 @@ dart run tool/object_pool_benchmark.dart             # pooled-vs-unpooled alloca
 dart run tool/remote_schema_compiler.dart --schema=event_schema.json --outDir=lib/generated
 dart run tool/create_consumer_app.dart --name=my_game --org=com.example
 ```
+The consumer generator defaults to the hosted dependency `roy_casual_kit: ^0.7.0`.
+Use `--kitVersion=<constraint>` to override it or `--kitPath=<path>` for a local checkout.
 `accessibility_audit_check`, `dependency_sbom_check`, `asset_license_check`,
 `performance_budget_check`, and `deprecation_check` are wired into CI's
 `quality-gate` job (see `.github/workflows/ci.yml`), scoped to only run

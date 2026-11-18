@@ -24,9 +24,8 @@ class WakeLockService extends GetxService {
   static WakeLockService? get maybe =>
       Get.isRegistered<WakeLockService>() ? Get.find<WakeLockService>() : null;
 
-  /// Restores the saved preference and applies it to the real platform
-  /// wakelock. Never throws — a platform with no wakelock support (e.g. some
-  /// test environments) just leaves the screen's own timeout behavior alone.
+  /// Requires a registered [StorageService] to restore the saved preference.
+  /// Platform wakelock failures are ignored; storage lookup/read errors propagate.
   Future<void> init() async {
     enabled.value = StorageService.to.getBool(
       StorageKeys.wakeLockEnabled,

@@ -5,7 +5,7 @@
 //
 // Usage:
 //   dart run tool/create_consumer_app.dart --name=my_game [--output=.]
-//     [--org=com.example] [--kitVersion=^0.4.1] [--kitPath=<path>] [--force]
+//     [--org=com.example] [--kitVersion=^0.7.0] [--kitPath=<path>] [--force]
 //   dart run tool/create_consumer_app.dart --check-version=<app_dir>
 //
 // Shells out to the REAL `flutter create` for the platform scaffolding
@@ -28,7 +28,7 @@ import 'dart:io';
 /// (auto-migration) is intentionally NOT implemented by this task — see
 /// this task's Quyết định for why that's a deliberately separate, larger
 /// feature.
-const int templateSchemaVersion = 3;
+const int templateSchemaVersion = 4;
 
 const _templateVersionFileName = '.roy_template_version';
 
@@ -114,7 +114,7 @@ bool isValidOrg(String org) {
 /// the generated smoke test's `shared_preferences` import). Versions
 /// pinned to match this package's own `pubspec.yaml` so both resolve the
 /// same package graph.
-String kitDependencyBlock({String? kitPath, String kitVersion = '^0.4.1'}) {
+String kitDependencyBlock({String? kitPath, String kitVersion = '^0.7.0'}) {
   final kitLine = kitPath != null
       ? '  roy_casual_kit:\n    path: $kitPath\n'
       : '  roy_casual_kit: $kitVersion\n';
@@ -439,7 +439,8 @@ void main() {
 /// Device/emulator boot test for a generated consumer app: starts the real
 /// `main()` and checks the Home screen renders. Bounded `pump`, never
 /// `pumpAndSettle` - `NeonBg`/Flame run a permanent ticker.
-String integrationBootTestTemplate({required String appName}) => '''
+String integrationBootTestTemplate({required String appName}) =>
+    '''
 import 'dart:convert';
 import 'dart:ui' as ui;
 
@@ -635,7 +636,7 @@ Future<GeneratedApp> generate({
   String outputDir = '.',
   String org = 'com.example',
   String? kitPath,
-  String kitVersion = '^0.4.1',
+  String kitVersion = '^0.7.0',
   bool force = false,
 }) async {
   if (!isValidAppName(name)) {
@@ -687,10 +688,7 @@ Future<GeneratedApp> generate({
   );
   write('lib/screens/game_demo_screen.dart', gameDemoScreenTemplate());
   write('test/widget_test.dart', smokeTestTemplate(appName: appName));
-  write(
-    'test/consumer_regression_test.dart',
-    consumerRegressionTestTemplate(),
-  );
+  write('test/consumer_regression_test.dart', consumerRegressionTestTemplate());
   write(
     'integration_test/app_boot_test.dart',
     integrationBootTestTemplate(appName: appName),
@@ -776,7 +774,7 @@ Future<void> main(List<String> args) async {
       outputDir: options['output'] ?? '.',
       org: options['org'] ?? 'com.example',
       kitPath: options['kitPath'],
-      kitVersion: options['kitVersion'] ?? '^0.4.1',
+      kitVersion: options['kitVersion'] ?? '^0.7.0',
       force: force,
     );
     stdout.writeln('Đã tạo app tại ${result.path}:');

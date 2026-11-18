@@ -1,3 +1,9 @@
+## Unreleased
+
+- **Behavior change:** `tool/create_consumer_app.dart` now generates consumers with the hosted dependency `roy_casual_kit: ^0.7.0` by default (it was `^0.4.1`); pass `--kitVersion` or `--kitPath` to override. The generated template schema marker is now 4.
+- Clarified `WakeLockService.init()`: a registered `StorageService` is required and storage errors propagate; only platform wakelock failures are ignored. Behavior is unchanged.
+- README now names `nowMsClamped` and `todayEpochDayClamped` instead of a non-existent `ClampedClock` class.
+
 ## 0.7.0
 
 - Added `NeonTheme.textOnFill(Color)`: black or white, whichever reads better on a solid fill (at least 4.5:1 for any opaque color); the fill is never changed.
