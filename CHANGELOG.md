@@ -1,4 +1,4 @@
-## Unreleased
+## 0.7.0
 
 - Added `NeonTheme.textOnFill(Color)`: black or white, whichever reads better on a solid fill (at least 4.5:1 for any opaque color); the fill is never changed.
 - **Behavior change:** text on solid accent badges now uses `textOnFill` instead of fixed white, so some labels are black: the unread count in `ClanChatPreviewBar`, the claimable count in `QuestProgressPill`, the count in `IconBadgeButton` (follows a custom `badgeColor`), the badge labels in `ComebackBundleCard` and `DailyOfferStack`, the level number in `MilestoneCelebrationDialog`, and the selected label of `SegmentedTabBar` (follows `activeColor`). White measured 1.79:1 to 2.78:1 on these fills. Fills, borders and icons are unchanged.
