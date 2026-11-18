@@ -30,6 +30,8 @@ enum RewardTransactionStatus { pending, partial, committed }
 /// once ("+50 coin, +1 energy"), which is why a transaction is a list of
 /// these rather than a single currency/amount pair.
 class RewardLine {
+  /// [currency] is the wallet currency id; [amount] must be `> 0` — the
+  /// pipeline rejects an empty currency or non-positive amount at grant time.
   const RewardLine({required this.currency, required this.amount});
 
   final String currency;
@@ -37,6 +39,9 @@ class RewardLine {
 
   Map<String, Object?> toJson() => {'currency': currency, 'amount': amount};
 
+  /// Returns `null` (instead of throwing) for a non-map, an empty currency
+  /// or a non-positive amount, so one corrupt persisted line is skipped
+  /// rather than failing the whole record.
   static RewardLine? fromJson(Object? json) {
     if (json is! Map) return null;
     final currency = asStringOr(json['currency'], '');
@@ -63,6 +68,8 @@ class RewardTransactionRecord {
     this.receiptMeta,
   }) : itemLines = const [];
 
+  /// Like the default constructor but also carries [itemLines], the
+  /// inventory items granted in the same transaction.
   const RewardTransactionRecord.withItems({
     required this.transactionId,
     required this.source,
@@ -85,6 +92,8 @@ class RewardTransactionRecord {
   /// Empty for every reward that predates FEAT-96 or never involved items.
   final List<InventoryLine> itemLines;
 
+  /// Copy with only [status] replaced; every other field, including
+  /// [itemLines] and [receiptMeta], is carried over unchanged.
   RewardTransactionRecord copyWith({RewardTransactionStatus? status}) =>
       itemLines.isEmpty
       ? RewardTransactionRecord(
@@ -118,6 +127,11 @@ class RewardTransactionRecord {
           .toList(),
   };
 
+  /// Tolerant parse of [toJson] output. Returns `null` for a non-map, an
+  /// empty `transactionId`, or a record with no valid currency or item line.
+  /// An unknown `source` becomes [RewardSource.other] and an unknown `status`
+  /// becomes `pending`, so such a record is retried by
+  /// [RewardTransactionPipeline.resumePending] instead of being dropped.
   static RewardTransactionRecord? fromJson(Object? json) {
     if (json is! Map) return null;
     final id = asStringOr(json['transactionId'], '');
@@ -264,6 +278,10 @@ class RewardTransactionPipeline extends GetxService {
     _validateCapacityAndHydrate();
   }
 
+  /// Like the default constructor but also takes the [inventory] that item
+  /// lines are granted into, enabling [grantWithItems], [preview] with
+  /// `itemLines`, and [executePlan] for combined currency+item rewards.
+  /// Throws [ArgumentError] if [capacity] is not `> 0`.
   RewardTransactionPipeline.withInventory({
     required this.wallet,
     required this.inventory,
@@ -295,6 +313,7 @@ class RewardTransactionPipeline extends GetxService {
     super.onClose();
   }
 
+  /// Wallet that every currency line is applied to via `earn`.
   final EconomyWallet wallet;
 
   /// FEAT-96: required whenever a [preview]/[executePlan]/[grant] call
@@ -308,6 +327,8 @@ class RewardTransactionPipeline extends GetxService {
   /// [grant]'s result into a failure (see class doc).
   final void Function(RewardTransactionRecord record)? onAnalytics;
 
+  /// Max records kept in [auditTrail] (and persisted); the oldest is evicted
+  /// first once exceeded. Must be `> 0`.
   final int capacity;
   final AsyncActionGuard _guard;
   final String _key;
@@ -319,6 +340,7 @@ class RewardTransactionPipeline extends GetxService {
   /// [auditTrail] is the durable record.
   final onGranted = Rx<RewardTransactionRecord?>(null);
 
+  /// The [wallet]'s storage, where the audit trail is persisted.
   StorageService get storage => wallet.storage;
 
   /// Bounded, newest-last. Like `EconomyWallet`'s own transaction list, the
@@ -329,6 +351,8 @@ class RewardTransactionPipeline extends GetxService {
   /// is lost, not correctness.
   List<RewardTransactionRecord> get auditTrail => List.unmodifiable(_records);
 
+  /// Registered instance, or `null` when none is registered (safe to call
+  /// before/without the pipeline, e.g. in widget tests).
   static RewardTransactionPipeline? get maybe =>
       Get.isRegistered<RewardTransactionPipeline>()
       ? Get.find<RewardTransactionPipeline>()
@@ -427,6 +451,11 @@ class RewardTransactionPipeline extends GetxService {
     receiptMeta: receiptMeta,
   );
 
+  /// Grants [lines] (currency, may be empty) and [itemLines] (inventory)
+  /// under [transactionId]. Same validation, idempotency and `partial`
+  /// resume rules as [grant]; currency lines apply first, then items. Fails
+  /// with `SdkErrorKind.validation` if [itemLines] is non-empty and no
+  /// inventory was configured via [RewardTransactionPipeline.withInventory].
   Future<SdkResult<RewardTransactionRecord>> grantWithItems({
     required RewardSource source,
     required String transactionId,
@@ -818,6 +847,9 @@ class RewardTransactionPipeline extends GetxService {
     }
   }
 
+  /// [grant] with [RewardSource.dailyQuest] and the deterministic id
+  /// `daily_quest:$questId:$periodKey`, so claiming the same quest twice in
+  /// one period grants once.
   Future<SdkResult<RewardTransactionRecord>> grantFromDailyQuest({
     required String questId,
     required String periodKey,
@@ -828,6 +860,9 @@ class RewardTransactionPipeline extends GetxService {
     lines: lines,
   );
 
+  /// [grant] with [RewardSource.dailyLogin] and the deterministic id
+  /// `daily_login:day$day:$periodKey`, so a repeated claim for the same day
+  /// and period grants once.
   Future<SdkResult<RewardTransactionRecord>> grantFromDailyLogin({
     required int day,
     required String periodKey,
@@ -838,6 +873,10 @@ class RewardTransactionPipeline extends GetxService {
     lines: lines,
   );
 
+  /// [grant] with [RewardSource.purchase] and the id `purchase:$receiptId`.
+  /// Call only after the store receipt was verified. A replayed [receiptId]
+  /// whose first grant committed returns that record without granting again;
+  /// an unfinished (pending/partial) one is resumed instead.
   Future<SdkResult<RewardTransactionRecord>> grantFromPurchase({
     required String receiptId,
     required List<RewardLine> lines,

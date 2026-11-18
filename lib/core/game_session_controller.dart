@@ -5,8 +5,14 @@ import 'lifecycle_coordinator.dart';
 import 'reproduction_capsule.dart';
 import 'utils/sdk_result.dart';
 
+/// Phase of one game session. Normal flow is `loading` → `ready` → `playing`
+/// → (`paused` ↔ `playing`)* → `won` | `lost`; `won`/`lost` are terminal until
+/// [GameSessionController.restart] returns the session to `loading`.
 enum GameSessionPhase { loading, ready, playing, paused, won, lost }
 
+/// Why a session is paused. Reasons stack: the session returns to `playing`
+/// only after every active reason has been resumed. `system` is raised by
+/// the app-background lifecycle hook, `user` by the game's own pause UI.
 enum GamePauseReason { user, system }
 
 String _phaseToJson(GameSessionPhase phase) => phase.name;
@@ -28,6 +34,9 @@ GamePauseReason? _pauseReasonFromJson(Object? raw) {
 /// internal pacing — same anti-fingerprinting posture `ReplayRecorder`
 /// already documents for its own offsets.
 class GameSessionTimelineEntry {
+  /// [offsetMs] is milliseconds since the session's stopwatch started;
+  /// [pauseReasons] is only meaningful for `paused` entries; [metadata]
+  /// must already be sanitized (the controller does that before recording).
   const GameSessionTimelineEntry({
     required this.offsetMs,
     required this.phase,
@@ -51,6 +60,9 @@ class GameSessionTimelineEntry {
     'metadata': metadata,
   };
 
+  /// Tolerant parse of [toJson] output: a missing or wrong-typed field falls
+  /// back to `0` / `loading` / empty, and unknown pause reasons are dropped,
+  /// so a hand-edited or older export never throws.
   static GameSessionTimelineEntry fromJson(Map<String, Object?> json) {
     final rawReasons = json['pauseReasons'];
     final reasons = <GamePauseReason>{};
@@ -76,6 +88,8 @@ class GameSessionTimelineEntry {
 /// [GameSessionTimelineEntry] list — see
 /// [GameSessionController.exportTimeline].
 class GameSessionTimelineExport {
+  /// [durationMs] is the offset of the last entry; [terminalPhase] is `null`
+  /// while the session has not ended (not won/lost).
   const GameSessionTimelineExport({
     required this.schemaVersion,
     required this.durationMs,
@@ -97,6 +111,8 @@ class GameSessionTimelineExport {
     'entries': [for (final e in entries) e.toJson()],
   };
 
+  /// Tolerant parse of [toJson] output: wrong-typed numbers become `0`,
+  /// non-map entries are skipped, and an unknown phase name maps to `loading`.
   static GameSessionTimelineExport fromJson(Map<String, Object?> json) {
     final rawEntries = json['entries'];
     final terminalRaw = json['terminalPhase'];
@@ -117,12 +133,21 @@ class GameSessionTimelineExport {
   }
 }
 
+/// Immutable view of a session's current [phase] and the [pauseReasons]
+/// active while it is `paused` (empty in every other phase).
 class GameSessionSnapshot {
+  /// Creates a snapshot; [pauseReasons] defaults to none.
   const GameSessionSnapshot(this.phase, {this.pauseReasons = const {}});
   final GameSessionPhase phase;
   final Set<GamePauseReason> pauseReasons;
+
+  /// Whether the session has ended (`won` or `lost`) and can no longer
+  /// start, pause or resume until restarted.
   bool get isTerminal =>
       phase == GameSessionPhase.won || phase == GameSessionPhase.lost;
+
+  /// Copy with [phase] and/or [pauseReasons] replaced; the reason set is
+  /// stored unmodifiable.
   GameSessionSnapshot copyWith({
     GameSessionPhase? phase,
     Set<GamePauseReason>? pauseReasons,
@@ -136,6 +161,9 @@ class GameSessionSnapshot {
 class GameSessionController extends GetxController {
   static const int _defaultTimelineCapacity = 50;
 
+  /// Default controller: hook name `'game-session'`, a 50-entry timeline and
+  /// no allowed metadata keys. Safe for a single controller per [lifecycle];
+  /// use [GameSessionController.withHookName] when sharing one coordinator.
   GameSessionController({this.lifecycle})
     : hookName = 'game-session',
       timelineCapacity = _defaultTimelineCapacity,
@@ -222,6 +250,8 @@ class GameSessionController extends GetxController {
     }
   }
 
+  /// Coordinator whose background/foreground events auto-pause and resume
+  /// this session with [GamePauseReason.system]; `null` disables that.
   final RoyLifecycleCoordinator? lifecycle;
 
   /// Name this controller registers/removes its lifecycle hook under via
@@ -230,7 +260,12 @@ class GameSessionController extends GetxController {
   /// across more than one controller instance.
   final String hookName;
 
+  /// Observable current phase and active pause reasons; starts at `loading`.
   final snapshot = const GameSessionSnapshot(GameSessionPhase.loading).obs;
+
+  /// Phase-change history of the current run, oldest first. Records only real
+  /// phase changes (an overlapping pause reason adds nothing) and is reset to
+  /// `[loading]` by [restart].
   final events = <GameSessionPhase>[].obs;
 
   /// ENH-96: max entries [timeline] retains — oldest evicted first once
@@ -338,6 +373,9 @@ class GameSessionController extends GetxController {
       ? Get.find<GameSessionController>()
       : null;
 
+  /// Registers the lifecycle hook (when [lifecycle] is set): app background
+  /// pauses with [GamePauseReason.system], any other event resumes it.
+  /// Failed pause/resume results are ignored there.
   @override
   void onInit() {
     super.onInit();
@@ -350,11 +388,21 @@ class GameSessionController extends GetxController {
     });
   }
 
+  /// `loading` → `ready`. Any other phase returns an `SdkFailure`
+  /// (`SdkErrorKind.validation`, not retryable) and changes nothing.
   SdkResult<GameSessionSnapshot> markReady() =>
       _transition(GameSessionPhase.ready, from: {GameSessionPhase.loading});
+
+  /// `ready` → `playing`. Fails with `SdkErrorKind.validation` from any other
+  /// phase, including `paused`; use [resume] for that.
   SdkResult<GameSessionSnapshot> start() =>
       _transition(GameSessionPhase.playing, from: {GameSessionPhase.ready});
+
+  /// `playing` → `won` (terminal). Fails with `SdkErrorKind.validation` from
+  /// any other phase, so a paused session must be resumed first.
   SdkResult<GameSessionSnapshot> win() => winWithMetadata(const {});
+
+  /// `playing` → `lost` (terminal). Same failure rules as [win].
   SdkResult<GameSessionSnapshot> lose() => loseWithMetadata(const {});
 
   /// ENH-96: same transition as [win], plus [metadata] recorded on the
@@ -379,6 +427,10 @@ class GameSessionController extends GetxController {
     metadata: metadata,
   );
 
+  /// Adds [reason] to the active pause reasons. Allowed while `playing` or
+  /// already `paused` (reasons stack); fails with `SdkErrorKind.validation`
+  /// in a terminal phase or any phase before `playing`. Pausing with a reason
+  /// that is already active succeeds and records another timeline entry.
   SdkResult<GameSessionSnapshot> pause(GamePauseReason reason) {
     final current = snapshot.value;
     if (current.isTerminal) return _reject('Terminal session cannot pause');
@@ -405,6 +457,10 @@ class GameSessionController extends GetxController {
     return SdkSuccess(snapshot.value);
   }
 
+  /// Removes [reason] from the active pause reasons. The phase returns to
+  /// `playing` only when no reason remains; otherwise it stays `paused`.
+  /// Fails with `SdkErrorKind.validation` if the session is not paused or
+  /// [reason] is not currently active.
   SdkResult<GameSessionSnapshot> resume(GamePauseReason reason) {
     final current = snapshot.value;
     if (current.phase != GameSessionPhase.paused ||
@@ -429,6 +485,9 @@ class GameSessionController extends GetxController {
     return SdkSuccess(snapshot.value);
   }
 
+  /// Resets to `loading` from any phase (including terminal) and starts a
+  /// fresh run: [events] and the timeline are cleared and offsets restart at
+  /// 0. Always succeeds.
   SdkResult<GameSessionSnapshot> restart() {
     snapshot.value = const GameSessionSnapshot(GameSessionPhase.loading);
     // Resets, not appends — `events` is this session's history, and a
@@ -463,6 +522,7 @@ class GameSessionController extends GetxController {
     retryable: false,
   );
 
+  /// Removes this controller's lifecycle hook (by [hookName]).
   @override
   void onClose() {
     lifecycle?.removeHook(hookName);

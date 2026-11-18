@@ -55,7 +55,12 @@ class SyncAck extends SyncOutcome {
 /// diverged from what was queued — [remotePayload] is its current value,
 /// handled per [ConflictPolicy].
 class SyncConflict extends SyncOutcome {
+  /// [remotePayload] is the authority's current payload for the same key.
   const SyncConflict(this.remotePayload);
+
+  /// The remote side's value, handed to the `merger` under
+  /// [ConflictPolicy.merge] or parked in [OutboxItem.remotePayload] for
+  /// manual review.
   final Map<String, Object?> remotePayload;
 }
 
@@ -88,6 +93,9 @@ enum ManualResolution {
 /// persisted locally in plain JSON" caveat as
 /// `RewardTransactionRecord.receiptMeta` (FEAT-42).
 class OutboxItem {
+  /// [idempotencyKey] must be non-empty to survive a reload (see
+  /// [fromJson]). [priority] defaults to `0`; [expiresAtMs], when set, is
+  /// an absolute [nowMsClamped] timestamp after which the item is dropped.
   const OutboxItem({
     required this.idempotencyKey,
     required this.payload,
@@ -101,6 +109,8 @@ class OutboxItem {
   /// than running both, and is what a real [OutboxUploader] backend should
   /// use to dedupe a retried request.
   final String idempotencyKey;
+
+  /// The caller-defined data handed to the uploader on each attempt.
   final Map<String, Object?> payload;
 
   /// Higher drains first; ties keep insertion order.
@@ -119,6 +129,9 @@ class OutboxItem {
   /// `null` otherwise.
   final Map<String, Object?>? remotePayload;
 
+  /// Copy with the given fields replaced. [idempotencyKey], [priority] and
+  /// [expiresAtMs] are always carried over. A `null` argument keeps the
+  /// current value, so [remotePayload] can't be cleared through this method.
   OutboxItem copyWith({
     Map<String, Object?>? payload,
     bool? manualReview,
@@ -132,6 +145,7 @@ class OutboxItem {
     remotePayload: remotePayload ?? this.remotePayload,
   );
 
+  /// Persisted form; [expiresAtMs] and [remotePayload] are omitted when `null`.
   Map<String, Object?> toJson() => {
     'idempotencyKey': idempotencyKey,
     'payload': payload,
@@ -141,6 +155,11 @@ class OutboxItem {
     if (remotePayload != null) 'remotePayload': remotePayload,
   };
 
+  /// Tolerant inverse of [toJson]. Returns `null` for a non-map or a missing/
+  /// empty `idempotencyKey` (so one corrupt entry is skipped on hydrate); a
+  /// non-map `payload` becomes `{}`, a non-numeric `priority` becomes `0`,
+  /// and a present but non-numeric `expiresAtMs` becomes `0` (already
+  /// expired, so the item is dropped on the next drain).
   static OutboxItem? fromJson(Object? json) {
     if (json is! Map) return null;
     final key = asStringOr(json['idempotencyKey'], '');
@@ -194,6 +213,12 @@ class OutboxItem {
 /// same way every other kit service's `storageKey` does — pass a distinct
 /// one per independent outbox instance (e.g. one per save slot).
 class OfflineOutboxService extends GetxService {
+  /// Loads any persisted items immediately, and again whenever [storage]
+  /// is restored or erased. [connectivity], when given, triggers [drain] on
+  /// each online transition (once the service is initialised) and after
+  /// each [enqueue] while online. Throws [ArgumentError] if [capacity] is
+  /// not `> 0`, or if [conflictPolicy] is [ConflictPolicy.merge] without a
+  /// [merger]. [storageKey] defaults to the shared outbox key.
   OfflineOutboxService({
     required this.storage,
     required this.uploader,
@@ -234,16 +259,32 @@ class OfflineOutboxService extends GetxService {
     storage.replaceEpoch.addListener(_hydrate);
   }
 
+  /// Where the outbox is persisted (as one JSON list under the storage key).
   final StorageService storage;
+
+  /// Performs the actual sync of one item; see [OutboxUploader].
   final OutboxUploader uploader;
+
+  /// Optional online/offline signal; without it the caller drives [drain].
   final ConnectivityCoordinator? connectivity;
+
+  /// How a [SyncConflict] is resolved; defaults to [ConflictPolicy.manual].
   final ConflictPolicy conflictPolicy;
+
+  /// Required (and only used) when [conflictPolicy] is [ConflictPolicy.merge].
   final ConflictMerger? merger;
+
+  /// Maximum number of queued items; see [enqueue] for the eviction rule.
   final int capacity;
+
+  /// Backoff applied to transient [uploader] failures within one [drain]
+  /// pass (default: 3 attempts).
   final RetryPolicy retryPolicy;
   final RetryExecutor _retryExecutor;
   final String _key;
 
+  /// All queued items, including those parked for manual review. Observable;
+  /// treat as read-only and mutate through the service's methods.
   final items = <OutboxItem>[].obs;
   bool _draining = false;
   // BUG-89: set by `enqueue` when it sees a drain already in flight — the
@@ -256,9 +297,12 @@ class OfflineOutboxService extends GetxService {
   bool _dirtyDuringDrain = false;
   StreamSubscription<ConnectivityState>? _connectivitySub;
 
+  /// Items parked by a conflict, waiting for [resolveManual]. [drain] skips them.
   List<OutboxItem> get manualReviewItems =>
       items.where((i) => i.manualReview).toList();
 
+  /// Null-safe accessor for call sites that may run before/without this
+  /// service registered.
   static OfflineOutboxService? get maybe =>
       Get.isRegistered<OfflineOutboxService>()
       ? Get.find<OfflineOutboxService>()
@@ -298,7 +342,12 @@ class OfflineOutboxService extends GetxService {
 
   /// Queues [payload] under [idempotencyKey] — replaces any existing item
   /// with the same key rather than duplicating it. Bounded at [capacity]:
-  /// once full, the lowest-[priority] item is evicted to make room.
+  /// once full, the lowest-[priority] item is evicted to make room, but only
+  /// an item with strictly lower priority than this one and not parked for
+  /// manual review. Returns an [SdkErrorKind.validation] failure (nothing
+  /// queued) for an empty [idempotencyKey], or when full with nothing
+  /// evictable. When connectivity reports online, a [drain] starts
+  /// automatically; otherwise the caller drains.
   SdkResult<void> enqueue({
     required String idempotencyKey,
     required Map<String, Object?> payload,
@@ -370,6 +419,11 @@ class OfflineOutboxService extends GetxService {
   /// Attempts to sync every non-[OutboxItem.manualReview] item,
   /// highest-[OutboxItem.priority] first. Safe to call concurrently with
   /// itself (a no-op re-entry) or with [enqueue]/[resolveManual].
+  ///
+  /// An item whose [OutboxItem.expiresAtMs] has passed is removed without
+  /// being uploaded. An item whose upload keeps failing past [retryPolicy]
+  /// stays queued for the next drain. Items enqueued while a pass runs are
+  /// picked up before this future completes.
   Future<void> drain() async {
     if (_draining) return;
     _draining = true;
@@ -498,7 +552,9 @@ class OfflineOutboxService extends GetxService {
   /// Resolves an item sitting in [manualReviewItems]. [ManualResolution.keepLocal]
   /// re-queues its original payload for another [drain] attempt;
   /// [ManualResolution.acceptRemote] removes it — the local change is
-  /// abandoned, nothing further is attempted.
+  /// abandoned, nothing further is attempted. Returns an
+  /// [SdkErrorKind.validation] failure if no manual-review item has
+  /// [idempotencyKey]. Re-queuing does not start a drain by itself.
   SdkResult<void> resolveManual({
     required String idempotencyKey,
     required ManualResolution resolution,

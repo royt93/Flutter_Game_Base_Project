@@ -11,12 +11,19 @@ import 'utils/clamped_clock.dart';
 /// to gate for that category.
 enum ConsentCategory { analytics, personalization }
 
+/// Outcome of a consent decision. [unknown] means "never decided" (or reset,
+/// or decided under an older policy version) and is treated as not granted.
 enum ConsentStatus { granted, denied, unknown }
 
+/// What produced a [ConsentRecord]: an explicit call from the app/player
+/// ([user]) or the synthesized fallback for a category with no valid decision
+/// under the current policy ([policyReset]).
 enum ConsentSource { user, policyReset }
 
 /// Immutable point-in-time read of one category's consent.
 class ConsentRecord {
+  /// [policyVersion] is the policy version the decision was stamped with and
+  /// [updatedAtMs] a clamped (never-backwards) timestamp of when it was made.
   const ConsentRecord({
     required this.category,
     required this.status,
@@ -50,8 +57,11 @@ class ConsentRecord {
 /// under the new version, it stamps that version and stays valid until
 /// the next bump.
 class ConsentStateService extends GetxService {
+  /// [policyVersion] is the current consent policy version; decisions stored
+  /// under a lower version are ignored (see the class doc).
   ConsentStateService({required this.policyVersion});
 
+  /// The app's current consent policy version.
   final int policyVersion;
 
   /// Gets the instance if already registered (safe to call from call
@@ -67,6 +77,10 @@ class ConsentStateService extends GetxService {
   /// changes.
   final revision = 0.obs;
 
+  /// Current record for [category]. If nothing valid is stored, or the stored
+  /// decision predates [policyVersion], returns a synthesized
+  /// [ConsentStatus.unknown] record with [ConsentSource.policyReset] — that
+  /// fallback is not persisted and its `updatedAtMs` is the current clamped time.
   ConsentRecord recordOf(ConsentCategory category) {
     final stored = _readState()[category];
     if (stored == null || stored.policyVersion < policyVersion) {
@@ -81,15 +95,24 @@ class ConsentStateService extends GetxService {
     return stored;
   }
 
+  /// Shorthand for `recordOf(category).status`; same policy-version rules.
   ConsentStatus statusOf(ConsentCategory category) => recordOf(category).status;
 
+  /// True only for an explicit, current-policy grant — never for
+  /// [ConsentStatus.unknown] or [ConsentStatus.denied].
   bool isGranted(ConsentCategory category) =>
       statusOf(category) == ConsentStatus.granted;
 
+  /// Persists a grant for [category] stamped with the current [policyVersion],
+  /// and bumps [revision].
   void grant(ConsentCategory category) => _set(category, ConsentStatus.granted);
 
+  /// Persists an explicit denial for [category] (distinct from "never asked")
+  /// and bumps [revision].
   void deny(ConsentCategory category) => _set(category, ConsentStatus.denied);
 
+  /// Returns [category] to [ConsentStatus.unknown] (a persisted user-sourced
+  /// record, so the app should ask again) and bumps [revision].
   void reset(ConsentCategory category) => _set(category, ConsentStatus.unknown);
 
   void _set(ConsentCategory category, ConsentStatus status) {

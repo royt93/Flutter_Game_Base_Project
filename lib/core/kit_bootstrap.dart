@@ -13,17 +13,36 @@ import 'wake_lock_service.dart';
 
 /// Optional modules that [RoyCasualKit.initialize] can register.
 enum RoyCasualKitModule {
+  /// [StorageService]; built from [RoyCasualKitConfig.storageOverride], else
+  /// [RoyCasualKitConfig.preferences], else the real `SharedPreferences`.
   storage,
+
+  /// [LocaleService]; fails with a [StateError] unless [StorageService] is
+  /// already registered (request [storage] too, or register it yourself).
   locale,
+
+  /// [AudioManager]; `init()` runs before registration, so a failed init
+  /// leaves nothing registered and a retry starts clean.
   audio,
+
+  /// [ReminderService].
   reminders,
+
+  /// [PerformanceTierService].
   performance,
+
+  /// [RoyLifecycleCoordinator].
   lifecycle,
+
+  /// [WakeLockService]; needs [StorageService] registered (its `init()`
+  /// reads the saved preference) and, like [audio], inits before registering.
   wakeLock,
 }
 
 /// Immutable SDK bootstrap configuration.
 class RoyCasualKitConfig {
+  /// [modules] defaults to storage + locale + lifecycle. [permanent] is
+  /// forwarded unchanged to every `Get.put` the bootstrap performs.
   const RoyCasualKitConfig({
     this.modules = const {
       RoyCasualKitModule.storage,
@@ -35,13 +54,29 @@ class RoyCasualKitConfig {
     this.permanent = true,
   });
 
+  /// Modules to register; each is skipped if its service is already registered.
   final Set<RoyCasualKitModule> modules;
+
+  /// Pre-opened `SharedPreferences` for the storage module (e.g. a test's
+  /// mock instance); `null` opens the real one.
   final SharedPreferences? preferences;
+
+  /// A ready-made [StorageService] to register as-is; takes precedence over
+  /// [preferences].
   final StorageService? storageOverride;
+
+  /// Passed as `permanent` to every `Get.put` the bootstrap performs.
   final bool permanent;
 }
 
-enum RoyCasualKitStatus { initialized, degraded }
+/// Overall outcome of [RoyCasualKit.initialize].
+enum RoyCasualKitStatus {
+  /// Every requested module is registered.
+  initialized,
+
+  /// At least one requested module threw; see [RoyCasualKitResult.errors].
+  degraded,
+}
 
 /// Result of bootstrap. A degraded result still reports successful modules so
 /// a host can decide whether to continue or show its own fallback UI.
@@ -52,10 +87,18 @@ class RoyCasualKitResult {
     required this.errors,
   });
 
+  /// [RoyCasualKitStatus.degraded] iff [errors] is non-empty.
   final RoyCasualKitStatus status;
+
+  /// Modules registered so far — includes ones registered by an earlier
+  /// [RoyCasualKit.initialize] call, not just this one.
   final Set<RoyCasualKitModule> registeredModules;
+
+  /// The error each failed module threw during this call; a failure never
+  /// aborts the remaining modules.
   final Map<RoyCasualKitModule, Object> errors;
 
+  /// Shorthand for `status == RoyCasualKitStatus.degraded`.
   bool get isDegraded => status == RoyCasualKitStatus.degraded;
 }
 
@@ -75,6 +118,12 @@ class RoyCasualKit {
   /// [resetForTesting].
   static RoyCasualKitResult? get lastResult => _result;
 
+  /// Registers the modules in [config], in enum order, skipping any service
+  /// that is already registered, so repeat calls are safe. Never throws: a
+  /// module that fails is recorded in [RoyCasualKitResult.errors] and the
+  /// result is [RoyCasualKitStatus.degraded]; re-calling retries it. A call
+  /// made while another is still running returns that call's future (its
+  /// [config] is ignored).
   static Future<RoyCasualKitResult> initialize({
     RoyCasualKitConfig config = const RoyCasualKitConfig(),
   }) {

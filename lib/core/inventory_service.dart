@@ -8,6 +8,8 @@ import 'utils/async_action_guard.dart';
 import 'utils/safe_json.dart';
 import 'utils/sdk_result.dart';
 
+/// Display rarity of an item, ordered from most to least common. The service
+/// stores it in [ItemDefinition] but never branches on it.
 enum ItemRarity { common, rare, epic, legendary }
 
 /// Static catalog entry for one item id — [InventoryService] is generic
@@ -20,6 +22,8 @@ enum ItemRarity { common, rare, epic, legendary }
 /// anyway, and a genuine `if`/`throw` here would force every `const`
 /// catalog map in this repo/consumers off `const`.
 class ItemDefinition {
+  /// [id] must match the key the definition has in the catalog. [maxStack] must
+  /// be `> 0`; [InventoryService] checks that at construction.
   const ItemDefinition({
     required this.id,
     this.maxStack = 1,
@@ -53,6 +57,8 @@ class InventorySlot {
   final int quantity;
   final bool equipped;
 
+  /// A copy with [quantity] and/or [equipped] replaced; [slotId] and [itemId] are
+  /// always kept.
   InventorySlot copyWith({int? quantity, bool? equipped}) => InventorySlot(
     slotId: slotId,
     itemId: itemId,
@@ -65,6 +71,7 @@ class InventorySlot {
 /// [InventoryService.consume] call — several lines under one call apply
 /// atomically (see those methods' doc).
 class InventoryLine {
+  /// One request line: [quantity] units of [itemId]. [quantity] should be `> 0`.
   const InventoryLine({required this.itemId, required this.quantity});
   final String itemId;
   final int quantity;
@@ -77,15 +84,20 @@ class InventorySnapshot {
   final List<InventorySlot> slots;
   final int capacity;
 
+  /// Whether every slot is in use. Counts slots, not units, so a partly filled
+  /// stack still occupies a full slot.
   bool get isFull => slots.length >= capacity;
 
+  /// Total units of [itemId] summed across all of its slots; `0` when absent.
   int quantityOf(String itemId) => slots
       .where((s) => s.itemId == itemId)
       .fold(0, (sum, s) => sum + s.quantity);
 
+  /// Every slot holding [itemId], in display order; empty when none.
   List<InventorySlot> slotsFor(String itemId) =>
       slots.where((s) => s.itemId == itemId).toList();
 
+  /// Every slot currently flagged as equipped, in display order.
   List<InventorySlot> get equippedSlots =>
       slots.where((s) => s.equipped).toList();
 }
@@ -104,6 +116,15 @@ class InventorySnapshot {
 /// insufficient quantity on consume), none of the lines mutate the
 /// inventory, not just the failing one.
 class InventoryService extends GetxService {
+  /// [storage] persists the inventory under [storageKey] (default
+  /// `StorageKeys.inventoryServiceV1`) and is reloaded after a whole-store
+  /// restore or erase. [itemCatalog] defines every valid item id; slots whose id is
+  /// not in it are dropped on load. [capacity] is the slot limit.
+  /// [transactionCapacity] is how many recent transaction ids are remembered for
+  /// idempotency; older ones are forgotten.
+  ///
+  /// Throws [ArgumentError] when [capacity] or [transactionCapacity] is `<= 0`, or
+  /// any catalog entry has `maxStack <= 0`, in every build mode.
   InventoryService({
     required this.storage,
     required Map<String, ItemDefinition> itemCatalog,
@@ -174,6 +195,7 @@ class InventoryService extends GetxService {
 
   final snapshot = const InventorySnapshot(slots: [], capacity: 0).obs;
 
+  /// The registered instance, or `null` when none is registered.
   static InventoryService? get maybe => Get.isRegistered<InventoryService>()
       ? Get.find<InventoryService>()
       : null;

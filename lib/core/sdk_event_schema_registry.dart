@@ -2,6 +2,8 @@ import 'analytics_provider.dart';
 import 'crash_reporter.dart';
 import 'sdk_health_report.dart';
 
+/// The value type an [EventParamSchema] accepts. [double] also accepts an
+/// `int` value; every other type matches exactly.
 enum EventParamType { string, int, double, bool }
 
 /// What to do with a param key an [EventSchema] doesn't declare.
@@ -21,14 +23,25 @@ enum UnknownFieldPolicy {
 /// stop, independent of [required]/[type] (see [EventSchema]'s
 /// constructor for why a param can never be both `required` and `pii`).
 class EventParamSchema {
+  /// [required] and [pii] both default to `false`; setting both `true` is
+  /// rejected when the owning [EventSchema] is constructed.
   const EventParamSchema({
     required this.type,
     this.required = false,
     this.pii = false,
   });
 
+  /// The accepted value type. A mismatch is recorded as a violation and the
+  /// param is left out of the sanitized params; it rejects the event only
+  /// when [required] is `true`.
   final EventParamType type;
+
+  /// A missing required param rejects the whole event.
   final bool required;
+
+  /// Always stripped, even if present and correctly typed. A present pii
+  /// key records a redaction violation but does not by itself reject the
+  /// event.
   final bool pii;
 }
 
@@ -40,6 +53,8 @@ class EventParamSchema {
 /// update immediately still has its old-shaped events validated
 /// correctly against the newest schema.
 class EventSchema {
+  /// Throws [ArgumentError] if any entry in [params] is both `required`
+  /// and `pii`. [unknownFieldPolicy] defaults to [UnknownFieldPolicy.drop].
   EventSchema({
     required this.name,
     required this.version,
@@ -58,10 +73,22 @@ class EventSchema {
     }
   }
 
+  /// The event name this schema validates; also the registry key, so a
+  /// later schema with the same name replaces this one.
   final String name;
+
+  /// Version label for this schema. [SdkEventSchemaRegistry.validate] does
+  /// not read it.
   final int version;
+
+  /// Declared params by key; any key not listed here is "unknown" and
+  /// handled per [unknownFieldPolicy].
   final Map<String, EventParamSchema> params;
+
+  /// How a key missing from [params] is treated.
   final UnknownFieldPolicy unknownFieldPolicy;
+
+  /// Optional upgrade hook run on the raw params before validation.
   final Map<String, Object?> Function(Map<String, Object?> raw)? migrate;
 }
 
@@ -69,13 +96,19 @@ class EventSchema {
 /// what's actually safe to forward to a real provider (empty when
 /// [accepted] is `false`: a rejected event is never partially sent).
 class EventValidationResult {
+  /// Built by [SdkEventSchemaRegistry.validate]; a consumer normally only
+  /// reads one.
   const EventValidationResult({
     required this.accepted,
     required this.sanitizedParams,
     required this.violations,
   });
 
+  /// `false` when the event must not be forwarded at all.
   final bool accepted;
+
+  /// The declared, correctly typed, non-pii params; empty when not
+  /// [accepted].
   final Map<String, Object?> sanitizedParams;
 
   /// Human-readable reasons — populated for both accepted-with-redaction
@@ -89,6 +122,7 @@ class EventValidationResult {
 /// `MemoryWatchdog`/`RemoteKillSwitchController` already use in this
 /// package.
 class EventAuditRecord {
+  /// One immutable audit entry; created by the registry, not by callers.
   const EventAuditRecord({
     required this.name,
     required this.accepted,
@@ -96,9 +130,17 @@ class EventAuditRecord {
     required this.decidedAtMs,
   });
 
+  /// The event name as passed to `validate`, including unregistered names.
   final String name;
+
+  /// Whether the event was accepted for forwarding.
   final bool accepted;
+
+  /// The violations recorded for this decision (also present on an
+  /// accepted event that had a pii field redacted or a type mismatch).
   final List<String> violations;
+
+  /// Registry clock reading (ms since epoch by default) when decided.
   final int decidedAtMs;
 }
 
@@ -115,6 +157,8 @@ bool _matchesType(Object? value, EventParamType type) => switch (type) {
 /// registered event's own unknown/pii fields are handled per the
 /// schema's own policy rather than passed through untouched.
 class SdkEventSchemaRegistry {
+  /// [nowMs] supplies the timestamp stored on each audit record; it
+  /// defaults to the wall clock and exists so tests can pin it.
   SdkEventSchemaRegistry({int Function()? nowMs})
     : _nowMs = nowMs ?? (() => DateTime.now().millisecondsSinceEpoch);
 
@@ -126,8 +170,12 @@ class SdkEventSchemaRegistry {
   /// `ReplayRecorder`/`MemoryWatchdog`'s own capped lists.
   static const int _auditCapacity = 200;
 
+  /// Registers [schema] under its name. A schema already registered under
+  /// the same name is silently replaced (last one wins).
   void register(EventSchema schema) => _schemas[schema.name] = schema;
 
+  /// Registers each of [schemas] in iteration order, so a duplicate name
+  /// within the batch resolves to the last one.
   void registerAll(Iterable<EventSchema> schemas) {
     for (final schema in schemas) {
       register(schema);
@@ -144,6 +192,11 @@ class SdkEventSchemaRegistry {
   /// policy) all set [EventValidationResult.accepted] to `false`; a pii
   /// field or a dropped unknown field under a `drop` policy is silently
   /// redacted/omitted without rejecting the rest of the event.
+  ///
+  /// A `null` [params] is treated as empty. A wrong-typed optional param is
+  /// recorded as a violation and left out, but does not reject the event.
+  /// An unknown field under a `drop` policy is omitted without any
+  /// violation. Every call, accepted or not, appends to [auditLog].
   EventValidationResult validate(String name, Map<String, Object?>? params) {
     final schema = _schemas[name];
     if (schema == null) {
@@ -242,9 +295,12 @@ class SdkEventSchemaRegistry {
 /// production without crashing anything, `dlog()`'s exact reasoning for
 /// existing) and swallowed.
 class SchemaValidatedAnalyticsProvider implements AnalyticsProvider {
+  /// Wraps [_inner], the real provider that receives only accepted events.
   const SchemaValidatedAnalyticsProvider(this._inner, this.registry);
 
   final AnalyticsProvider _inner;
+
+  /// The registry that decides, and audits, every event before forwarding.
   final SdkEventSchemaRegistry registry;
 
   @override

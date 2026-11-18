@@ -10,6 +10,10 @@ import 'utils/sdk_result.dart';
 /// A path segment starting with `:` captures that segment as a param (e.g.
 /// `['level', ':id']` matches `/level/42` and captures `id: '42'`).
 class DeepLinkRoute {
+  /// [pathSegments] must match the URI's path segment count exactly; a `:name`
+  /// segment captures any value into the param `name`, any other segment is a
+  /// literal compared for equality. [commandType] is the key handlers register
+  /// under.
   const DeepLinkRoute({
     required this.commandType,
     required this.scheme,
@@ -30,6 +34,8 @@ class DeepLinkRoute {
 /// merged into one map (a query key never overrides a path param of the
 /// same name, since path params are captured first).
 class DeepLinkCommand {
+  /// [type] is the matched route's `commandType`; [raw] keeps the original URI
+  /// for logging or re-parsing.
   const DeepLinkCommand({
     required this.type,
     required this.params,
@@ -88,16 +94,26 @@ SdkResult<DeepLinkCommand> parseDeepLink(
   );
 }
 
+/// What [DeepLinkCommandRouter.handleUri] did with a link.
 enum DeepLinkOutcome {
+  /// Handlers ran (zero handlers registered still counts as dispatched).
   dispatched,
+
+  /// Router not ready yet; the link waits for [DeepLinkCommandRouter.markReady].
   queuedUntilReady,
+
+  /// Same URI already queued before ready, or dispatched within the dedupe
+  /// cooldown.
   duplicateIgnored,
+
+  /// URI too long or matching no route; no handler ran.
   rejected,
 }
 
 /// One handler's result for a single dispatch — diagnostic only, never
 /// aborts the rest of the dispatch loop.
 class DeepLinkHandlerResult {
+  /// [error] is the thrown object when [succeeded] is `false`.
   const DeepLinkHandlerResult({
     required this.priority,
     required this.succeeded,
@@ -109,6 +125,9 @@ class DeepLinkHandlerResult {
   final Object? error;
 }
 
+/// Result of [DeepLinkCommandRouter.handleUri]. [handlerResults] is non-empty
+/// only for [DeepLinkOutcome.dispatched] with at least one registered handler,
+/// in the order the handlers ran; [rejectionMessage] is set only when rejected.
 class DeepLinkHandleResult {
   const DeepLinkHandleResult({
     required this.outcome,
@@ -126,6 +145,8 @@ class DeepLinkHandleResult {
   final String? rejectionMessage;
 }
 
+/// Callback for one command type; may be sync or async. The router awaits it
+/// and records a throw instead of propagating it.
 typedef DeepLinkHandler = FutureOr<void> Function(DeepLinkCommand command);
 
 /// Parses deep links into typed [DeepLinkCommand]s and dispatches them to
@@ -150,6 +171,9 @@ typedef DeepLinkHandler = FutureOr<void> Function(DeepLinkCommand command);
 /// throws — a throw is captured into that entry's [DeepLinkHandlerResult],
 /// never rethrown, and never affects a different command's dispatch.
 class DeepLinkCommandRouter extends GetxService {
+  /// [routes] is the allowlist (first match wins); [dedupeCooldown] is the
+  /// window in which an identical URI is ignored after its last dispatch;
+  /// [maxUriLength] is the longest URI string accepted before rejecting.
   DeepLinkCommandRouter({
     required this.routes,
     this.dedupeCooldown = const Duration(seconds: 3),
@@ -160,6 +184,7 @@ class DeepLinkCommandRouter extends GetxService {
   final Duration dedupeCooldown;
   final int maxUriLength;
 
+  /// The registered router, or `null` when none is registered (never throws).
   static DeepLinkCommandRouter? get maybe =>
       Get.isRegistered<DeepLinkCommandRouter>()
       ? Get.find<DeepLinkCommandRouter>()
@@ -170,6 +195,10 @@ class DeepLinkCommandRouter extends GetxService {
   final _handlers = <String, List<({int priority, DeepLinkHandler handler})>>{};
   final _lastHandledAtMs = <String, int>{};
 
+  /// Adds [handler] for [commandType]; several handlers per type are allowed
+  /// and run highest [priority] first. Registering the same function twice
+  /// adds it twice (it then runs twice), and the order between equal
+  /// priorities is not guaranteed. Pair with [unregisterHandler].
   void registerHandler(
     String commandType,
     DeepLinkHandler handler, {
@@ -216,6 +245,13 @@ class DeepLinkCommandRouter extends GetxService {
     }
   }
 
+  /// Parses [uri] and dispatches it. A throwing handler never escapes (it is
+  /// recorded in its result) and parse failures come back as `rejected`, but
+  /// once the router is ready a registered `StorageService` is required for
+  /// the dedupe clock. Order of checks: parse
+  /// (rejected on failure, even before ready), then the not-ready queue, then
+  /// the dedupe cooldown, then handlers. Handlers run one after another, each
+  /// awaited, and a throwing handler does not stop the rest.
   Future<DeepLinkHandleResult> handleUri(Uri uri) async {
     final parsed = parseDeepLink(uri, routes, maxLength: maxUriLength);
     if (parsed is SdkFailure<DeepLinkCommand>) {

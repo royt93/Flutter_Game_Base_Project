@@ -11,7 +11,11 @@ import 'utils/retry_policy.dart';
 /// can be up with zero real connectivity (captive portal, DNS failure),
 /// which is exactly what [ReachabilityProbe] below is for.
 abstract class ConnectivitySignal {
+  /// Emits `true`/`false` each time an interface appears or disappears.
   Stream<bool> get hasInterfaceStream;
+
+  /// Current interface state; read at coordinator construction and again when
+  /// a debug override is cleared.
   bool get hasInterfaceNow;
 }
 
@@ -19,6 +23,8 @@ abstract class ConnectivitySignal {
 /// push interface transitions directly via [setHasInterface] instead of
 /// depending on a real platform channel.
 class FakeConnectivitySignal implements ConnectivitySignal {
+  /// [initialHasInterface] is what [hasInterfaceNow] reports until the first
+  /// [setHasInterface] call.
   FakeConnectivitySignal({bool initialHasInterface = false})
     : _hasInterface = initialHasInterface;
 
@@ -31,11 +37,14 @@ class FakeConnectivitySignal implements ConnectivitySignal {
   @override
   Stream<bool> get hasInterfaceStream => _controller.stream;
 
+  /// Updates [hasInterfaceNow] and emits [value] on [hasInterfaceStream]
+  /// (even if it equals the previous value).
   void setHasInterface(bool value) {
     _hasInterface = value;
     _controller.add(value);
   }
 
+  /// Closes [hasInterfaceStream]; call from test teardown.
   void dispose() => _controller.close();
 }
 
@@ -44,6 +53,7 @@ class FakeConnectivitySignal implements ConnectivitySignal {
 /// usable, not just "an interface exists".
 typedef ReachabilityProbe = Future<bool> Function();
 
+/// What [ConnectivityCoordinator] currently believes about Internet access.
 enum ConnectivityState {
   /// No network interface at all.
   offline,
@@ -64,6 +74,9 @@ enum ConnectivityState {
 
 /// One retryable, idempotent unit of work queued while offline.
 class QueuedTask {
+  /// [idempotencyKey] identifies the task for replacement; [run] is retried
+  /// per the coordinator's retry policy; [expiresAtMs] is an optional
+  /// deadline in [nowMsClamped] milliseconds.
   QueuedTask({
     required this.idempotencyKey,
     required this.run,
@@ -75,6 +88,8 @@ class QueuedTask {
   /// than running both — e.g. re-submitting the same score sync while the
   /// first submission is still queued shouldn't double-send it.
   final String idempotencyKey;
+
+  /// The work to perform once online; a throw counts as a failed attempt.
   final Future<void> Function() run;
 
   /// Higher drains first. Ties keep insertion order.
@@ -110,6 +125,13 @@ class QueuedTask {
 /// the rest of the queue. A mid-drain drop back offline stops the drain
 /// immediately — whatever's left stays queued for the next `online`.
 class ConnectivityCoordinator extends GetxService {
+  /// [signal] and [probe] are required. [debounceWindow] delays acting on an
+  /// interface change; [probeInterval] is the re-probe period while an
+  /// interface is up; [failuresToGoOffline] consecutive failed probes are
+  /// needed to report offline; [maxQueueSize] caps [enqueue]d tasks. Throws
+  /// [ArgumentError] if [failuresToGoOffline] or [maxQueueSize] is `<= 0`.
+  /// Schedules an evaluation of the current interface state right away; it
+  /// takes effect after [debounceWindow].
   ConnectivityCoordinator({
     required this.signal,
     required this.probe,
@@ -137,25 +159,45 @@ class ConnectivityCoordinator extends GetxService {
     _scheduleInterfaceEvaluation(signal.hasInterfaceNow);
   }
 
+  /// Source of raw interface up/down events.
   final ConnectivitySignal signal;
+
+  /// Real reachability check; a throw is treated as a failed probe.
   final ReachabilityProbe probe;
+
+  /// Quiet period after an interface event before it is evaluated.
   final Duration debounceWindow;
+
+  /// How often [probe] re-runs while an interface is up.
   final Duration probeInterval;
+
+  /// Consecutive failed probes required to move to [ConnectivityState.offline].
   final int failuresToGoOffline;
+
+  /// Maximum queued tasks; see [enqueue] for what is evicted.
   final int maxQueueSize;
+
+  /// Retry settings applied to each queued task while draining.
   final RetryPolicy retryPolicy;
   final RetryExecutor _retryExecutor;
   final Timer Function(Duration delay, void Function() callback) _createTimer;
 
+  /// The registered coordinator, or `null` if none is registered.
   static ConnectivityCoordinator? get maybe =>
       Get.isRegistered<ConnectivityCoordinator>()
       ? Get.find<ConnectivityCoordinator>()
       : null;
 
   ConnectivityState _state = ConnectivityState.offline;
+
+  /// Current state; stays [ConnectivityState.offline] until the first
+  /// debounced evaluation runs.
   ConnectivityState get state => _state;
 
   late final StreamController<ConnectivityState> _stateController;
+
+  /// Broadcast stream of state changes; emits only when [state] actually
+  /// changes, and does not replay the current value to new listeners.
   Stream<ConnectivityState> get stateStream => _stateController.stream;
 
   /// Bridges directly into `NetworkStatusBanner.stream` — `true` for
@@ -175,6 +217,7 @@ class ConnectivityCoordinator extends GetxService {
   bool _isClosed = false;
   final _queue = <QueuedTask>[];
 
+  /// Number of tasks still waiting to run.
   int get queueLength => _queue.length;
 
   // FEAT-93: DebugQaOverlay's "Network Simulator" tab — lets a QA tester
@@ -281,6 +324,11 @@ class ConnectivityCoordinator extends GetxService {
     }
   }
 
+  /// Queues [task] to run once [state] is [ConnectivityState.online] (starts
+  /// draining immediately if it already is). A queued task with the same
+  /// [QueuedTask.idempotencyKey] is replaced; if the queue is full, the
+  /// lowest-priority entry (the earliest one on a tie) is evicted first.
+  /// Ignored after the coordinator is closed.
   void enqueue(QueuedTask task) {
     if (_isClosed) return;
     _queue.removeWhere((t) => t.idempotencyKey == task.idempotencyKey);

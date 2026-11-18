@@ -8,6 +8,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'debug_log.dart';
 import 'utils/async_action_guard.dart';
 
+/// Every persisted SharedPreferences key as a named constant. Never use a string
+/// literal for a key at a call site; add a constant here instead. Not
+/// instantiable.
 class StorageKeys {
   StorageKeys._();
 
@@ -188,6 +191,9 @@ class StorageService extends GetxService {
     }
   }
 
+  /// Creates the service over [_prefs]. Pass `null` when
+  /// `SharedPreferences.getInstance()` failed at boot: reads and writes then use
+  /// an in-memory map that is lost when the app exits.
   StorageService(this._prefs);
 
   /// Bumped after every WHOLE-store replace that can make a service's
@@ -218,6 +224,8 @@ class StorageService extends GetxService {
     prefixReplace.value = PrefixReplace(prefix, ++_prefixReplaceSeq);
   }
 
+  /// The registered instance. Throws (GetX "not found") when the service was not
+  /// registered; use [maybe] where it may legitimately be absent.
   static StorageService get to => Get.find<StorageService>();
 
   /// Safe to call from a standalone widget test that hasn't registered the
@@ -252,9 +260,14 @@ class StorageService extends GetxService {
   /// is killed means losing the player's money/items.
   final Map<String, Object> _buffer = {};
 
+  /// Stores [value] in the in-memory buffer only; nothing reaches disk until
+  /// [flush]. Reads see it immediately. A value buffered and not flushed is lost
+  /// if the app is killed, so use it for hot-path counters, never for purchases or
+  /// rewards (use [setInt] for those).
   Future<void> setIntBuffered(String key, int value) async =>
       _buffer[key] = value;
 
+  /// String counterpart of [setIntBuffered], with the same loss-on-kill caveat.
   Future<void> setStringBuffered(String key, String value) async =>
       _buffer[key] = value;
 
@@ -328,6 +341,9 @@ class StorageService extends GetxService {
   Object? _raw(String key) =>
       _buffer[key] ?? _prefs?.get(key) ?? _fallback[key];
 
+  /// Returns the int stored under [key], or [def] when the key is missing or holds
+  /// a value of another type (never throws on a wrong type). A buffered value
+  /// wins over the one on disk.
   int getInt(String key, {int def = 0}) {
     final v = _raw(key);
     return v is int ? v : def;
@@ -353,6 +369,7 @@ class StorageService extends GetxService {
     return _guardedWrite(() => prefs.setInt(key, value), queueWhenIdle: false);
   }
 
+  /// Returns the bool under [key], or [def] when missing or of another type.
   bool getBool(String key, {bool def = false}) {
     final v = _raw(key);
     return v is bool ? v : def;
@@ -370,6 +387,7 @@ class StorageService extends GetxService {
     return _guardedWrite(() => prefs.setBool(key, value), queueWhenIdle: false);
   }
 
+  /// Returns the double under [key], or [def] when missing or of another type.
   double getDouble(String key, {double def = 0.0}) {
     final v = _raw(key);
     return v is double ? v : def;
@@ -390,6 +408,7 @@ class StorageService extends GetxService {
     );
   }
 
+  /// Returns the string under [key], or `null` when missing or of another type.
   String? getString(String key) {
     final v = _raw(key);
     return v is String ? v : null;
@@ -423,9 +442,14 @@ class StorageService extends GetxService {
     }
   }
 
+  /// Stores [value] as one JSON-encoded string under [key] (read back with
+  /// [getStringList]). Like [setString], it is written immediately and discards
+  /// any buffered value for [key].
   Future<void> setStringList(String key, List<String> value) =>
       setString(key, jsonEncode(value));
 
+  /// Deletes [key] from disk, the in-memory fallback and the write buffer, so an
+  /// unflushed buffered value cannot reappear on the next read.
   Future<void> remove(String key) async {
     // Xoá cả bản đang đệm, nếu không thì giá trị chưa flush sẽ "sống lại"
     // ở lần đọc kế tiếp dù key đã bị xoá khỏi đĩa.

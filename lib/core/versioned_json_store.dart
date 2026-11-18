@@ -11,6 +11,7 @@ import 'utils/sdk_result.dart';
 /// One side (local or cloud) of a [VersionedSyncConflict] — the parsed value plus
 /// the `syncedAtMs` timestamp it was saved under.
 class VersionedSyncConflictSide<T> {
+  /// [value] is already parsed through the store's `fromJson`.
   const VersionedSyncConflictSide({required this.value, required this.syncedAtMs});
   final T value;
   final int syncedAtMs;
@@ -28,14 +29,27 @@ class VersionedSyncConflict<T> {
 }
 
 /// Which side [VersionedSyncConflictResolution] picked.
-enum VersionedSyncConflictStrategy { preferLocal, preferCloud, merge }
+enum VersionedSyncConflictStrategy {
+  /// Keep local data and upload it to the cloud.
+  preferLocal,
+
+  /// Overwrite local storage with the cloud copy.
+  preferCloud,
+
+  /// Write a caller-built value to both local storage and the cloud.
+  merge,
+}
 
 /// What an [onConflict] handler decided to do about a [VersionedSyncConflict] —
 /// built via one of the 3 named constructors, never directly.
 class VersionedSyncConflictResolution<T> {
+  /// Keep the local save; it is uploaded and the cloud copy is replaced.
   const VersionedSyncConflictResolution.preferLocal()
     : strategy = VersionedSyncConflictStrategy.preferLocal,
       mergedValue = null;
+
+  /// Take the cloud copy; its validated (and, if older, migrated) envelope
+  /// replaces the local save.
   const VersionedSyncConflictResolution.preferCloud()
     : strategy = VersionedSyncConflictStrategy.preferCloud,
       mergedValue = null;
@@ -47,7 +61,10 @@ class VersionedSyncConflictResolution<T> {
     : strategy = VersionedSyncConflictStrategy.merge,
       mergedValue = value;
 
+  /// The chosen resolution kind.
   final VersionedSyncConflictStrategy strategy;
+
+  /// The caller-built value; only set for [VersionedSyncConflictStrategy.merge].
   final T? mergedValue;
 }
 
@@ -55,7 +72,9 @@ class VersionedSyncConflictResolution<T> {
 /// see that method's doc for exactly when this is invoked, and its
 /// exception-safety contract.
 typedef VersionedSyncConflictHandler<T> =
-    VersionedSyncConflictResolution<T> Function(VersionedSyncConflict<T> conflict);
+    VersionedSyncConflictResolution<T> Function(
+      VersionedSyncConflict<T> conflict,
+    );
 
 /// A thin, versioned JSON object store on top of [StorageService]'s plain
 /// key-value strings — for save data with actual shape (player profile,
@@ -76,6 +95,11 @@ typedef VersionedSyncConflictHandler<T> =
 /// usable" (`null`, same as a fresh install) rather than throw or hand a
 /// shape [fromJson]/[migrate] were never told how to read.
 class VersionedJsonStore<T> {
+  /// [storage] and [key] locate the save; [schemaVersion] is the current
+  /// shape's version, stamped on every [save]. [toJson]/[fromJson] convert [T]
+  /// to and from a JSON map. [migrate] upgrades an older map, unless
+  /// [migrationRegistry] is given, in which case the registry's multi-hop
+  /// chain is used instead and [migrate] is never called.
   VersionedJsonStore({
     required this.storage,
     required this.key,
@@ -86,10 +110,20 @@ class VersionedJsonStore<T> {
     this.migrationRegistry,
   });
 
+  /// Backing key-value store; also the clock source for `syncedAtMs`.
   final StorageService storage;
+
+  /// Storage key the JSON envelope is persisted under.
   final String key;
+
+  /// Current schema version; stored saves with a higher version are rejected.
   final int schemaVersion;
+
+  /// Serializes [T] to a JSON map. [save] adds `schemaVersion`/`syncedAtMs`.
   final Map<String, Object?> Function(T value) toJson;
+
+  /// Builds [T] from a map already at [schemaVersion]; it may throw on a
+  /// wrong-typed field (see [loadResult]).
   final T Function(Map<String, Object?> json) fromJson;
 
   /// Upgrades a JSON map saved under an older [fromVersion] to a shape
@@ -100,8 +134,14 @@ class VersionedJsonStore<T> {
     Map<String, Object?> json,
   )
   migrate;
+
+  /// Optional multi-hop migration chain; when set it replaces [migrate].
   final SaveMigrationRegistry? migrationRegistry;
 
+  /// Persists [value] as a JSON envelope tagged with the current
+  /// [schemaVersion] and a clamped `syncedAtMs` (used for last-write-wins in
+  /// [syncWith]). Uses the unbuffered `setString`, so the write is not lost on
+  /// a kill.
   Future<void> save(T value) async {
     final json = {
       ...toJson(value),
@@ -117,13 +157,19 @@ class VersionedJsonStore<T> {
   }
 
   /// Returns `null` if nothing has been saved yet, or if what's saved
-  /// isn't safely usable (see the class doc's trust-boundary policy).
+  /// isn't safely usable (see the class doc's trust-boundary policy). Does not
+  /// catch a throwing [fromJson]; use [loadResult] when that is possible.
   T? load() {
     final json = _readLocalJson();
     if (json == null) return null;
     return fromJson(json);
   }
 
+  /// Like [load] but typed. Returns an [SdkFailure] of kind
+  /// [SdkErrorKind.storage] (marked non-retryable) when nothing usable is
+  /// saved, and also one carrying the cause when [fromJson] throws on a
+  /// structurally valid envelope — the case where [load] itself would let the
+  /// exception propagate.
   SdkResult<T> loadResult() {
     try {
       final value = load();

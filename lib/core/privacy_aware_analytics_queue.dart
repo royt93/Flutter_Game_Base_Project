@@ -12,9 +12,16 @@ import 'utils/fnv1a.dart';
 import 'utils/retry_policy.dart';
 import 'utils/sdk_result.dart';
 
+/// Sends one batch to the backend. Completing normally means the whole batch
+/// was ACKed (the events are then removed, unless consent was revoked during
+/// the upload, which purges the queue instead); throwing means none were, and
+/// the queue retries per its `RetryPolicy` before reporting a network failure.
 typedef AnalyticsBatchUploader =
     Future<void> Function(List<QueuedAnalyticsEvent> batch);
 
+/// One persisted event. [id] is what an idempotent uploader dedupes on,
+/// [sequence] is the FIFO order and survives restarts, [createdAtMs] is the
+/// enqueue time in epoch milliseconds (wall clock unless `nowMs` is injected).
 class QueuedAnalyticsEvent {
   const QueuedAnalyticsEvent({
     required this.id,
@@ -38,6 +45,9 @@ class QueuedAnalyticsEvent {
     'createdAtMs': createdAtMs,
   };
 
+  /// Rebuilds an event from decoded JSON, or returns `null` (never throws) when
+  /// [raw] is not a map, a field is missing or the wrong type, or any param is
+  /// non-scalar or has a non-string key. Used to skip corrupt stored entries.
   static QueuedAnalyticsEvent? tryParse(Object? raw) {
     if (raw is! Map) return null;
     final id = raw['id'];
@@ -67,13 +77,26 @@ class QueuedAnalyticsEvent {
   }
 }
 
+/// Why an event never entered the queue.
 enum AnalyticsQueueDropReason {
+  /// Analytics consent is not granted, or the queue was disposed.
   consentNotGranted,
+
+  /// The schema registry rejected the event name or params.
   schemaRejected,
+
+  /// Deterministic sampling excluded this event name for the session.
   sampledOut,
+
+  /// Pending events already reached `capacity`; new events are dropped, old
+  /// ones are kept.
   queueFull,
 }
 
+/// In-memory counters since the queue was constructed (not persisted, so they
+/// restart at 0 on relaunch). [queued] counts events accepted, [uploaded]
+/// counts events removed after a successful upload, [droppedByReason] has an
+/// entry for every [AnalyticsQueueDropReason].
 class AnalyticsQueueAudit {
   const AnalyticsQueueAudit({
     required this.queued,
@@ -85,6 +108,7 @@ class AnalyticsQueueAudit {
   final int uploaded;
   final Map<AnalyticsQueueDropReason, int> droppedByReason;
 
+  /// Sum of [droppedByReason] across every reason.
   int get totalDropped =>
       droppedByReason.values.fold(0, (sum, count) => sum + count);
 }
@@ -95,6 +119,18 @@ class AnalyticsQueueAudit {
 /// event [QueuedAnalyticsEvent.id]: a process crash after remote ACK but before
 /// persisted removal can replay the same event on the next launch.
 class PrivacyAwareAnalyticsQueue implements AnalyticsProvider {
+  /// [capacity] caps pending events and [batchSize] caps events per [flush];
+  /// both must be `> 0`. [defaultSamplingRate] and every value in
+  /// [samplingRateOverrides] (keyed by event name) must be within `[0, 1]`.
+  /// Invalid values throw [ArgumentError]. Sampling hashes [sessionSeed] plus
+  /// the event name, so a name is either always kept or always dropped within
+  /// one session; the default seed is constant. [idGenerator] defaults to 16
+  /// random bytes as hex.
+  ///
+  /// Construction reads any stored queue from [storage] synchronously (corrupt
+  /// entries are skipped, extras beyond [capacity] are ignored), or deletes it
+  /// when analytics consent is not granted. It also starts a listener that
+  /// purges the queue whenever consent is revoked; stop it with [dispose].
   PrivacyAwareAnalyticsQueue({
     required this.storage,
     required this.consent,
@@ -160,19 +196,33 @@ class PrivacyAwareAnalyticsQueue implements AnalyticsProvider {
   int _uploaded = 0;
   bool _disposed = false;
 
+  /// Events waiting to be uploaded.
   int get pendingCount => _pending.length;
+
+  /// Unmodifiable copy of the waiting events in FIFO order.
   List<QueuedAnalyticsEvent> get pendingEvents => List.unmodifiable(_pending);
+
+  /// Point-in-time copy of the counters; later activity does not change it.
   AnalyticsQueueAudit get auditSnapshot => AnalyticsQueueAudit(
     queued: _queued,
     uploaded: _uploaded,
     droppedByReason: Map.unmodifiable(_dropped),
   );
 
+  /// Fire-and-forget [enqueueDurably]: returns at once, and a failed storage
+  /// write is swallowed, so the event may be lost. Use [enqueueDurably] when
+  /// the caller must know it was stored.
   @override
   void logEvent(String name, [Map<String, Object?>? params]) {
     unawaited(enqueueDurably(name, params).catchError((_) => false));
   }
 
+  /// Queues an event and completes once it is written to storage. Checks, in
+  /// order: consent (or disposed), schema validation (the stored params are the
+  /// sanitized ones), sampling, capacity. Returns `false` and counts a drop
+  /// under the matching [AnalyticsQueueDropReason] when any check fails. If the
+  /// storage write fails, the event is removed from memory again and the
+  /// error is rethrown.
   Future<bool> enqueueDurably(
     String name, [
     Map<String, Object?>? params,
@@ -215,8 +265,20 @@ class PrivacyAwareAnalyticsQueue implements AnalyticsProvider {
     }
   }
 
+  /// Completes when every storage write queued so far has finished, and
+  /// rethrows the error of the most recent write if it failed. Mainly for
+  /// tests and shutdown paths that need to know the queue is on disk.
   Future<void> flushPersistence() => _persistenceTail;
 
+  /// Uploads at most one batch (the oldest [batchSize] events) and returns how
+  /// many were removed. Never throws; failures come back as [SdkFailure]:
+  /// `validation` when consent is not granted or was revoked mid-upload (the
+  /// queue is purged), `network` (retryable, events stay queued) when the
+  /// uploader still fails after retries, `storage` when persisting fails.
+  /// Returns `SdkSuccess(0)` when nothing is pending. Concurrent calls share
+  /// one in-flight upload. Delivery is at-least-once: events whose removal
+  /// was not persisted can be uploaded again, so the uploader must dedupe by
+  /// event id.
   Future<SdkResult<int>> flush() {
     final existing = _flushInFlight;
     if (existing != null) return existing;
@@ -345,6 +407,10 @@ class PrivacyAwareAnalyticsQueue implements AnalyticsProvider {
     _dropped[reason] = (_dropped[reason] ?? 0) + 1;
   }
 
+  /// Stops listening for consent changes and rejects further events (counted
+  /// as [AnalyticsQueueDropReason.consentNotGranted]). Events already queued
+  /// stay in storage until a later [flush], which on a disposed queue purges
+  /// them instead of uploading. Does not wait for pending writes.
   void dispose() {
     _disposed = true;
     _consentWorker.dispose();
