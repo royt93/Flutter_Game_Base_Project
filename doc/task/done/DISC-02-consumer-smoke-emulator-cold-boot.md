@@ -147,3 +147,11 @@ Không có bằng chứng mới từ phiên này. Ba kết luận đang đứng:
 - Hang evidence: emulator boot xong (`emulator-5554` online); app pid `4573` còn sống ở state `S`; `[consumer-smoke] main-entered` và `binding-initialized` có, nhưng không có `test-start`/`app-main-start`; logcat sau đó chỉ có Impeller OpenGLES + VM-service URL, không có Flutter frame/GETX/app checkpoint; native sample phút 9 ghi `Total frames rendered: 1`, `Janky frames: 1 (100%)`. ADB và emulator vẫn sẵn sàng tới timeout.
 - Kết luận cập nhật: thêm một hang no-tracer, phù hợp stall trong khởi động Flutter/engine/app trước test body, không do tracer attach. Tuy vậy mẫu nhỏ: control no-tracer hiện 2 hang/12 job (đợt 1: 1/8, đợt này: 1/4); không đủ kết luận tỷ lệ khác với early-tracer hay DDS. 3/4 job xanh cho thấy lỗi không phải deterministic.
 - Không đổi AVD, timeout, Flutter pin hay workflow. Bằng chứng tăng nhưng nguyên nhân gốc còn chưa rõ; giữ task mở.
+
+## Kết luận (2026-11-18, người dùng chọn đóng): không xác định được nguyên nhân gốc
+- **Triệu chứng:** `consumer-smoke` thỉnh thoảng treo tới hết 20 phút trong bước emulator; ADB và emulator vẫn online, app còn sống nhưng không tới `test-start`, sample native ghi `Total frames rendered: 1`, `Janky frames: 1 (100%)`.
+- **Đã loại trừ:** không phải lỗi biên dịch/setup (job khác cùng commit xanh); không do tracer (hang xảy ra khi không gắn tracer); không do DDS (hang xảy ra với `--no-dds`); không phụ thuộc vùng runner (job xanh và treo cùng vùng).
+- **Tỉ lệ đo được:** control no-tracer 2 treo / 12 job. Mẫu quá nhỏ để so với các biến thể khác.
+- **Giả thuyết chưa kiểm chứng:** app dừng ở khởi tạo Flutter/engine (Impeller OpenGLES trên `swiftshader_indirect`) trước frame đầu. Không có bằng chứng trực tiếp; đo thêm cần thay workflow, bị ràng buộc cấm khi chưa duyệt, và mỗi lượt tốn khoảng 20 phút CI.
+- **Quyết định:** đóng với kết luận "không xác định được", không đổi AVD, timeout, cờ emulator hay Flutter pin, không có sửa trong SDK. Mở lại nếu hang lặp lại thường xuyên hơn hoặc có người duyệt thay đổi workflow.
+- **Việc dọn dẹp để lại:** `.github/workflows/disc02-control-no-tracer.yml` và `disc02-no-dds-experiment.yml` vẫn còn (chỉ chạy tay). Task ghi "xoá khi DISC-02 đóng"; xoá workflow là thay đổi CI nên chưa làm, cần duyệt riêng.
