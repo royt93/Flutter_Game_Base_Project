@@ -191,8 +191,8 @@ class _OfferRow extends StatelessWidget {
                         ),
                         child: Text(
                           offer.badgeLabel!,
-                          style: const TextStyle(
-                            color: Colors.white,
+                          style: TextStyle(
+                            color: NeonTheme.textOnFill(accent),
                             fontSize: 9,
                             fontWeight: FontWeight.w900,
                           ),

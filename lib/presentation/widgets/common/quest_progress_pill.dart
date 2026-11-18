@@ -139,8 +139,8 @@ class QuestProgressPill extends StatelessWidget {
                   ),
                   child: Text(
                     claimableCount > 9 ? '9+' : '$claimableCount',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: NeonTheme.textOnFill(NeonTheme.pink),
                       fontSize: 11,
                       fontWeight: FontWeight.w800,
                     ),

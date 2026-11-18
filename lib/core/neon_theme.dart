@@ -193,6 +193,19 @@ class NeonTheme {
     return const Color(0xFF000000);
   }
 
+  /// Black or white, whichever reads better as text on the solid [fill]
+  /// (WCAG contrast; at least 4.5:1 for any opaque fill). The fill itself is
+  /// never changed, so a caller-supplied badge or accent color keeps its look.
+  /// Pass an already composited (opaque) color.
+  static Color textOnFill(Color fill) {
+    final l = fill.computeLuminance();
+    final whiteRatio = 1.05 / (l + 0.05);
+    final blackRatio = (l + 0.05) / 0.05;
+    return whiteRatio >= blackRatio
+        ? const Color(0xFFFFFFFF)
+        : const Color(0xFF000000);
+  }
+
   // --- 7 màu block kiểu kẹo (saturated, thân thiện, dễ phân biệt) ---
   static Color cyan = const Color(0xFF35C4F0); // xanh dương kẹo
   static Color magenta = const Color(0xFFFF6FC1); // hồng kẹo

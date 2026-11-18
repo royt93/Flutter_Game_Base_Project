@@ -182,19 +182,20 @@ class _IconBadgeButtonState extends State<IconBadgeButton>
 
   Widget _buildCountBadge() {
     final text = widget.badgeCount! > 99 ? '99+' : '${widget.badgeCount}';
+    final badgeFill = widget.badgeColor ?? NeonTheme.red;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
       constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
       decoration: BoxDecoration(
-        color: widget.badgeColor ?? NeonTheme.red,
+        color: badgeFill,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.white, width: 1.5),
       ),
       alignment: Alignment.center,
       child: Text(
         text,
-        style: const TextStyle(
-          color: Colors.white,
+        style: TextStyle(
+          color: NeonTheme.textOnFill(badgeFill),
           fontSize: 9,
           fontWeight: FontWeight.w800,
         ),

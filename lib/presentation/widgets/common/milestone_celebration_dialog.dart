@@ -215,7 +215,7 @@ class _MilestoneBodyState extends State<_MilestoneBody>
                           '${widget.level}',
                           key: const ValueKey('milestoneLevelText'),
                           style: TextStyle(
-                            color: Colors.white,
+                            color: NeonTheme.textOnFill(NeonTheme.gold),
                             fontSize: 38,
                             fontWeight: FontWeight.w900,
                           ),

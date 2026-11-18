@@ -123,8 +123,8 @@ class ComebackBundleCard extends StatelessWidget {
                     ),
                     child: Text(
                       badgeLabel!,
-                      style: const TextStyle(
-                        color: Colors.white,
+                      style: TextStyle(
+                        color: NeonTheme.textOnFill(accent),
                         fontSize: 10,
                         fontWeight: FontWeight.w900,
                       ),

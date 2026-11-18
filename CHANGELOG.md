@@ -1,5 +1,8 @@
 ## Unreleased
 
+- Added `NeonTheme.textOnFill(Color)`: black or white, whichever reads better on a solid fill (at least 4.5:1 for any opaque color); the fill is never changed.
+- **Behavior change:** text on solid accent badges now uses `textOnFill` instead of fixed white, so some labels are black: the unread count in `ClanChatPreviewBar`, the claimable count in `QuestProgressPill`, the count in `IconBadgeButton` (follows a custom `badgeColor`), the badge labels in `ComebackBundleCard` and `DailyOfferStack`, the level number in `MilestoneCelebrationDialog`, and the selected label of `SegmentedTabBar` (follows `activeColor`). White measured 1.79:1 to 2.78:1 on these fills. Fills, borders and icons are unchanged.
+
 - **Behavior change:** `WheelSpinner` segment labels now choose black or white foreground per caller-provided segment fill to meet WCAG AA (4.5:1) over declared `backgroundColor`. Segment colors remain unchanged; some labels that were white are now black.
 
 - **Behavior change:** `CoinMultiplierWheel` multiplier labels now choose black or white foreground per sector to meet WCAG AA (4.5:1) over the declared background; sector colors, alpha, and decorative shadow are unchanged. Some labels that were white are black.

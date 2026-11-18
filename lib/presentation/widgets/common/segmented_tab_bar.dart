@@ -114,7 +114,7 @@ class SegmentedTabBar extends StatelessWidget {
                                       ? FontWeight.w800
                                       : FontWeight.w700,
                                   color: active
-                                      ? Colors.white
+                                      ? NeonTheme.textOnFill(activeColor)
                                       : NeonTheme.inkSoft,
                                   fontSize: 14,
                                 ),
