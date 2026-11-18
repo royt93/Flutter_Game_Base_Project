@@ -64,3 +64,9 @@ FEAT-205 harness đo `RichText`/`TextSpan` trên nền phẳng. Prototype xác n
 - `WheelSpinner`: built-in showcase segment colors on light background yield 1.79–2.04:1; caller-supplied colors can vary. Tracked separately as BUG-130; no auto-fix in audit task.
 - `CoinMultiplierWheel`: built-in sectors below 4.5:1 in both win/non-win alpha states on light/dark declared backgrounds (dark non-winning 2.38–2.68:1; light non-winning 1.66–1.85:1). Tracked as BUG-131; no auto-fix in audit task.
 - FEAT-210 audit scope complete; BUG-130/131 own UI remediation decisions.
+
+## Kết quả cuối (2026-11-18): đóng
+- Phát hiện đã xử lý bằng các BUG riêng: BUG-130 (`WheelSpinner`), BUG-131 (`CoinMultiplierWheel`), BUG-132 (chữ trắng cố định trên badge accent, tìm ra khi phân loại 76 chỗ `Colors.white/black`). Cả ba đều giữ nguyên màu fill/sector, chỉ chọn chữ đen/trắng theo nền thật.
+- Đã xác minh trên TECNO: nhãn đen trên cyan/lime/vàng/cam, trắng trên segment tối; nền sáng và tối; sector thắng của `CoinMultiplierWheel`.
+- Giới hạn còn lại (không chứng nhận WCAG): nền gradient/shader, `CustomPaint` ngoài hai wheel, icon accent dưới 3:1 (đã quyết định ghi nhận trong FEAT-205). Golden dùng font Ahem nên không kiểm hình dạng glyph.
+- Hai workflow thử nghiệm của DISC-02 đã được xoá cùng lúc; `.github/scripts/vm_trace.dart` và `vm_probe.dart` giữ lại vì `ci.yml` còn dùng.
