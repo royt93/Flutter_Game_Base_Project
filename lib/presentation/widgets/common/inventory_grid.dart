@@ -6,6 +6,11 @@ import '../../../core/inventory_service.dart';
 import '../../../core/neon_theme.dart';
 
 /// Calculates the top-left offset of a grid cell relative to the grid origin.
+///
+/// Cells fill rows left to right, so `index` maps to column
+/// `index % crossAxisCount` and row `index ~/ crossAxisCount`. Returns
+/// [Offset.zero] instead of throwing for a negative [index], a non-positive
+/// [crossAxisCount], or a negative [cellSize] or [spacing].
 Offset inventoryGridCellOffset({
   required int index,
   required int crossAxisCount,
@@ -21,6 +26,11 @@ Offset inventoryGridCellOffset({
 }
 
 /// Calculates the layout translation delta between [oldIndex] and [newIndex].
+///
+/// The result is `offset(oldIndex) - offset(newIndex)`: the translation that
+/// makes a cell that has just moved to [newIndex] look as if it were still at
+/// [oldIndex], so animating it back to zero produces the slide. Shares the
+/// invalid-input behaviour of [inventoryGridCellOffset].
 Offset inventoryGridCellDelta({
   required int oldIndex,
   required int newIndex,
@@ -103,23 +113,44 @@ class InventoryGrid extends StatelessWidget {
     this.animationCurve = NeonTheme.curveSurface,
   });
 
+  /// Inventory contents to render; its `capacity` sets the base cell count.
   final InventorySnapshot snapshot;
+
+  /// Renders each filled cell; see [InventoryItemBuilder].
   final InventoryItemBuilder itemBuilder;
 
   /// How many of `max(snapshot.capacity, this)` total cells are usable
   /// (item or empty) rather than locked. `null` means every capacity
   /// slot is unlocked — no locked cells rendered at all.
   final int? unlockedCapacity;
+
+  /// Renders an unlocked cell with no item; null uses a dim rounded
+  /// placeholder.
   final InventoryPlaceholderBuilder? emptyBuilder;
+
+  /// Renders an item-less cell at or beyond [unlockedCapacity]; null uses the
+  /// same placeholder with a lock icon. The builder receives the cell index.
   final InventoryPlaceholderBuilder? lockedBuilder;
+
+  /// Columns in the grid (default 4). Must be positive; the underlying
+  /// `SliverGridDelegateWithFixedCrossAxisCount` asserts this.
   final int crossAxisCount;
+
+  /// Gap in logical pixels between cells, both horizontally and vertically.
   final double spacing;
 
   /// The currently-selected slot's id, or `null` for no selection — this
   /// widget never tracks selection itself (see class doc), a caller
   /// wanting selection re-passes the updated id after [onSlotTap] fires.
   final int? selectedSlotId;
+
+  /// Called with the tapped filled slot. The grid wires no tap handling onto
+  /// empty or locked cells (a custom [emptyBuilder]/[lockedBuilder] can add its
+  /// own). When this or [onSlotLongPress] is set, each filled cell is exposed
+  /// to accessibility as a single merged button.
   final ValueChanged<InventorySlot>? onSlotTap;
+
+  /// Called with the long-pressed filled slot; same scope as [onSlotTap].
   final ValueChanged<InventorySlot>? onSlotLongPress;
 
   /// Fires with the dragged slot's id and the drop target slot's id when
@@ -129,13 +160,22 @@ class InventoryGrid extends StatelessWidget {
   /// reordering command) from this callback.
   final void Function(int fromSlotId, int toSlotId)? onReorder;
 
+  /// Passed to the underlying grid: when true the grid is only as tall as its
+  /// cells (use inside another scrollable) instead of filling its parent.
   final bool shrinkWrap;
+
+  /// Scroll physics of the underlying grid; null uses the platform default.
   final ScrollPhysics? physics;
 
   /// Enables pop-in scale for newly added items and smooth slide transitions
-  /// when items reorder in the grid.
+  /// when items reorder in the grid. Skipped entirely when reduced motion is
+  /// enabled.
   final bool animate;
+
+  /// Length of the pop-in and reorder slide animations.
   final Duration animationDuration;
+
+  /// Easing of the pop-in and reorder slide animations.
   final Curve animationCurve;
 
   @override
@@ -405,7 +445,12 @@ class _AnimatedItemCellWrapperState extends State<_AnimatedItemCellWrapper>
 
 /// Animated variant of [InventoryGrid] with pop-in scale for newly added items
 /// and smooth sliding transitions on slot reorders.
+///
+/// Forwards every parameter to [InventoryGrid] with `animate: true`; see the
+/// matching [InventoryGrid] fields for what each one does.
 class AnimatedInventoryGrid extends StatelessWidget {
+  /// Same parameters as [InventoryGrid] minus `animate`, which is fixed to
+  /// true.
   const AnimatedInventoryGrid({
     super.key,
     required this.snapshot,

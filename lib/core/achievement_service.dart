@@ -252,7 +252,9 @@ class AchievementService extends GetxService with StorageReplaceWatch {
 
   /// Adds [amount] to [achievementId]'s progress. Safe to call after the
   /// achievement is already completed: progress keeps accumulating,
-  /// [isCompleted] stays `true`, never throws or "re-unlocks".
+  /// [isCompleted] stays `true`, and it never "re-unlocks". Throws
+  /// [ArgumentError] for an invalid [achievementId] or a non-positive
+  /// [amount], and [RangeError] if the progress would overflow.
   void incrementProgress(String achievementId, int amount) {
     _validateId(achievementId);
     if (amount <= 0) {

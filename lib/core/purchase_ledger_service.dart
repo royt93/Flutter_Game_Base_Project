@@ -187,9 +187,10 @@ class PurchaseLedgerService extends GetxService with StorageReplaceWatch {
   }
 
   /// Spends [amount] from [sku]'s consumable balance. Returns `true` if
-  /// the balance covered it (and was deducted); `false` (never throws,
-  /// balance left untouched) if [sku] has fewer than [amount] remaining —
-  /// this is the guard against the balance ever going negative.
+  /// the balance covered it (and was deducted); `false` (balance left
+  /// untouched, no throw) if [sku] has fewer than [amount] remaining —
+  /// this is the guard against the balance ever going negative. Still throws
+  /// [ArgumentError] for an empty [sku] or a non-positive [amount].
   bool consume(String sku, int amount) {
     _validateSku(sku);
     _validateAmount(amount);

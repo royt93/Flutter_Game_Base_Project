@@ -2,9 +2,17 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 
+/// Whether [ratio] of the cover has been scratched past [threshold]. The
+/// comparison is strict (`>`), so a ratio exactly equal to it is not enough.
 bool scratchThresholdReached(double ratio, {double threshold = 0.6}) =>
     ratio > threshold;
 
+/// A `columns` x `rows` bitmap of which cover cells a scratch has cleared, so
+/// progress is measured on a coarse grid instead of by reading pixels.
+///
+/// A cell counts as cleared once its center lies within the brush radius
+/// (plus half a cell diagonal) of a scratched segment, and stays cleared.
+/// Throws [ArgumentError] if [columns] or [rows] is not positive.
 class ScratchCoverageGrid {
   ScratchCoverageGrid({this.columns = 48, this.rows = 32})
     : _cells = List<bool>.filled(_validatedCellCount(columns, rows), false);
@@ -24,10 +32,18 @@ class ScratchCoverageGrid {
   final List<bool> _cells;
   int _covered = 0;
 
+  /// Number of cells cleared so far.
   int get coveredCount => _covered;
   int get cellCount => _cells.length;
+
+  /// Cleared fraction of all cells, from 0.0 to 1.0.
   double get ratio => _covered / _cells.length;
 
+  /// Clears every cell near the line from [start] to [end], in the local
+  /// coordinates of a cover of [size] with a brush of [brushWidth], and
+  /// returns how many cells were newly cleared (0 for an already-cleared
+  /// area). Returns 0 and changes nothing if [size] or [brushWidth] is not
+  /// positive.
   int markSegment({
     required Offset start,
     required Offset end,
@@ -83,6 +99,20 @@ class ScratchCoverageGrid {
   }
 }
 
+/// A scratch-off card: finger drags wipe the [cover] away to uncover [prize].
+///
+/// Progress is counted on a [columns] x [rows] grid. Once the cleared
+/// fraction is greater than [threshold], the whole cover is removed and the
+/// callbacks fire once per reveal. A revealed card stays revealed until
+/// [columns] or [rows] change, which resets it to a fresh, unscratched card.
+/// Only the first pointer scratches; other pointers are ignored until it is
+/// lifted. For screen readers the card is a button that reveals on activate,
+/// announcing [semanticLabel] and the scratched percentage.
+///
+/// Invalid arguments are rejected with [ArgumentError] when the state is
+/// created or the widget is updated (not in the constructor): [threshold]
+/// must be strictly between 0 and 1, [brushWidth] and both sides of [size]
+/// finite and positive, [coverBorderRadius] finite and non-negative.
 class ScratchCard extends StatefulWidget {
   const ScratchCard({
     super.key,
@@ -99,22 +129,46 @@ class ScratchCard extends StatefulWidget {
     this.coverBorderRadius = 18,
   });
 
+  /// Shown underneath; visible only where the cover has been scratched off.
   final Widget prize;
+
+  /// Drawn on top and erased along the scratch path.
   final Widget cover;
+
+  /// Called when the scratched fraction passes [threshold], just before
+  /// [onRevealed]. Also fires for a screen-reader activation, and again after
+  /// a reset caused by changing [columns] or [rows].
   final VoidCallback? onThresholdReached;
+
+  /// Called right after [onThresholdReached] when the cover is removed.
   final VoidCallback? onRevealed;
+
+  /// Cleared fraction of the cover, strictly between 0 and 1, that must be
+  /// exceeded to reveal. Default 0.6.
   final double threshold;
+
+  /// Diameter of the scratch stroke in logical pixels. Default 36.
   final double brushWidth;
+
+  /// Fixed size of the card; the cover and prize are laid out to fill it.
   final Size size;
+
+  /// Grid resolution used to measure progress. Finer grids measure more
+  /// precisely at higher cost. Changing either resets the card.
   final int columns;
   final int rows;
+
+  /// Screen-reader label; the scratched percentage is exposed as its value.
   final String semanticLabel;
+
+  /// Corner radius clipping the whole card, in logical pixels.
   final double coverBorderRadius;
 
   @override
   State<ScratchCard> createState() => ScratchCardState();
 }
 
+/// State of [ScratchCard]; exposes read-only scratch progress.
 class ScratchCardState extends State<ScratchCard> {
   late ScratchCoverageGrid _grid;
   final List<_ScratchSegment> _segments = [];
@@ -124,7 +178,13 @@ class ScratchCardState extends State<ScratchCard> {
   bool _thresholdNotified = false;
   double _progress = 0;
 
+  /// Cleared fraction of the cover, 0.0 to 1.0. Not forced to 1.0 on reveal:
+  /// a screen-reader reveal leaves it at whatever was scratched so far.
   double get progress => _progress;
+
+  /// True once the threshold was passed or the card was revealed through
+  /// accessibility; stays true until [ScratchCard.columns] or
+  /// [ScratchCard.rows] change.
   bool get isRevealed => _revealed;
 
   @override

@@ -32,24 +32,51 @@ typedef SceneTransitionLoad =
 /// state further, so a load that finishes after cancel/dispose can never
 /// leave a stale pointer-blocking barrier up.
 class SceneTransitionController {
+  /// [coverDuration] is how long the [SceneTransitionPhase.covering] phase
+  /// lasts and [revealDuration] the [SceneTransitionPhase.revealing] phase;
+  /// the overlay uses the same values as its animation durations.
   SceneTransitionController({
     this.coverDuration = const Duration(milliseconds: 260),
     this.revealDuration = const Duration(milliseconds: 220),
   });
 
+  /// Time spent in [SceneTransitionPhase.covering] before loading starts.
   final Duration coverDuration;
+
+  /// Time spent in [SceneTransitionPhase.revealing] after a successful load.
   final Duration revealDuration;
 
+  /// Current [SceneTransitionPhase]; observable so the overlay rebuilds.
   final phase = SceneTransitionPhase.idle.obs;
+
+  /// Load progress in 0.0–1.0, reset to 0 when a [run] starts or on [cancel].
+  /// The overlay shows an indeterminate spinner while it is `<= 0`.
   final progress = 0.0.obs;
+
+  /// The failure that put the controller in [SceneTransitionPhase.error];
+  /// `null` otherwise. Cleared by [run] and [cancel].
   SdkFailure<void>? lastError;
 
   int _tokenCounter = 0;
   int? _activeToken;
   bool _disposed = false;
 
+  /// Whether a transition is in progress, i.e. [phase] is anything but
+  /// [SceneTransitionPhase.idle] (including [SceneTransitionPhase.error]).
   bool get isActive => phase.value != SceneTransitionPhase.idle;
 
+  /// Runs one transition: covering → [load] → revealing → idle.
+  ///
+  /// Returns [load]'s own result on success or failure. A [load] that throws
+  /// is turned into an [SdkErrorKind.unknown] failure carrying the cause. A
+  /// failure (returned or thrown) leaves the controller in
+  /// [SceneTransitionPhase.error] with [lastError] set, and it stays there
+  /// until [retry], [run] or [cancel]. A run that was superseded or cancelled
+  /// still returns a result, but no longer changes [phase]/[progress]; if it
+  /// was superseded during the cover delay the result is an
+  /// [SdkErrorKind.unknown] failure and [load] is not called. After
+  /// [dispose] it returns an [SdkErrorKind.unknown] failure without touching
+  /// state.
   Future<SdkResult<void>> run(SceneTransitionLoad load) async {
     if (_disposed) {
       return const SdkFailure(
@@ -108,6 +135,8 @@ class SceneTransitionController {
     return result;
   }
 
+  /// Starts a fresh [run] with [load]; typically called from the error state's
+  /// retry button. It has no extra behavior of its own.
   Future<SdkResult<void>> retry(SceneTransitionLoad load) => run(load);
 
   /// Immediately drops back to [idle] and invalidates the active token — an
@@ -146,6 +175,9 @@ class SceneTransitionController {
 
   bool _isCurrent(int token) => !_disposed && _activeToken == token;
 
+  /// Marks the controller disposed: a later [run] returns a failure and any
+  /// in-flight [run] stops changing state. It does not reset [phase], so call
+  /// [cancel] first if the barrier must come down.
   void dispose() {
     _disposed = true;
   }
@@ -167,19 +199,46 @@ class SceneTransitionOverlay extends StatefulWidget {
     this.wipeCenter,
   });
 
+  /// Drives which phase the overlay shows. The overlay does not own it, so the
+  /// caller creates and disposes it.
   final SceneTransitionController controller;
+
+  /// The scene underneath. It ignores pointers and is excluded from semantics
+  /// for the whole time [controller] is not idle, including the reveal.
   final Widget child;
+
+  /// Barrier color; defaults to `NeonTheme.bgMid`.
   final Color? color;
+
+  /// Label of the retry button in the error state; forwarded to
+  /// `RetryErrorState.fromSdkFailure`.
   final String? retryLabel;
+
+  /// Called when the retry button in the error state is tapped. Usually calls
+  /// [SceneTransitionController.retry]; the overlay does not do that itself.
   final Future<void> Function()? onRetry;
+
+  /// Forces reduced motion on or off. When `null`, follows
+  /// `MediaQuery.disableAnimations` (treated as off if there is no
+  /// `MediaQuery`). Reduced motion removes the fade duration and makes a
+  /// shape wipe jump straight to its end state instead of animating.
   final bool? reducedMotion;
+
+  /// How the barrier covers the scene. The default [SceneWipeShape.fade]
+  /// shows the barrier at full opacity from the covering phase and fades it
+  /// out during the reveal; any other shape reveals it with a clipped wipe.
   final SceneWipeShape wipeShape;
+
+  /// Origin of the wipe in the overlay's own coordinates; `null` means the
+  /// center of the overlay. Ignored for [SceneWipeShape.fade].
   final Offset? wipeCenter;
 
   @override
   State<SceneTransitionOverlay> createState() => _SceneTransitionOverlayState();
 }
 
+/// State of [SceneTransitionOverlay]: owns the wipe [AnimationController] and
+/// re-syncs it whenever the controller's phase changes.
 class _SceneTransitionOverlayState extends State<SceneTransitionOverlay>
     with SingleTickerProviderStateMixin {
   late final AnimationController _wipe;

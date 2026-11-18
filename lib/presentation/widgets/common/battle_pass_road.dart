@@ -6,10 +6,30 @@ import 'common_button.dart';
 
 const double _milestoneExtent = 168;
 
+/// Which reward lane of a milestone: every milestone has a [free] lane and a
+/// [vip] lane, and [BattlePassRoad] shows them side by side in this order.
 enum BattlePassTrack { free, vip }
 
-enum BattlePassMilestoneStatus { locked, claimable, claimed }
+/// State of one track of one milestone (see [battlePassMilestoneStatuses]).
+enum BattlePassMilestoneStatus {
+  /// Not claimable: progress is below the threshold, the track has no
+  /// rewards, or it is the VIP track and VIP is not enabled.
+  locked,
 
+  /// Unclaimed, has rewards, and progress has reached the threshold (and VIP
+  /// is enabled for the VIP track). The only state with a claim button.
+  claimable,
+
+  /// The milestone id is in that track's claimed-id set. Takes precedence over
+  /// every other state, even if VIP has since been disabled.
+  claimed,
+}
+
+/// One step on the battle-pass road, reached once progress >= [requiredProgress].
+///
+/// Throws [ArgumentError] if [id] is blank, [requiredProgress] is not `> 0`,
+/// or [freeRewards] is empty. [vipRewards] may be empty (the VIP track then
+/// shows as locked). Both reward lists are copied into unmodifiable lists.
 class BattlePassMilestone {
   BattlePassMilestone({
     required this.id,
@@ -37,12 +57,18 @@ class BattlePassMilestone {
     }
   }
 
+  /// Identifies the milestone in the claimed-id sets and in `onClaimMilestone`.
+  /// Must be unique within one [BattlePassRoad.milestones] list.
   final String id;
+
+  /// Progress value at which this milestone becomes reachable (inclusive).
   final int requiredProgress;
   final List<RewardLine> freeRewards;
   final List<RewardLine> vipRewards;
 }
 
+/// The computed state and rewards of one [track] of one milestone, as returned
+/// by [battlePassMilestoneStatuses].
 class BattlePassMilestoneStatusView {
   const BattlePassMilestoneStatusView({
     required this.track,
@@ -55,6 +81,9 @@ class BattlePassMilestoneStatusView {
   final List<RewardLine> rewards;
 }
 
+/// Fraction (0.0–1.0, clamped) of the segment between [previousThreshold] and
+/// [nextThreshold] that [progress] has covered. Throws [ArgumentError] if
+/// [previousThreshold] is negative or [nextThreshold] does not exceed it.
 double milestoneProgressRatio({
   required int progress,
   required int previousThreshold,
@@ -78,6 +107,10 @@ double milestoneProgressRatio({
       .clamp(0.0, 1.0);
 }
 
+/// Index of the first milestone whose `requiredProgress` is `>= progress`,
+/// i.e. the one the player is working toward (or has exactly reached). Returns
+/// the last index once [progress] is past every milestone, and `0` for an empty
+/// list. Assumes [milestones] is sorted by `requiredProgress`.
 int currentBattlePassMilestoneIndex(
   List<BattlePassMilestone> milestones,
   int progress,
@@ -89,6 +122,11 @@ int currentBattlePassMilestoneIndex(
   return index == -1 ? milestones.length - 1 : index;
 }
 
+/// Status of both tracks of [milestone], in [BattlePassTrack.values] order
+/// (free, then VIP). Per track: claimed if the milestone id is in that track's
+/// claimed set; otherwise locked when the track has no rewards or is VIP while
+/// [vipEnabled] is false; otherwise claimable once [progress] reaches
+/// `requiredProgress`, else locked.
 List<BattlePassMilestoneStatusView> battlePassMilestoneStatuses({
   required BattlePassMilestone milestone,
   required int progress,
@@ -132,6 +170,15 @@ BattlePassMilestoneStatusView _statusForTrack({
   );
 }
 
+/// A vertically scrolling road of battle-pass milestones, each showing a free
+/// and a VIP reward card plus a progress rail.
+///
+/// Renders nothing when [milestones] is empty. On first build, and whenever
+/// [progress] moves to a different current milestone, the list jumps (no
+/// animation) to that milestone after the frame. Throws [ArgumentError] (from
+/// the state's init/update) if milestone ids repeat or `requiredProgress` is
+/// not strictly increasing; the list is re-validated only when a different
+/// [milestones] instance is passed.
 class BattlePassRoad extends StatefulWidget {
   const BattlePassRoad({
     super.key,
@@ -145,20 +192,39 @@ class BattlePassRoad extends StatefulWidget {
     this.shrinkWrap = false,
   });
 
+  /// Milestones in ascending `requiredProgress` order with unique ids.
   final List<BattlePassMilestone> milestones;
+
+  /// Player's current progress, compared against each `requiredProgress`.
   final int progress;
+
+  /// Whether the VIP track is unlocked; when false, unclaimed VIP cards that
+  /// have rewards read "VIP locked" and cannot be claimed.
   final bool vipEnabled;
+
+  /// Ids of milestones already claimed on the free track.
   final Set<String> claimedFreeIds;
+
+  /// Ids of milestones already claimed on the VIP track.
   final Set<String> claimedVipIds;
+
+  /// Called when the player taps "Claim" on a claimable card. The road does not
+  /// update the claimed sets itself; the caller must add the id and rebuild.
   final void Function(String milestoneId, BattlePassTrack track)
   onClaimMilestone;
+
+  /// Forwarded to the underlying `ListView`.
   final ScrollPhysics? physics;
+
+  /// Forwarded to the underlying `ListView`.
   final bool shrinkWrap;
 
   @override
   State<BattlePassRoad> createState() => BattlePassRoadState();
 }
 
+/// State of [BattlePassRoad]: owns the scroll controller and the cached index
+/// of the current milestone.
 class BattlePassRoadState extends State<BattlePassRoad> {
   late final ScrollController _scrollController;
   late int _currentIndex;

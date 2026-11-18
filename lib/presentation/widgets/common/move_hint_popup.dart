@@ -7,7 +7,10 @@ import 'common_button.dart';
 /// Categories for caller-supplied puzzle-move hints (FEAT-138).
 enum MoveHintType { swap, booster, goal, custom }
 
+/// Default icon and accent color for each [MoveHintType]; used when the
+/// popup is not given an explicit `color`.
 extension MoveHintTypePresentation on MoveHintType {
+  /// Icon shown in the header and in the default illustration.
   IconData get defaultIcon => switch (this) {
     MoveHintType.swap => Icons.swap_horiz_rounded,
     MoveHintType.booster => Icons.bolt_rounded,
@@ -15,6 +18,8 @@ extension MoveHintTypePresentation on MoveHintType {
     MoveHintType.custom => Icons.lightbulb_rounded,
   };
 
+  /// Accent color used for the icon ring and glow and, while hints remain,
+  /// the action button.
   Color get defaultColor => switch (this) {
     MoveHintType.swap => NeonTheme.cyan,
     MoveHintType.booster => NeonTheme.orange,
@@ -25,7 +30,14 @@ extension MoveHintTypePresentation on MoveHintType {
 
 /// In-tree puzzle hint panel. Caller owns hint selection, board logic, and
 /// optional refill/purchase flow; this widget only presents provided content.
+///
+/// The action button shows "Try Hint" (or [hintLabel]) and calls [onHintTap]
+/// while [remainingHints] is above zero; at zero it shows "Get More (+)" and
+/// calls [onEmptyHintTap]. The dismiss button always calls [onDismiss].
 class MoveHintPopup extends StatelessWidget {
+  /// Throws [ArgumentError] if [title] or [message] is blank, [remainingHints]
+  /// is negative, only one of [fromKey]/[toKey] or of [from]/[to] is given, or
+  /// a [from]/[to] coordinate is not finite.
   MoveHintPopup({
     super.key,
     required this.type,
@@ -72,24 +84,63 @@ class MoveHintPopup extends StatelessWidget {
     }
   }
 
+  /// Picks the default icon and accent color.
   final MoveHintType type;
+
+  /// Heading; must not be blank.
   final String title;
+
+  /// Body text; must not be blank.
   final String message;
+
+  /// Called by the dismiss button.
   final VoidCallback onDismiss;
+
+  /// Replaces the built-in illustration when non-null.
   final Widget? hintContent;
+
+  /// Optional board anchors for the hint, validated as a pair with [toKey].
+  /// This widget does not read them when rendering; they are carried for the
+  /// caller.
   final GlobalKey? fromKey;
+
+  /// See [fromKey].
   final GlobalKey? toKey;
+
+  /// Optional hint start offset, validated as a pair with [to] and required to
+  /// be finite. Not read when rendering.
   final Offset? from;
+
+  /// See [from].
   final Offset? to;
+
+  /// Hints left, shown as text. At zero the action button switches to the
+  /// "Get More (+)" state. Must not be negative.
   final int remainingHints;
+
+  /// Action button callback while [remainingHints] is above zero.
   final VoidCallback? onHintTap;
+
+  /// Action button callback when no hints remain.
   final VoidCallback? onEmptyHintTap;
+
+  /// Action button label while hints remain; defaults to "Try Hint". Ignored
+  /// at zero hints, where the label is "Get More (+)".
   final String? hintLabel;
+
+  /// Dismiss button label; defaults to "Got it".
   final String dismissLabel;
+
+  /// Accent color; defaults to [MoveHintTypePresentation.defaultColor].
   final Color? color;
+
+  /// Overrides the generated screen-reader description of the panel.
   final String? semanticLabel;
 
   /// Displays the panel via [NeonDialog.show], safe over Flame `GameWidget`.
+  /// Parameters match the constructor except [semanticLabel], which is not
+  /// forwarded; the dialog also gets a muted action labelled [dismissLabel]
+  /// that calls [onDismiss].
   static Future<void> show(
     BuildContext context, {
     required MoveHintType type,

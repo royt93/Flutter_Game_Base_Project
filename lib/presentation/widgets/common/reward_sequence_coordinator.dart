@@ -4,27 +4,66 @@ import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
 
-enum RewardSequenceStep { initial, banner, content, counter, fx, ready }
+/// Stages of a [RewardSequenceCoordinator], in reveal order. Each stage keeps
+/// everything revealed by the earlier ones visible; [ready] also reveals the
+/// action button.
+enum RewardSequenceStep {
+  /// Nothing revealed yet.
+  initial,
 
+  /// The banner slot is revealed.
+  banner,
+
+  /// The content slot is revealed.
+  content,
+
+  /// The counter slot is revealed.
+  counter,
+
+  /// The fx layer is revealed.
+  fx,
+
+  /// Sequence finished: all slots and the action button are visible.
+  ready,
+}
+
+/// Holds the current [RewardSequenceStep] and notifies listeners when it
+/// changes. Pass one to [RewardSequenceCoordinator.controller] to drive or
+/// observe the sequence from outside; the caller then owns its disposal.
 class RewardSequenceController extends ChangeNotifier {
   RewardSequenceStep _step = RewardSequenceStep.initial;
 
+  /// The stage currently revealed.
   RewardSequenceStep get step => _step;
+
+  /// Whether the sequence has reached [RewardSequenceStep.ready].
   bool get isReady => _step == RewardSequenceStep.ready;
 
+  /// Jumps to [next] and notifies listeners; a no-op when already there.
+  /// Any stage can be targeted, forwards or backwards.
   void advanceTo(RewardSequenceStep next) {
     if (_step == next) return;
     _step = next;
     notifyListeners();
   }
 
+  /// Jumps straight to [RewardSequenceStep.ready], skipping remaining stages.
   void skipToEnd() => advanceTo(RewardSequenceStep.ready);
 
+  /// Returns to [RewardSequenceStep.initial]; a coordinator with `autoStart`
+  /// then plays the sequence again.
   void reset() => advanceTo(RewardSequenceStep.initial);
 }
 
 /// Sequences reward slots, with optional tap-to-skip and Reduce Motion support.
+///
+/// Slots are revealed in the order banner, content, counter, fx, then the
+/// action button once the sequence is ready; a slot passed as `null` is
+/// skipped. While [autoStart] is true the first step is taken right after the
+/// first frame and each later one [stepDuration] after the previous. When
+/// Reduce Motion is on, the sequence jumps straight to ready.
 class RewardSequenceCoordinator extends StatefulWidget {
+  /// Throws [ArgumentError] if [stepDuration] is not positive.
   RewardSequenceCoordinator({
     super.key,
     this.banner,
@@ -47,15 +86,38 @@ class RewardSequenceCoordinator extends StatefulWidget {
     }
   }
 
+  /// Revealed first; omitted from the sequence when `null`.
   final Widget? banner;
+
+  /// Revealed after [banner]; omitted from the sequence when `null`.
   final Widget? content;
+
+  /// Revealed after [content]; omitted from the sequence when `null`.
   final Widget? counter;
+
+  /// Effects layer stacked behind the column, revealed after [counter];
+  /// omitted from the sequence when `null`.
   final Widget? fx;
+
+  /// Shown, and made tappable, only once the sequence is ready.
   final Widget? actionButton;
+
+  /// External controller. When `null` the widget creates and disposes its own;
+  /// a supplied one is only listened to, never disposed here.
   final RewardSequenceController? controller;
+
+  /// Delay between steps. Must be positive.
   final Duration stepDuration;
+
+  /// Whether the sequence starts by itself after the first frame and keeps
+  /// advancing on a timer. When `false`, drive it through [controller].
   final bool autoStart;
+
+  /// Whether tapping before the sequence is ready jumps straight to ready.
   final bool allowTapToSkip;
+
+  /// Called after the frame in which the sequence became ready. It fires again
+  /// after a reset, or a controller swap, once ready is reached again.
   final VoidCallback? onSequenceComplete;
 
   @override

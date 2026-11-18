@@ -6,9 +6,15 @@ import '../../../core/storage_service.dart';
 import '../pressable_scale.dart';
 import '../spring_scale_transition.dart';
 
+/// Which action group a reveal opened: `start` is the leading actions, `end`
+/// the trailing ones. The physical edge mirrors under RTL; the value does not.
 enum SwipeSide { start, end }
 
+/// One button in the action strip behind a [SwipeableActionTile].
+///
+/// Tapping it runs [onTap] and then closes the tile.
 class SwipeableAction {
+  /// Throws [ArgumentError] if [width] is not a finite positive number.
   SwipeableAction({
     required this.label,
     required this.onTap,
@@ -22,14 +28,38 @@ class SwipeableAction {
     }
   }
 
+  /// Button text; also the default accessibility label and part of the
+  /// widget key (`swipeAction_<label>`), so keep labels unique within one
+  /// side's action list.
   final String label;
+
+  /// Runs on tap, before the tile closes itself.
   final VoidCallback onTap;
   final IconData? icon;
+
+  /// Background fill; defaults to [NeonTheme.purple]. Icon and label are
+  /// always drawn white, so pick a dark enough fill.
   final Color? color;
+
+  /// Screen-reader label; falls back to [label] when null.
   final String? semanticLabel;
+
+  /// Logical pixels this button occupies in the strip. Defaults to 72.
   final double width;
 }
 
+/// A list tile that slides sideways to reveal action buttons behind it.
+///
+/// [leadingActions] sit at the start edge and appear on a swipe toward the
+/// end; [trailingActions] the reverse. Directions follow the ambient
+/// [Directionality], so they mirror under RTL. The reveal distance is the sum
+/// of the action [SwipeableAction.width]s on that side. Control it from
+/// outside through the `GlobalKey<SwipeableActionTileState>` methods
+/// `openLeading`, `openTrailing` and `close`.
+///
+/// Throws [ArgumentError] from the constructor if [revealThreshold] or
+/// [hapticThreshold] is not strictly between 0 and 1, or [resistance] is not
+/// in (0, 1].
 class SwipeableActionTile extends StatefulWidget {
   SwipeableActionTile({
     super.key,
@@ -70,20 +100,41 @@ class SwipeableActionTile extends StatefulWidget {
     }
   }
 
+  /// The foreground content that slides.
   final Widget child;
   final List<SwipeableAction> leadingActions;
   final List<SwipeableAction> trailingActions;
+
+  /// Fraction of the revealed side's total width the drag must reach for the
+  /// release to snap open (`>=`); a shorter drag snaps closed. Default 0.4.
   final double revealThreshold;
+
+  /// Fraction of the revealed width at which one light haptic fires per drag
+  /// (`>=`). Default 0.5.
   final double hapticThreshold;
+
+  /// The haptic also needs a registered `StorageService`; without one it is
+  /// skipped silently.
   final bool enableHaptic;
+
+  /// Drag past the fully open width moves this fraction of the extra distance
+  /// (rubber band). Default 0.3.
   final double resistance;
+
+  /// Called with the side that opened, from a snapped-open release or
+  /// `openLeading`/`openTrailing`. Not called when there are no actions on
+  /// that side.
   final ValueChanged<SwipeSide>? onRevealed;
+
+  /// Called when the tile animates back to closed. Not called if it was
+  /// already closed.
   final VoidCallback? onClosed;
 
   @override
   State<SwipeableActionTile> createState() => SwipeableActionTileState();
 }
 
+/// State of [SwipeableActionTile]; exposes programmatic open/close.
 class SwipeableActionTileState extends State<SwipeableActionTile>
     with SingleTickerProviderStateMixin {
   late final SpringSimulationController _spring = SpringSimulationController(
@@ -96,7 +147,11 @@ class SwipeableActionTileState extends State<SwipeableActionTile>
   double _dragOffset = 0;
   bool _isDragging = false;
 
+  /// Signed slide distance in logical pixels: positive toward the leading
+  /// actions, negative toward the trailing ones (before RTL mirroring).
   double get offset => _spring.value;
+
+  /// True while the tile is displaced at all, including mid-animation.
   bool get isOpen => _spring.value != 0;
 
   double get _leadingWidth =>
@@ -116,18 +171,24 @@ class SwipeableActionTileState extends State<SwipeableActionTile>
     super.dispose();
   }
 
+  /// Animates open to the leading actions and calls `onRevealed(start)`.
+  /// Does nothing when there are no leading actions.
   void openLeading() {
     if (_leadingWidth <= 0) return;
     _animateToOffset(_leadingWidth);
     widget.onRevealed?.call(SwipeSide.start);
   }
 
+  /// Animates open to the trailing actions and calls `onRevealed(end)`.
+  /// Does nothing when there are no trailing actions.
   void openTrailing() {
     if (_trailingWidth <= 0) return;
     _animateToOffset(-_trailingWidth);
     widget.onRevealed?.call(SwipeSide.end);
   }
 
+  /// Animates back to closed and calls `onClosed`; does nothing if already at
+  /// offset 0. Also used by a tap on the open tile and by every action tap.
   void close() {
     if (_spring.value == 0) return;
     _animateToOffset(0);

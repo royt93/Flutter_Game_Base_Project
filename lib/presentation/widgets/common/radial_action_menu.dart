@@ -12,6 +12,16 @@ double _finitePositive(double value, String name) {
   return value;
 }
 
+/// Offset of item [index] from the primary button's centre, for a fan of
+/// [itemCount] items spread evenly over [sweepAngleDegrees] starting at
+/// [startAngleDegrees].
+///
+/// Angles are in degrees with 0 pointing right and positive values turning
+/// clockwise on screen (y grows downward). The first item sits exactly at
+/// [startAngleDegrees] and the last at `start + sweep`; a single item is
+/// placed at the middle of the sweep. Throws [ArgumentError] for a non-positive
+/// [itemCount], an [index] outside `0..itemCount-1`, a [radius] that is not
+/// finite and positive, or a non-finite angle.
 Offset radialActionOffsetForIndex({
   required int index,
   required int itemCount,
@@ -35,7 +45,10 @@ Offset radialActionOffsetForIndex({
   return Offset(math.cos(angle) * radius, math.sin(angle) * radius);
 }
 
+/// One button in a [RadialActionMenu]'s fan.
 class RadialActionItem {
+  /// [onTap] runs first, then the menu closes itself; if it was still open
+  /// that also fires [RadialActionMenu.onDismissed].
   const RadialActionItem({
     required this.label,
     required this.icon,
@@ -44,14 +57,33 @@ class RadialActionItem {
     this.color,
   });
 
+  /// Used as the accessibility label when [semanticLabel] is null, and as part
+  /// of the button's `ValueKey` (`radialAction_<index>_<label>`).
   final String label;
   final IconData icon;
   final VoidCallback onTap;
+
+  /// Screen-reader label that overrides [label] when set.
   final String? semanticLabel;
+
+  /// Button colour; falls back to [RadialActionMenu.color], then
+  /// [NeonTheme.magenta], when null.
   final Color? color;
 }
 
+/// A floating "+" button that fans [items] out along an arc when tapped.
+///
+/// The menu sizes itself to the maximum incoming constraints, so place it in
+/// a bounded area (for example a `Stack` child with a known size);
+/// [alignment] then decides which corner/edge the primary button anchors to.
+/// While open, a full-area barrier closes the menu on any tap outside the
+/// buttons. An item ignores taps until its own reveal progress reaches 0.5.
+/// With reduced motion enabled opening is instant; closing still animates.
 class RadialActionMenu extends StatefulWidget {
+  /// [items] must not be empty, [radius] and [buttonSize] must be finite and
+  /// positive, and the angles must be finite with `|sweepAngleDegrees| <= 360`;
+  /// otherwise an [ArgumentError] is thrown when the state is created or the
+  /// widget is updated.
   const RadialActionMenu({
     super.key,
     required this.items,
@@ -65,26 +97,60 @@ class RadialActionMenu extends StatefulWidget {
     this.onDismissed,
   });
 
+  /// Actions in fan order, from [startAngleDegrees] towards
+  /// `startAngleDegrees + sweepAngleDegrees`.
   final List<RadialActionItem> items;
+
+  /// Where the primary button sits inside the available area (default bottom
+  /// right). This is a physical [Alignment], so it is not flipped in
+  /// right-to-left text directions.
   final Alignment alignment;
+
+  /// Distance in logical pixels from the primary button's centre to each
+  /// item's centre once fully open.
   final double radius;
+
+  /// Angle of the first item; see [radialActionOffsetForIndex] for the
+  /// convention. The default 180 points left.
   final double startAngleDegrees;
+
+  /// Angle covered by the fan. With the defaults (180 and 90) the items arc
+  /// from left to straight up, suiting the bottom-right default alignment.
   final double sweepAngleDegrees;
+
+  /// Width given to the primary button and to each item button; the primary
+  /// button is also given this height.
   final double buttonSize;
+
+  /// Primary button colour (default [NeonTheme.magenta]); an item's own
+  /// [RadialActionItem.color] takes precedence for that item.
   final Color? color;
+
+  /// Accessibility label of the primary button.
   final String semanticLabel;
+
+  /// Called whenever the menu goes from open to closed — barrier tap, item
+  /// tap, the primary button, or a call to [RadialActionMenuState.close].
+  /// Not called when the menu opens or when [RadialActionMenuState.close] is a
+  /// no-op because it is already closed.
   final VoidCallback? onDismissed;
 
   @override
   State<RadialActionMenu> createState() => RadialActionMenuState();
 }
 
+/// State of [RadialActionMenu]; obtain it with a `GlobalKey` to open or close
+/// the fan from outside (for example on a back-button press).
 class RadialActionMenuState extends State<RadialActionMenu>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
   bool _isOpen = false;
 
+  /// True from the moment [open] is called until [close] is called; it does
+  /// not wait for the animation to finish.
   bool get isOpen => _isOpen;
+
+  /// Reveal animation value from 0 (fully collapsed) to 1 (fully fanned out).
   double get progress => _controller.value;
 
   @override
@@ -118,6 +184,8 @@ class RadialActionMenuState extends State<RadialActionMenu>
     _validate();
   }
 
+  /// Fans the items out. Does nothing if already open. Jumps straight to the
+  /// fully open state when reduced motion is enabled.
   void open() {
     if (isOpen) return;
     setState(() => _isOpen = true);
@@ -128,6 +196,8 @@ class RadialActionMenuState extends State<RadialActionMenu>
     }
   }
 
+  /// Collapses the items and calls [RadialActionMenu.onDismissed]. Does
+  /// nothing (and does not call it) if already closed.
   void close() {
     if (!isOpen) return;
     setState(() => _isOpen = false);
@@ -135,6 +205,7 @@ class RadialActionMenuState extends State<RadialActionMenu>
     widget.onDismissed?.call();
   }
 
+  /// [close] if open, otherwise [open].
   void toggle() => isOpen ? close() : open();
 
   @override
