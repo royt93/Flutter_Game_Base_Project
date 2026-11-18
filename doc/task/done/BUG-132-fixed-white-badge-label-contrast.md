@@ -39,4 +39,4 @@ Use the existing foreground/fill helper pattern for solid fills: preserve each b
 - [x] Applied to `ClanChatPreviewBar`, `QuestProgressPill`, `IconBadgeButton` (follows caller `badgeColor`), `ComebackBundleCard`, `DailyOfferStack`, `MilestoneCelebrationDialog` and the selected label of `SegmentedTabBar` (follows `activeColor`).
 - [x] Tests: `badge_label_contrast_test.dart` (light/dark, default and dark caller badge color, three pill colors) and `textOnFillTests` over 13 fills. The tab is checked against its real pill color rather than the ancestor-only audit.
 - [x] CHANGELOG behavior change; API snapshot gained one line.
-- [ ] Golden baselines for the affected widgets regenerated through the Linux workflow.
+- [x] 56 golden baselines regenerated through the Linux workflow (run 44306521767): ClanChatPreviewBar, ComebackBundleCard, DailyOfferStack, QuestProgressPill.
