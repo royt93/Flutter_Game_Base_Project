@@ -1,8 +1,10 @@
-## Unreleased
+## 0.7.1
 
 - **Behavior change:** `tool/create_consumer_app.dart` now generates consumers with the hosted dependency `roy_casual_kit: ^0.7.0` by default (it was `^0.4.1`); pass `--kitVersion` or `--kitPath` to override. The generated template schema marker is now 4.
 - Clarified `WakeLockService.init()`: a registered `StorageService` is required and storage errors propagate; only platform wakelock failures are ignored. Behavior is unchanged.
 - README now names `nowMsClamped` and `todayEpochDayClamped` instead of a non-existent `ClampedClock` class.
+- Expanded public API documentation across core services, theme and audit utilities, and eight common widgets, covering preconditions, failure modes, thresholds, callback timing, and reduced-motion behavior; runtime behavior is unchanged.
+- Corrected overly broad no-throw documentation for `PurchaseLedgerService.consume` and `AchievementService.incrementProgress`: invalid arguments can still throw, and achievement progress overflow throws `RangeError`.
 
 ## 0.7.0
 
