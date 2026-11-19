@@ -155,3 +155,12 @@ Không có bằng chứng mới từ phiên này. Ba kết luận đang đứng:
 - **Giả thuyết chưa kiểm chứng:** app dừng ở khởi tạo Flutter/engine (Impeller OpenGLES trên `swiftshader_indirect`) trước frame đầu. Không có bằng chứng trực tiếp; đo thêm cần thay workflow, bị ràng buộc cấm khi chưa duyệt, và mỗi lượt tốn khoảng 20 phút CI.
 - **Quyết định:** đóng với kết luận "không xác định được", không đổi AVD, timeout, cờ emulator hay Flutter pin, không có sửa trong SDK. Mở lại nếu hang lặp lại thường xuyên hơn hoặc có người duyệt thay đổi workflow.
 - **Việc dọn dẹp để lại:** `.github/workflows/disc02-control-no-tracer.yml` và `disc02-no-dds-experiment.yml` vẫn còn (chỉ chạy tay). Task ghi "xoá khi DISC-02 đóng"; xoá workflow là thay đổi CI nên chưa làm, cần duyệt riêng.
+
+## Bằng chứng bổ sung (2026-11-19): hai hang tự nhiên liên tiếp, một rerun xanh
+
+- **Run `44327873250`, commit `ebd674d4`** (job `134883945102`): bước "Integration test on emulator" chạy `14:52:23Z` → `15:12:23Z`, bị cắt ở 20 phút. App `com.example.ci_smoke` khởi động `14:54:47`, log chỉ có dòng Impeller OpenGLES, `emulator-5554` vẫn `device`, app pid còn sống ở state `S`. Job khác cùng run (`analyze-test`, `quality-gate`) xanh, gồm generate/analyze/test của app sinh ra và build APK.
+- **Run `44526220567`, commit `c77e0013`, attempt 1** (job `135567379498`): bước emulator chạy `12:48:03Z` → `13:08:03Z`, cùng dấu hiệu: log app chỉ có dòng Impeller OpenGLES và "The Dart VM service is listening" (`12:50:35`), tới watcher `13:07:44Z` không có test nào chạy, rồi `##[error] ... timed out after 20 minutes`.
+- **Cùng run, attempt 2** (rerun job lỗi, không đổi commit hay workflow; job `135595617020`): bước emulator `13:37:56Z` → `13:41:29Z` (~3.5 phút) = **success**. Readiness check chuyển PASS ở mục CI.
+- **Ý nghĩa:** cùng một commit, hang rồi xanh ở lần sau: xác nhận lỗi gián đoạn của môi trường emulator, không phải do thay đổi mã. `ebd674d4` (đổi generator) và `c77e0013` (chuẩn bị 0.7.1, `lib/` chỉ khác comment so với 0.7.0) không liên quan tới nguyên nhân. Các commit xung quanh: `d5b2084f` và `68b10e31` xanh; `838fe79b` ở trạng thái cancelled (bị run sau huỷ), không tính là xanh.
+- **Tỉ lệ ghi nhận hiện có:** thêm 2 hang tự nhiên (trong khoảng 24 giờ) vào 2 hang/12 job của control cũ; chưa đủ để so sánh biến thể.
+- **Không làm:** không đổi workflow, AVD, timeout hay Flutter pin. Kết luận "không xác định được nguyên nhân gốc" giữ nguyên; điều kiện mở lại (hang lặp thường xuyên hơn) cần được người dùng đánh giá.
