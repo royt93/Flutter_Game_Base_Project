@@ -5,17 +5,14 @@ type: bug
 layer: example
 effort: S
 priority: P3
+status: resolved
 source: "TECNO KJ7 run of example/integration_test/app_boot_test.dart on 2026-11-20"
 ---
 
 ## Evidence
 
-`FEAT-113: Candy choice controls respond on S24 Ultra` fails when run alone on TECNO KJ7 (`115333744A005844`) with `Expected: exactly one matching candidate; Actual: Found 0 widgets with text "Mode: Relaxed · Hints: on"` at the final assertion (line 5581 after the scroll-helper fix). It also failed in the full TECNO integration suite. This is independent of `_scrollUntilVisible`: the test does not use that helper at the failing assertion, and isolated rerun reproduces it.
+`FEAT-113: Candy choice controls respond on S24 Ultra` failed on TECNO KJ7 (`115333744A005844`) with the final label missing. The example showcase test passed using `scrollUntilVisible`; the device test used `ensureVisible` only before the first tap, then tapped the checkbox without rechecking visibility. After adding `ensureVisible` + a bounded pump before each control and checking the intermediate `Mode: Relaxed · Hints: off` state, the isolated device test passed.
 
-## Next step
+## Resolution
 
-Inspect the Candy mode/hints demo state and the test taps. Log the selected mode, hints value and rendered label after each action; determine whether the callback/state update or expected text is wrong. Keep the test assertion strict until the behavior is understood.
-
-## Scope
-
-No change made to Candy-choice production behavior or FEAT-113 test. Do not treat this as caused by the integration scroll-helper change.
+Updated only `example/integration_test/app_boot_test.dart`: ensure the radio and checkbox controls are visible before tapping, and assert intermediate state before the final label. No production code changed. Reproduced fixed behavior on TECNO KJ7 on 2026-11-20.

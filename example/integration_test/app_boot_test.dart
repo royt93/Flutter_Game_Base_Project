@@ -5573,10 +5573,15 @@ void main() {
     }
     expect(radio, findsOneWidget);
     await tester.ensureVisible(radio);
+    await tester.pump(const Duration(milliseconds: 100));
     await tester.tap(radio);
     await tester.pump(const Duration(milliseconds: 250));
-    await tester.ensureVisible(find.text('Enable extra hints'));
-    await tester.tap(find.text('Enable extra hints'));
+    expect(find.text('Mode: Relaxed · Hints: off'), findsOneWidget);
+
+    final hints = find.text('Enable extra hints');
+    await tester.ensureVisible(hints);
+    await tester.pump(const Duration(milliseconds: 100));
+    await tester.tap(hints);
     await tester.pump(const Duration(milliseconds: 250));
     expect(find.text('Mode: Relaxed · Hints: on'), findsOneWidget);
     expect(tester.takeException(), isNull);
