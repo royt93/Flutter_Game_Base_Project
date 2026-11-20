@@ -188,7 +188,22 @@ Future<void> _scrollUntilVisible(
             .descendant(of: showcaseList, matching: find.byType(Scrollable))
             .first;
   for (var i = 0; i < maxTries; i++) {
-    if (target.evaluate().isNotEmpty) return;
+    if (target.evaluate().isNotEmpty) {
+      await tester.ensureVisible(target.first);
+      await tester.pump(const Duration(milliseconds: 100));
+      if (target.evaluate().isNotEmpty) {
+        final targetRect = tester.getRect(target.first);
+        final viewportRect = outer == null
+            ? Rect.fromLTWH(
+                0,
+                0,
+                tester.view.physicalSize.width / tester.view.devicePixelRatio,
+                tester.view.physicalSize.height / tester.view.devicePixelRatio,
+              )
+            : tester.getRect(showcaseList);
+        if (targetRect.overlaps(viewportRect)) return;
+      }
+    }
     if (outer != null) {
       // The showcase is far longer than maxTries * delta, so jump the outer
       // list instead of dragging whichever ListView happens to be first.
@@ -1131,54 +1146,6 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  // FEAT-28: swipe a real PageView on-device, verify PaginatedDotsIndicator
-  // follows the current page.
-  //
-  // SKIPPED: flaky on-device only (never in the widget-test suite, which
-  // covers this widget's own logic fully — see
-  // test/widget/common/paginated_dots_indicator_test.dart). Root-caused to
-  // this integration_test binary running every testWidgets in ONE
-  // continuous process: GetX's navigator key is a process-global singleton
-  // that survives repeated `app.app()`/`runApp()` calls here, so route-pop
-  // transition remnants and Ticker lifecycles from earlier tests can still
-  // be settling when a later test's PageView fling fires, making the
-  // resulting page index nondeterministic. Not reproducible via a real
-  // user's normal navigation (an app doesn't call `runApp()` every few
-  // seconds). Needs a real fix at the test-harness level (e.g. running
-  // each case as its own `flutter test` process) before re-enabling.
-  testWidgets('Page Dots demo: swiping a real PageView moves the highlight', (
-    tester,
-  ) async {
-    await app.app();
-    await tester.pump(const Duration(seconds: 4));
-    await _goToWidgetShowcase(tester);
-
-    await _scrollUntilVisible(tester, find.byType(PaginatedDotsIndicator));
-
-    expect(
-      tester
-          .widget<PaginatedDotsIndicator>(find.byType(PaginatedDotsIndicator))
-          .currentIndex,
-      0,
-    );
-
-    // fling (not drag) — PageView's page-snap ballistic simulation needs
-    // release velocity to commit to the next page; a plain drag() only
-    // moves position with no velocity and may settle back on the same
-    // page.
-    await tester.fling(find.byType(PageView), const Offset(-400, 0), 1000);
-    // NeonBg's permanent ticker never settles — bounded pump, not
-    // pumpAndSettle() (see CLAUDE.md's testing note).
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(
-      tester
-          .widget<PaginatedDotsIndicator>(find.byType(PaginatedDotsIndicator))
-          .currentIndex,
-      1,
-    );
-  }, skip: true);
-
   // FEAT-30: tap the real SoundToggleFab on-device, verify AudioManager's
   // mute state (and therefore the real bgm playback it gates) actually
   // flips. Must run WITHOUT `--dart-define=E2E_TEST=true` (that flag skips
@@ -1234,10 +1201,6 @@ void main() {
     },
   );
 
-  // SKIPPED: flaky on-device only — see the "Page Dots" skip comment above
-  // for the root cause (multiple testWidgets sharing one continuous
-  // integration_test process). NetworkStatusBanner's own logic is fully
-  // covered by test/widget/common/network_status_banner_test.dart.
   testWidgets('FEAT-26: NetworkStatusBanner toggle online/offline nhiều lần', (
     tester,
   ) async {
@@ -1256,14 +1219,26 @@ void main() {
     for (var i = 0; i < 3; i++) {
       await tester.tap(goOffline.first);
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('No internet connection'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('networkBannerDemo')),
+          matching: find.text('No internet connection'),
+        ),
+        findsOneWidget,
+      );
 
       await tester.tap(goOnline.first);
       await tester.pump(const Duration(milliseconds: 300));
-      expect(find.text('No internet connection'), findsNothing);
+      expect(
+        find.descendant(
+          of: find.byKey(const Key('networkBannerDemo')),
+          matching: find.text('No internet connection'),
+        ),
+        findsNothing,
+      );
     }
     expect(tester.takeException(), isNull);
-  }, skip: true);
+  });
 
   testWidgets(
     'FEAT-27: ShimmerPlaceholder mount/unmount nhanh nhiều lần không leak',
@@ -1293,85 +1268,9 @@ void main() {
     },
   );
 
-  // SKIPPED: flaky on-device only — see the "Page Dots" skip comment above
-  // for the root cause. LevelSelectGrid's own logic is fully covered by
-  // test/widget/common/level_select_grid_test.dart.
-  testWidgets('LevelSelectGrid: tapping an unlocked node fires its callback '
-      '(FEAT-19)', (tester) async {
-    await app.app();
-    await tester.pump(const Duration(seconds: 4));
-    await _goToWidgetShowcase(tester);
-
-    // Showcase sample data: level 4 is the only `unlocked` node (1-3
-    // completed, 5-8 locked) — tapping it must fire onLevelTap, shown
-    // here as a ToastBanner. LevelSelectGrid sits near the end of the
-    // screen's ListView, so on a real (non-oversized) device viewport it
-    // isn't built yet until scrolled into view — ListView only builds
-    // children near the current viewport.
-    final level4 = find.text('4');
-    await _scrollUntilVisible(tester, level4);
-    await tester.tap(level4.first);
-    await tester.pump(const Duration(milliseconds: 300));
-
-    expect(find.text('Level 4 tapped'), findsOneWidget);
-
-    // ToastBanner.show holds for its 2s default duration + a 220ms/180ms
-    // in/out transition — let it fully self-remove and dispose (its
-    // AnimationController/Ticker) before the test ends.
-    await tester.pump(const Duration(seconds: 5));
-    expect(tester.takeException(), isNull);
-  }, skip: true);
-
-  // SKIPPED: flaky on-device only — see the "Page Dots" skip comment above
-  // for the root cause. ConfettiOverlay's own logic (including the
-  // Ticker-dispose case this test targets) is fully covered by
-  // test/widget/common/confetti_overlay_test.dart.
-  testWidgets(
-    'ConfettiOverlay: triggering it repeatedly does not crash or leak '
-    '(FEAT-18)',
-    (tester) async {
-      await app.app();
-      await tester.pump(const Duration(seconds: 4));
-      await _goToWidgetShowcase(tester);
-
-      // ConfettiOverlay's demo sits near the end of the screen's ListView,
-      // so on a real device viewport it isn't built yet until scrolled
-      // into view (ListView only builds children near the viewport). See
-      // the FEAT-21 comment above for why `find.widgetWithText(...)` (not
-      // `find.text(...)`) is required for this CommonButton label.
-      final trigger = find.widgetWithText(CommonButton, 'Trigger');
-      await _scrollUntilVisible(tester, trigger);
-
-      // Fire it a few times back-to-back, including mid-burst re-triggers,
-      // to catch a Ticker/AnimationController leak (the bug this widget's
-      // spec explicitly calls out).
-      for (var i = 0; i < 3; i++) {
-        await tester.tap(trigger.first);
-        await tester.pump(const Duration(milliseconds: 150));
-      }
-      // Let the last burst finish and hide itself (2.2s default duration)
-      // and fully dispose its Ticker before the test ends.
-      await tester.pump(const Duration(seconds: 5));
-
-      expect(tester.takeException(), isNull);
-    },
-    skip: true,
-  );
-
-  // SKIPPED: flaky on-device only — same class of issue as the "Page Dots"
-  // skip above (ToastBanner-triggering widgets + this integration_test
-  // binary's one continuous process), confirmed by isolating it: even a
-  // SINGLE tile tap here (down from all 7), with a 5s trailing pump — far
-  // longer than ToastBanner's ~2.4s entrance+hold+exit lifecycle — still
-  // leaves its AnimationController's Ticker undisposed at
-  // `NavigatorState.dispose()`, the exact "NavigatorState was disposed
-  // with an active Ticker" failure the LevelSelectGrid ToastBanner test
-  // above already hit and skipped for. Not reproducible via a real user's
-  // normal navigation. CookbookScreen's own logic (every tile below, same
-  // labels) is fully covered headless by test/cookbook_screen_test.dart —
-  // this on-device test only re-proves navigation + real storage/platform
-  // channels, which `app boots to HomeScreen`-style tests already do
-  // elsewhere in this file.
+  // SKIPPED: the headless cookbook tests cover service behavior, but this
+  // device test also exercises Home-to-Cookbook navigation and real platform
+  // channels. Keep it until those device-only paths have stable coverage.
   testWidgets('CookbookScreen: navigates from Home and fires real service '
       'calls on device', (tester) async {
     await app.app();
@@ -2287,9 +2186,6 @@ void main() {
       await _scrollUntilVisible(tester, coordinator);
       final claim = find.widgetWithText(CommonButton, 'Claim All');
       await _scrollUntilVisible(tester, claim);
-      // Ensure the button is fully scrolled into viewport
-      await tester.drag(find.byType(ListView).first, const Offset(0, -200));
-      await tester.pump(const Duration(milliseconds: 300));
       await tester.tap(claim.first);
       await tester.pump(const Duration(milliseconds: 300));
       expect(claim.first.hitTestable(), findsOneWidget);
