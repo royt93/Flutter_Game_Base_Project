@@ -4,10 +4,13 @@ import '../../../core/neon_theme.dart';
 import 'common_button.dart';
 import 'panel_card.dart';
 
+/// Caller-owned state of the preview and its apply operation.
 enum RewardPlanPreviewStatus { ready, stale, executing, applied, failed }
 
+/// One caller-formatted reward entry; [amountText] is displayed verbatim.
 @immutable
 class RewardPlanPreviewLine {
+  /// Creates a line with non-blank [label] and [amountText].
   RewardPlanPreviewLine({required this.label, required this.amountText}) {
     if (label.trim().isEmpty) {
       throw ArgumentError.value(label, 'label', 'must not be blank');
@@ -22,6 +25,11 @@ class RewardPlanPreviewLine {
 }
 
 class RewardPlanPreviewCard extends StatefulWidget {
+  /// Shows a caller-computed preview; displaying it does not grant rewards or
+  /// guarantee they remain available. Confirm is enabled only when [status]
+  /// is [RewardPlanPreviewStatus.ready], [lines] is non-empty, and no action
+  /// is busy. Refresh is offered for stale/failed previews; async action errors
+  /// are shown using [actionErrorLabel].
   RewardPlanPreviewCard({
     super.key,
     required List<RewardPlanPreviewLine> lines,
@@ -63,10 +71,20 @@ class RewardPlanPreviewCard extends StatefulWidget {
     }
   }
 
+  /// Immutable copy of the caller-computed entries shown in the preview.
   final List<RewardPlanPreviewLine> lines;
+
+  /// Caller-provided preview/apply state; the card does not validate freshness.
   final RewardPlanPreviewStatus status;
+
+  /// Applies the preview. Enabled only for a non-empty [lines] list in [ready]
+  /// state while not [busy]. A thrown error is shown inline.
   final Future<void> Function()? onConfirm;
+
+  /// Refreshes a stale or failed preview. A thrown error is shown inline.
   final Future<void> Function()? onRefresh;
+
+  /// Optional cancel action, disabled while any action is running.
   final VoidCallback? onCancel;
   final bool busy;
   final String title;

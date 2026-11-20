@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 
 import '../../../core/neon_theme.dart';
@@ -78,70 +80,94 @@ class ToastBanner extends StatelessWidget {
     final overlay = Overlay.of(context, rootOverlay: true);
     final reduced = NeonTheme.reducedMotion(context);
     late OverlayEntry entry;
-    final controller = AnimationController(
-      vsync: Navigator.of(context),
-      duration: reduced ? Duration.zero : const Duration(milliseconds: 220),
-      reverseDuration: reduced
+    entry = OverlayEntry(
+      builder: (context) => _ToastBannerOverlay(
+        message: message,
+        color: color ?? NeonTheme.purple,
+        duration: duration,
+        reducedMotion: reduced,
+        onDismissed: () {
+          if (entry.mounted) entry.remove();
+        },
+      ),
+    );
+    overlay.insert(entry);
+  }
+}
+
+class _ToastBannerOverlay extends StatefulWidget {
+  const _ToastBannerOverlay({
+    required this.message,
+    required this.color,
+    required this.duration,
+    required this.reducedMotion,
+    required this.onDismissed,
+  });
+
+  final String message;
+  final Color color;
+  final Duration duration;
+  final bool reducedMotion;
+  final VoidCallback onDismissed;
+
+  @override
+  State<_ToastBannerOverlay> createState() => _ToastBannerOverlayState();
+}
+
+class _ToastBannerOverlayState extends State<_ToastBannerOverlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+  late final Animation<Offset> _slide;
+  Timer? _timer;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: widget.reducedMotion
+          ? Duration.zero
+          : const Duration(milliseconds: 220),
+      reverseDuration: widget.reducedMotion
           ? Duration.zero
           : const Duration(milliseconds: 180),
     );
-    final slide = Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero)
+    _slide = Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero)
         .animate(
           CurvedAnimation(
-            parent: controller,
+            parent: _controller,
             curve: Curves.easeOutBack,
-            // Không dùng lại easeOutBack cho chiều đóng — overshoot của nó rơi
-            // ngay lúc bắt đầu reverse(), làm toast "nảy ngược" một nhịp trước
-            // khi trượt lên. Cùng quy ước `neon_dialog.dart`'s
-            // `_kDialogCurve`/`Curves.easeIn`: vào bouncy, ra êm.
             reverseCurve: Curves.easeIn,
           ),
         );
-
-    // BUG-57: `controller.dispose()` must run even when the OverlayEntry
-    // was already removed from under us (e.g. the screen was popped before
-    // the toast's own timer fired) — the old early `if (!entry.mounted)
-    // return;` skipped straight past dispose(), leaking the
-    // AnimationController/Ticker every time that happened. `_disposed`
-    // also makes this safe to call more than once.
-    var disposed = false;
-    Future<void> remove() async {
-      if (entry.mounted) {
-        try {
-          await controller.reverse();
-        } catch (_) {
-          // vsync (the Navigator) may already be gone if the whole app was
-          // torn down mid-toast — still clean up below regardless, so the
-          // AnimationController/Ticker never leaks.
-        }
-        entry.remove();
-      }
-      if (!disposed) {
-        disposed = true;
-        controller.dispose();
-      }
-    }
-
-    entry = OverlayEntry(
-      builder: (context) => Positioned(
-        top: MediaQuery.of(context).padding.top + NeonTheme.s16,
-        left: 0,
-        right: 0,
-        child: FadeTransition(
-          opacity: controller,
-          child: SlideTransition(
-            position: slide,
-            child: ToastBanner(
-              message: message,
-              color: color ?? NeonTheme.purple,
-            ),
-          ),
-        ),
-      ),
-    );
-
-    overlay.insert(entry);
-    controller.forward();
-    Future.delayed(duration, remove);
+    _controller.forward();
+    _timer = Timer(widget.duration, _dismiss);
   }
+
+  Future<void> _dismiss() async {
+    if (!mounted) return;
+    await _controller.reverse();
+    if (mounted) widget.onDismissed();
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => Positioned(
+    top: MediaQuery.of(context).padding.top + NeonTheme.s16,
+    left: 0,
+    right: 0,
+    child: FadeTransition(
+      opacity: _controller,
+      child: SlideTransition(
+        position: _slide,
+        child: ToastBanner(message: widget.message, color: widget.color),
+      ),
+    ),
+  );
 }

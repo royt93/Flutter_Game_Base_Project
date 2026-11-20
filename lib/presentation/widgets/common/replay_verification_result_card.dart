@@ -4,12 +4,17 @@ import '../../../core/neon_theme.dart';
 import 'common_button.dart';
 import 'panel_card.dart';
 
+/// Outcome of the replay comparisons the caller actually performed.
 enum ReplayVerificationStatus { notChecked, matched, diverged, invalid }
 
+/// Outcome of the RNG check, independently of replay outcome comparison.
 enum ReplayRngCheckStatus { notChecked, matched, mismatched }
 
-/// Only caller-mapped status and safe copy; never raw replay data or secrets.
+/// Presents caller-mapped verification results, never raw replay data/secrets.
 class ReplayVerificationResultCard extends StatefulWidget {
+  /// [matched] means checked outcomes matched; it is not proof of fair play.
+  /// [rngMismatchCount] must be positive only for a mismatched RNG result.
+  /// Errors from [onVerifyAgain] are caught and shown inline.
   ReplayVerificationResultCard({
     super.key,
     required this.status,
@@ -108,12 +113,26 @@ class ReplayVerificationResultCard extends StatefulWidget {
     }
   }
 
+  /// Caller-mapped result; [matched] covers checked outcomes only.
   final ReplayVerificationStatus status;
+
+  /// Number of replay outcomes actually compared; must be non-negative.
   final int checkedOutcomeCount;
+
+  /// Caller-mapped result of the independent RNG check.
   final ReplayRngCheckStatus rngStatus;
+
+  /// Non-negative mismatch count; non-zero is valid only when [rngStatus] is
+  /// [ReplayRngCheckStatus.mismatched].
   final int rngMismatchCount;
+
+  /// Optional zero-based index of the first divergent checked outcome.
   final int? divergenceIndex;
+
+  /// Re-runs verification asynchronously; thrown errors are shown inline.
   final Future<void> Function()? onVerifyAgain;
+
+  /// Disables verification while the caller's operation is busy.
   final bool busy;
   final String? summaryText;
   final String title;

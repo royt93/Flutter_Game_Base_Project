@@ -90,6 +90,34 @@ void main() {
     },
   );
 
+  testWidgets('disposing app while a toast is visible disposes its ticker', (
+    tester,
+  ) async {
+    late BuildContext context;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (value) {
+            context = value;
+            return const Scaffold(body: SizedBox());
+          },
+        ),
+      ),
+    );
+
+    ToastBanner.show(
+      context,
+      message: 'Temporary',
+      duration: const Duration(seconds: 5),
+    );
+    await tester.pump();
+    expect(find.text('Temporary'), findsOneWidget);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets(
     'ENH-26: đóng (reverse) không overshoot ngược — offset.dy không vượt quá 0 lúc bắt đầu đóng',
     (tester) async {

@@ -64,7 +64,10 @@ Future<void> _goToCookbook(WidgetTester tester) async {
     Get.back();
     await tester.pump(const Duration(milliseconds: 300));
   }
-  await tester.tap(find.byType(NeonButton).at(3));
+  final cookbookButton = find.byType(NeonButton).last;
+  await tester.ensureVisible(cookbookButton);
+  await tester.pump(const Duration(milliseconds: 100));
+  await tester.tap(cookbookButton);
   await tester.pump(const Duration(seconds: 1));
   expect(find.byType(CookbookScreen), findsOneWidget);
 }
@@ -1268,43 +1271,25 @@ void main() {
     },
   );
 
-  // SKIPPED: the headless cookbook tests cover service behavior, but this
-  // device test also exercises Home-to-Cookbook navigation and real platform
-  // channels. Keep it until those device-only paths have stable coverage.
-  testWidgets('CookbookScreen: navigates from Home and fires real service '
-      'calls on device', (tester) async {
+  testWidgets('CookbookScreen: real storage round-trip on device', (
+    tester,
+  ) async {
     await app.app();
     await tester.pump(const Duration(seconds: 4));
-
     await _goToCookbook(tester);
 
-    // One representative tile per category, each a real call (not a
-    // mockup) against the actual service — same tiles already covered
-    // headless by test/cookbook_screen_test.dart, re-run here against
-    // real on-device storage/platform channels.
-    for (final label in const [
+    final saveLoad = find.widgetWithText(
+      CommonButton,
       'VersionedJsonStore — save + load',
-      'OfflineProgressionService — claim idle earnings',
-      'RemoteConfigService — init + read',
-      'SdkHealthReport — collect',
-      'SecureStorageAdapter (fake adapter) — round trip',
-      'maybeRequestReview — happy-moment prompt',
-      'HapticChoreographer — play a prebuilt pattern',
-    ]) {
-      final button = find.widgetWithText(CommonButton, label);
-      await _scrollUntilVisible(tester, button);
-      await tester.tap(button.first);
-      await tester.pump(const Duration(milliseconds: 400));
-    }
-    // Let every ToastBanner triggered above finish its 2s auto-dismiss and
-    // dispose its AnimationController/Ticker before the test ends — same
-    // reasoning as the ConfettiOverlay test above. 7 taps only 400ms apart
-    // can stack several overlapping toasts, each on its own ~2.4s
-    // lifecycle from its own tap time, so this needs real margin.
-    await tester.pump(const Duration(seconds: 5));
+    );
+    await _scrollUntilVisible(tester, saveLoad);
+    await tester.tap(saveLoad.first);
+    await tester.pump(const Duration(milliseconds: 400));
 
+    expect(find.textContaining('round-tripped:'), findsOneWidget);
+    await tester.pump(const Duration(seconds: 3));
     expect(tester.takeException(), isNull);
-  }, skip: true);
+  });
 
   testWidgets(
     'BUG-98: public service and widget member methods execute safely on device',
