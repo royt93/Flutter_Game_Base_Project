@@ -40,7 +40,22 @@ class _ThrowingCacheStorage extends StorageService {
 
   @override
   Future<void> setString(String key, String value) {
-    if (key == targetKey) throw StateError('cache write failed');
+    if (key == targetKey) throw StateError('write failed');
+    return super.setString(key, value);
+  }
+}
+
+class _ThrowingOnceStorage extends StorageService {
+  _ThrowingOnceStorage(super.prefs, this.targetKey);
+  final String targetKey;
+  bool _thrown = false;
+
+  @override
+  Future<void> setString(String key, String value) {
+    if (!_thrown && key == targetKey) {
+      _thrown = true;
+      throw StateError('write failed');
+    }
     return super.setString(key, value);
   }
 }
@@ -761,6 +776,181 @@ void main() {
       fetchRemote: fetchRemote,
     );
 
+    String historyRecordKey(String key) => '${key}_history_v1';
+    String combinedRecordKey(String key) => '${key}_record_v2';
+
+    Map<String, Object?> legacyCache(String name, int id) => {
+      'id': id,
+      'name': name,
+      'schemaVersion': 1,
+      'cachedAtMs': 1,
+    };
+
+    Map<String, Object?> legacyHistory(String name, int id, int version) => {
+      'schemaVersion': 1,
+      'contentVersion': version,
+      'checksum': 'legacy-$version',
+      'appliedAtMs': version,
+      'json': {'id': id, 'name': name, 'schemaVersion': 1},
+    };
+
+    test(
+      'migrate legacy cache/history vào một record authoritative, giữ key cũ',
+      () async {
+        await storage.setString(
+          cacheKey,
+          jsonEncode(legacyCache('Current cached V2', 2)),
+        );
+        await storage.setString(
+          historyRecordKey(cacheKey),
+          jsonEncode([
+            legacyHistory('V1', 1, 1),
+            legacyHistory('Current cached V2', 2, 2),
+          ]),
+        );
+
+        final pack = packWithHistory(useStorage: storage);
+        await pack.load();
+
+        expect(pack.current!.name, 'Current cached V2');
+        expect(pack.currentContentVersion, 2);
+        expect(pack.history.map((entry) => entry.contentVersion), [1, 2]);
+        expect(storage.getString(combinedRecordKey(cacheKey)), isNotNull);
+        expect(storage.getString(cacheKey), isNotNull);
+        expect(storage.getString(historyRecordKey(cacheKey)), isNotNull);
+      },
+    );
+
+    test(
+      'legacy cache without history is rejected because its signature was not retained',
+      () async {
+        await storage.setString(
+          cacheKey,
+          jsonEncode(legacyCache('Newest cache', 3)),
+        );
+        await storage.setString(historyRecordKey(cacheKey), jsonEncode([]));
+
+        final pack = packWithHistory(useStorage: storage);
+        await pack.load();
+
+        expect(pack.current!.name, 'Asset');
+        expect(pack.history, isEmpty);
+        expect(storage.getString(combinedRecordKey(cacheKey)), isNotNull);
+      },
+    );
+
+    test(
+      'migration write failure retries from untouched legacy keys',
+      () async {
+        await storage.setString(
+          cacheKey,
+          jsonEncode(legacyCache('Legacy cached', 2)),
+        );
+        await storage.setString(
+          historyRecordKey(cacheKey),
+          jsonEncode([legacyHistory('Legacy cached', 2, 2)]),
+        );
+        final failing = _ThrowingOnceStorage(
+          await SharedPreferences.getInstance(),
+          combinedRecordKey(cacheKey),
+        );
+
+        final first = packWithHistory(useStorage: failing);
+        await first.load();
+        expect(first.current!.name, 'Legacy cached');
+        expect(failing.getString(combinedRecordKey(cacheKey)), isNull);
+        expect(failing.getString(cacheKey), isNotNull);
+        expect(failing.getString(historyRecordKey(cacheKey)), isNotNull);
+
+        final retry = packWithHistory(useStorage: failing);
+        await retry.load();
+        expect(retry.current!.name, 'Legacy cached');
+        expect(retry.history.single.contentVersion, 2);
+        expect(failing.getString(combinedRecordKey(cacheKey)), isNotNull);
+      },
+    );
+
+    test(
+      'combined-record write failure leaves current and history unchanged',
+      () async {
+        final pack = packWithHistory(
+          useStorage: storage,
+          fetchRemote: () async => envelopeFor(1, 'V1', contentVersion: 1),
+        );
+        await pack.load();
+        await pack.refreshed;
+        final beforeCurrent = pack.current!.name;
+        final beforeHistory = pack.history
+            .map((entry) => entry.contentVersion)
+            .toList();
+        final beforeRecord = storage.getString(combinedRecordKey(cacheKey));
+
+        final failing = RemoteContentPack<_Level>.withHistory(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          contentSecret: _secret,
+          storage: _ThrowingCacheStorage(
+            await SharedPreferences.getInstance(),
+            combinedRecordKey(cacheKey),
+          ),
+          cacheKey: cacheKey,
+          historyCapacity: 3,
+          bundle: _asset('Asset'),
+          fetchRemote: () async => envelopeFor(2, 'V2', contentVersion: 2),
+        );
+        await failing.load();
+        await failing.refreshed;
+        expect(failing.current!.name, beforeCurrent);
+        expect(
+          failing.history.map((entry) => entry.contentVersion),
+          beforeHistory,
+        );
+        expect(storage.getString(combinedRecordKey(cacheKey)), beforeRecord);
+
+        final result = await failing.rollbackToChecksum(
+          failing.currentChecksum!,
+        );
+        expect(result, isA<SdkFailure<_Level>>());
+        expect(failing.current!.name, beforeCurrent);
+        expect(
+          failing.history.map((entry) => entry.contentVersion),
+          beforeHistory,
+        );
+        expect(storage.getString(combinedRecordKey(cacheKey)), beforeRecord);
+      },
+    );
+
+    test(
+      'withCache stays on legacy cache key and does not consume history record',
+      () async {
+        await storage.setString(
+          combinedRecordKey(cacheKey),
+          jsonEncode({
+            'formatVersion': 2,
+            'cache': legacyCache('New record', 9),
+            'history': [],
+          }),
+        );
+        await storage.setString(
+          cacheKey,
+          jsonEncode(legacyCache('withCache legacy', 4)),
+        );
+
+        final pack = RemoteContentPack<_Level>.withCache(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          storage: storage,
+          cacheKey: cacheKey,
+          bundle: _asset('Asset'),
+        );
+        await pack.load();
+
+        expect(pack.current!.name, 'withCache legacy');
+      },
+    );
+
     test('cacheKey rỗng -> ArgumentError tại constructor', () {
       expect(
         () => RemoteContentPack<_Level>.withHistory(
@@ -794,67 +984,75 @@ void main() {
       expect(pack.history, hasLength(1));
     });
 
-    test('rollback: ghi cache lỗi -> SdkFailure(storage), current giữ nguyên', () async {
-      final seed = packWithHistory(
-        useStorage: storage,
-        fetchRemote: () async => envelopeFor(1, 'V1', contentVersion: 1),
-      );
-      await seed.load();
-      await seed.refreshed;
-      final v1Checksum = seed.currentChecksum!;
+    test(
+      'rollback: ghi cache lỗi -> SdkFailure(storage), current giữ nguyên',
+      () async {
+        final seed = packWithHistory(
+          useStorage: storage,
+          fetchRemote: () async => envelopeFor(1, 'V1', contentVersion: 1),
+        );
+        await seed.load();
+        await seed.refreshed;
+        final v1Checksum = seed.currentChecksum!;
 
-      final failing = RemoteContentPack<_Level>.withHistory(
-        assetPath: _assetPath,
-        schemaVersion: 1,
-        fromJson: _Level.fromJson,
-        contentSecret: _secret,
-        storage: _ThrowingCacheStorage(
-          await SharedPreferences.getInstance(),
-          cacheKey,
-        ),
-        cacheKey: cacheKey,
-        historyCapacity: 3,
-        bundle: _asset('Asset'),
-        fetchRemote: () async => envelopeFor(2, 'V2', contentVersion: 2),
-      );
-      await failing.load();
-      await failing.refreshed;
-      final before = failing.current!.name;
+        final failing = RemoteContentPack<_Level>.withHistory(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          contentSecret: _secret,
+          storage: _ThrowingCacheStorage(
+            await SharedPreferences.getInstance(),
+            combinedRecordKey(cacheKey),
+          ),
+          cacheKey: cacheKey,
+          historyCapacity: 3,
+          bundle: _asset('Asset'),
+          fetchRemote: () async => envelopeFor(2, 'V2', contentVersion: 2),
+        );
+        await failing.load();
+        await failing.refreshed;
+        final before = failing.current!.name;
 
-      final result = await failing.rollbackToChecksum(v1Checksum);
+        final result = await failing.rollbackToChecksum(v1Checksum);
 
-      expect(result, isA<SdkFailure<_Level>>());
-      final failure = result as SdkFailure<_Level>;
-      expect(failure.kind, SdkErrorKind.storage);
-      expect(failure.cause, isA<StateError>());
-      expect(failure.stackTrace, isNotNull);
-      expect(failing.current!.name, before);
-    });
+        expect(result, isA<SdkFailure<_Level>>());
+        final failure = result as SdkFailure<_Level>;
+        expect(failure.kind, SdkErrorKind.storage);
+        expect(failure.cause, isA<StateError>());
+        expect(failure.stackTrace, isNotNull);
+        expect(failing.current!.name, before);
+      },
+    );
 
-    test('history hỏng trên đĩa: bỏ entry hỏng, giữ entry hợp lệ, không chặn boot', () async {
-      const good =
-          '{"schemaVersion":1,"contentVersion":1,"checksum":"c1","appliedAtMs":1,"json":{"id":1,"name":"V1"}}';
+    test(
+      'history hỏng trên đĩa: bỏ entry hỏng, giữ entry hợp lệ, không chặn boot',
+      () async {
+        const good =
+            '{"schemaVersion":1,"contentVersion":1,"checksum":"c1","appliedAtMs":1,"json":{"id":1,"name":"V1"}}';
 
-      // Không phải list, hoặc không phải JSON -> rỗng.
-      await storage.setString('${cacheKey}_history_v1', '{"not":"a list"}');
-      final notList = packWithHistory(useStorage: storage);
-      await notList.load();
-      expect(notList.history, isEmpty);
+        // Non-list/malformed blobs decode as empty history.
+        await storage.setString('${cacheKey}_history_v1', '{"not":"a list"}');
+        final notList = packWithHistory(useStorage: storage);
+        await notList.load();
+        expect(notList.history, isEmpty);
 
-      await storage.setString('${cacheKey}_history_v1', 'not json at all');
-      final garbage = packWithHistory(useStorage: storage);
-      await garbage.load();
-      expect(garbage.history, isEmpty);
+        await storage.remove(combinedRecordKey(cacheKey));
+        await storage.setString('${cacheKey}_history_v1', 'not json at all');
+        final garbage = packWithHistory(useStorage: storage);
+        await garbage.load();
+        expect(garbage.history, isEmpty);
 
-      // Entry hỏng nằm giữa entry hợp lệ: chỉ entry hỏng bị bỏ.
-      await storage.setString(
-        '${cacheKey}_history_v1',
-        '[$good,"not a map",{"checksum":"c2"},{"checksum":5,"json":{}},$good]',
-      );
-      final mixed = packWithHistory(useStorage: storage);
-      await mixed.load();
-      expect(mixed.history.map((r) => r.checksum), ['c1', 'c1']);
-    });
+        // Invalid entries are ignored when legacy history migrates.
+        await storage.remove(combinedRecordKey(cacheKey));
+        await storage.setString(
+          '${cacheKey}_history_v1',
+          '[$good,"not a map",{"checksum":"c2"},{"checksum":5,"json":{}},$good]',
+        );
+        final mixed = packWithHistory(useStorage: storage);
+        await mixed.load();
+        expect(mixed.history.map((r) => r.checksum), ['c1', 'c1']);
+      },
+    );
 
     test('historyCapacity <= 0 -> ArgumentError tại constructor', () {
       expect(

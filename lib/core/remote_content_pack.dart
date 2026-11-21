@@ -289,69 +289,198 @@ class RemoteContentPack<T> {
   /// wait deterministically past the background refresh.
   Future<void> get refreshed => _refreshFuture ?? Future.value();
 
-  /// ENH-96 (`withHistory` only): where [_history] is persisted —
-  /// deliberately a DIFFERENT key than [cacheKey] (`${cacheKey}_history_v1`)
-  /// so an existing [withCache] consumer's cache entry is never touched by
-  /// upgrading to [withHistory], and a `withHistory` pack's own single-slot
-  /// cache (still written by [_writeCache], unchanged) stays exactly
-  /// compatible with [withCache]'s format too.
   String? get _historyStorageKey {
     final key = cacheKey;
     if (key == null || historyCapacity == null) return null;
     return '${key}_history_v1';
   }
 
-  bool _historyLoaded = false;
+  String? get _combinedStorageKey {
+    final key = cacheKey;
+    if (key == null || historyCapacity == null) return null;
+    return '${key}_record_v2';
+  }
 
-  void _ensureHistoryLoaded() {
-    if (_historyLoaded) return;
-    _historyLoaded = true;
+  bool _historyLoaded = false;
+  bool _combinedRecordLoaded = false;
+
+  Future<bool> _ensureHistoryLoaded() async {
+    if (_historyLoaded) return _combinedRecordLoaded && _current != null;
     final store = storage;
-    final key = _historyStorageKey;
-    if (store == null || key == null) return;
-    final raw = store.getString(key);
-    if (raw == null) return;
-    try {
-      final decoded = jsonDecode(raw);
-      if (decoded is! List) return;
-      for (final entry in decoded) {
-        final record = _HistoryRecord.fromStorageJson(entry);
-        if (record != null) _history.add(record);
+    final combinedKey = _combinedStorageKey;
+    if (store == null || combinedKey == null) {
+      _historyLoaded = true;
+      return false;
+    }
+
+    final combinedRaw = store.getString(combinedKey);
+    if (combinedRaw != null) {
+      try {
+        final decoded = jsonDecode(combinedRaw);
+        if (decoded is Map) {
+          final record = decoded.cast<String, Object?>();
+          if (record['formatVersion'] == 2 &&
+              record['history'] is List &&
+              (record['cache'] == null || record['cache'] is Map)) {
+            _history
+              ..clear()
+              ..addAll(_decodeHistory(record['history']));
+            final cache = record['cache'];
+            final hasCache = cache is Map && _tryApplyCache(cache);
+            if (!hasCache && _history.isNotEmpty) {
+              final migrated = _validateSchema(_history.last.json);
+              if (migrated != null) _current = fromJson(migrated);
+            }
+            _historyLoaded = true;
+            _combinedRecordLoaded = true;
+            return hasCache;
+          }
+        }
+      } catch (_) {
+        // Invalid authoritative record falls back to legacy migration.
       }
+    }
+
+    final legacyHistory = _decodeHistory(
+      _decodeJson(store.getString(_historyStorageKey!)),
+    );
+    _history
+      ..clear()
+      ..addAll(legacyHistory);
+
+    final legacyCache = _validatedCache(
+      _decodeJson(store.getString(cacheKey!)),
+    );
+    Map<String, Object?>? cache;
+    final cacheHistoryMismatch =
+        legacyCache != null &&
+        _history.isNotEmpty &&
+        !_sameJson(_history.last.json, _withoutCacheMetadata(legacyCache));
+    if (legacyCache != null && _history.isNotEmpty && !cacheHistoryMismatch) {
+      final cachedJson = _withoutCacheMetadata(legacyCache);
+      cache = legacyCache;
+      _current = fromJson(cachedJson);
+    }
+    if (legacyCache == null && _history.isNotEmpty) {
+      final current = _history.last.json;
+      final migrated = _validateSchema(current);
+      if (migrated != null) {
+        cache = {...migrated, 'cachedAtMs': _history.last.appliedAtMs};
+        _current = fromJson(migrated);
+      }
+    }
+
+    try {
+      await _writeCombined(cache, _history);
+      _historyLoaded = true;
+      _combinedRecordLoaded = true;
     } catch (_) {
-      // Corrupt/malformed history blob → start from an empty history
-      // rather than crash boot (same trust-boundary posture every other
-      // persisted JSON blob in this package uses).
-      _history.clear();
+      // Keep legacy keys as retry source; state remains readable this run.
+    }
+    return cache != null;
+  }
+
+  List<_HistoryRecord> _decodeHistory(Object? value) {
+    if (value is! List) return [];
+    return [for (final entry in value) ?_HistoryRecord.fromStorageJson(entry)];
+  }
+
+  Object? _decodeJson(String? raw) {
+    if (raw == null) return null;
+    try {
+      return jsonDecode(raw);
+    } catch (_) {
+      return null;
     }
   }
 
-  Future<void> _persistHistory() async {
+  bool _sameJson(Map<String, Object?> a, Map<String, Object?> b) =>
+      jsonEncode(a) == jsonEncode(b);
+
+  Map<String, Object?>? _validatedCache(Object? decoded) {
+    if (decoded is! Map) return null;
+    try {
+      final json = decoded.cast<String, Object?>();
+      final migrated = _validateSchema(json);
+      if (migrated == null) return null;
+      final maxAge = maxCacheAge;
+      if (maxAge != null) {
+        final cachedAtMs = asIntOr(json['cachedAtMs'], 0);
+        if (nowMsClamped(storage) - cachedAtMs > maxAge.inMilliseconds) {
+          return null;
+        }
+      }
+      fromJson(migrated);
+      return {...migrated, 'cachedAtMs': asIntOr(json['cachedAtMs'], 0)};
+    } catch (_) {
+      return null;
+    }
+  }
+
+  bool _tryApplyCache(Map decoded) {
+    final cache = _validatedCache(decoded);
+    if (cache == null) return false;
+    _current = fromJson(_withoutCacheMetadata(cache));
+    return true;
+  }
+
+  Future<void> _writeCombined(
+    Map<String, Object?>? cache,
+    List<_HistoryRecord> history,
+  ) async {
     final store = storage;
-    final key = _historyStorageKey;
+    final key = _combinedStorageKey;
     if (store == null || key == null) return;
     await store.setString(
       key,
-      jsonEncode([for (final r in _history) r.toStorageJson()]),
+      jsonEncode({
+        'formatVersion': 2,
+        'cache': cache,
+        'history': [for (final r in history) r.toStorageJson()],
+      }),
     );
   }
 
-  void _appendHistory(_HistoryRecord record) {
-    _history.add(record);
-    final capacity = historyCapacity;
-    if (capacity != null && _history.length > capacity) {
-      _history.removeRange(0, _history.length - capacity);
+  List<_HistoryRecord> _nextHistory(_HistoryRecord record) {
+    final next = [..._history, record];
+    if (next.length > historyCapacity!) {
+      next.removeRange(0, next.length - historyCapacity!);
     }
+    return next;
+  }
+
+  Map<String, Object?> _cacheValue(Map<String, Object?> json) => {
+    ...json,
+    'schemaVersion': schemaVersion,
+    'cachedAtMs': nowMsClamped(storage),
+  };
+
+  void _commitHistory(List<_HistoryRecord> history) {
+    _history
+      ..clear()
+      ..addAll(history);
+  }
+
+  Map<String, Object?> _withoutCacheMetadata(Map<String, Object?> json) =>
+      Map<String, Object?>.from(json)..remove('cachedAtMs');
+
+  String _persistedChecksum(Map<String, Object?> envelope) {
+    final checksum = envelope[checksumKey];
+    return checksum is String ? checksum : '';
   }
 
   Future<T?> load() async {
-    _ensureHistoryLoaded();
+    final withHistory = historyCapacity != null;
+    final loadedCache = withHistory ? await _ensureHistoryLoaded() : false;
     // ENH-94: a verified cache entry always wins over the bundled asset —
     // it only ever exists after a signature-verified fetch, so its mere
     // presence-and-validity already implies it's live-ops content strictly
     // newer in provenance than what was compiled into the app, regardless
     // of any timestamp on either side (the asset carries none at all).
-    if (!_tryLoadFromCache()) {
+    final cached = !withHistory
+        ? _tryLoadFromCache()
+        : loadedCache || (!_combinedRecordLoaded && _tryLoadFromCache());
+    if (!cached && _current == null) {
       try {
         final raw = await _bundle.loadString(assetPath);
         final decoded = jsonDecode(raw);
@@ -415,14 +544,7 @@ class RemoteContentPack<T> {
     final store = storage;
     final key = cacheKey;
     if (store == null || key == null) return;
-    await store.setString(
-      key,
-      jsonEncode({
-        ...json,
-        'schemaVersion': schemaVersion,
-        'cachedAtMs': nowMsClamped(store),
-      }),
-    );
+    await store.setString(key, jsonEncode(_cacheValue(json)));
   }
 
   Future<void> _refreshFromRemote(
@@ -451,21 +573,24 @@ class RemoteContentPack<T> {
       // _current"). If the write throws, this whole try block's catch
       // below catches it too, so `_current` is left untouched rather than
       // pointing at content the disk doesn't actually have a record of.
-      await _writeCache(validated);
+      final nextCurrent = fromJson(validated);
       if (resolver != null) {
-        final checksum = envelope[checksumKey];
-        _appendHistory(
+        final history = _nextHistory(
           _HistoryRecord(
             schemaVersion: schemaVersion,
             contentVersion: resolver(validated),
-            checksum: checksum is String ? checksum : '',
+            checksum: _persistedChecksum(envelope),
             appliedAtMs: nowMsClamped(storage),
             json: validated,
           ),
         );
-        await _persistHistory();
+        await _writeCombined(_cacheValue(validated), history);
+        _combinedRecordLoaded = true;
+        _commitHistory(history);
+      } else {
+        await _writeCache(validated);
       }
-      _current = fromJson(validated);
+      _current = nextCurrent;
     } catch (_) {
       // Network failure, bad signature/schema, a fromJson throw on a
       // wrong-typed field, or a cache-write failure → keep whatever
@@ -482,7 +607,7 @@ class RemoteContentPack<T> {
   /// timestamp), and only then swaps [_current]. Returns [SdkFailure] (no
   /// mutation at all) if no history entry matches.
   Future<SdkResult<T>> rollbackToChecksum(String checksum) async {
-    _ensureHistoryLoaded();
+    await _ensureHistoryLoaded();
     final match = _history.cast<_HistoryRecord?>().lastWhere(
       (r) => r!.checksum == checksum,
       orElse: () => null,
@@ -502,7 +627,7 @@ class RemoteContentPack<T> {
   /// "latest wins" convention [currentContentVersion] itself uses. Returns
   /// [SdkFailure] (no mutation) if no history entry matches.
   Future<SdkResult<T>> rollbackToVersion(int contentVersion) async {
-    _ensureHistoryLoaded();
+    await _ensureHistoryLoaded();
     final matches = _history
         .where((r) => r.contentVersion == contentVersion)
         .toList();
@@ -518,8 +643,8 @@ class RemoteContentPack<T> {
 
   Future<SdkResult<T>> _activateHistoryRecord(_HistoryRecord record) async {
     try {
-      await _writeCache(record.json);
-      _appendHistory(
+      final nextCurrent = fromJson(record.json);
+      final history = _nextHistory(
         _HistoryRecord(
           schemaVersion: record.schemaVersion,
           contentVersion: record.contentVersion,
@@ -528,9 +653,11 @@ class RemoteContentPack<T> {
           json: record.json,
         ),
       );
-      await _persistHistory();
-      _current = fromJson(record.json);
-      return SdkSuccess(_current as T);
+      await _writeCombined(_cacheValue(record.json), history);
+      _combinedRecordLoaded = true;
+      _commitHistory(history);
+      _current = nextCurrent;
+      return SdkSuccess(nextCurrent);
     } catch (error, stack) {
       return SdkFailure(
         kind: SdkErrorKind.storage,
@@ -547,7 +674,6 @@ class RemoteContentPack<T> {
   /// represents), matching this package's existing default-deny diagnostics
   /// convention (`DiagnosticsExportBundle.build`'s `configAllowedKeys`).
   Map<String, Object?> diagnosticsSummary() {
-    _ensureHistoryLoaded();
     return {
       'schemaVersion': schemaVersion,
       'contentVersion': currentContentVersion,
