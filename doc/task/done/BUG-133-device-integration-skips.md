@@ -19,10 +19,12 @@ source: "TECNO KJ7 smoke 2026-11-19; flaky device tests recorded in app_boot_tes
 - After FEAT-113 visibility handling, ToastBanner lifecycle ownership, and minimal Cookbook coverage were fixed, the full TECNO suite passed: 142 passed, 0 skipped.
 - Replaced the seven-tile device test with one `VersionedJsonStore — save + load` smoke through `app.app()`/`_goToCookbook` and real `StorageService.to`. After the ToastBanner controller moved into the root-overlay entry's state, the test passed on TECNO KJ7 with clean teardown. Headless screen/service tests still cover the other tiles.
 
-## Remaining follow-up
+## Resolution
 
-The only remaining skipped integration case is unrelated to this task's removed tests. Keep its reason documented at the test site and continue to run the device suite on TECNO when it is changed.
+Removed three skipped cases whose behavior already had widget/showcase coverage. Fixed `_scrollUntilVisible` to ensure a found lazy-list target is visible and still mounted before returning; scoped the NetworkStatusBanner assertion to its demo key. Removed the contradictory extra drag from the Wave 1 P0 caller. Replaced the seven-toast Cookbook smoke with one real `VersionedJsonStore` storage round-trip. ToastBanner controller/timer ownership moved into the root-overlay entry's state and now disposes cleanly on teardown (BUG-135).
+
+Full `example/integration_test/app_boot_test.dart` suite passed on TECNO KJ7: 142 passed, 0 skipped. Cookbook headless coverage for remaining tiles stays in `example/test/`.
 
 ## Scope
 
-No production behavior change from the scroll-helper task. The helper/assertion fix and the minimal Cookbook device smoke now have on-device passing coverage; ToastBanner lifecycle was fixed under BUG-135.
+Test/helper and ToastBanner lifecycle changes are complete; no known device integration skips remain.
