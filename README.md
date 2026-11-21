@@ -13,10 +13,11 @@ to build from scratch.
 Want to see proof without reading code? Use this order:
 
 1. Open `example/` on a device.
-2. Tap **Game Demo**.
-3. Tap the circle 10 times.
-4. Expected result: the badge reaches `tap: 10/10`, gems reach `20`, a confetti burst appears, and the achievement icon turns into a star.
-5. Background and resume the app. Expected result: the pause panel appears while backgrounded and disappears after resume; no crash.
+2. From Home, tap **Game Demo** to open the mini-game hub.
+3. In the hub, choose **Classic Flame**.
+4. Tap the circle 10 times.
+5. Expected result: the badge reaches `tap: 10/10`, gems reach `20`, a confetti burst appears, and the achievement icon turns into a star.
+6. Background and resume the app. Expected result: the pause panel appears while backgrounded and disappears after resume; no crash.
 
 What this proves:
 

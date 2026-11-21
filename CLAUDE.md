@@ -15,9 +15,13 @@ The repo has two parts:
   (`lib/presentation/game/roy_game.dart`). No `main.dart`, no screens, no
   `android/`/`ios/` at the root.
 - `example/` — a **separate** Flutter app with its own `pubspec.yaml`,
-  `android/`, `ios/`, and `lib/main.dart` + 4 screens (`HomeScreen`,
-  `SettingsScreen`, `WidgetShowcaseScreen`, `GameDemoScreen`). It depends on
-  the root package via `path: ../` in `example/pubspec.yaml`.
+  `android/`, `ios/`, `lib/main.dart`, and focused demo screens under
+  `example/lib/screens/`. Home links to settings, the widget showcase, a
+  mini-game hub, rewards/shop/save/progression/live-ops demos, and the
+  cookbook; the mini-game hub opens Classic Flame, Sprite Arena, or Match-3
+  Lite. A dedicated analytics ACK demo is available from Home for local
+  failure/retry verification. The app depends on the root package via
+  `path: ../` in `example/pubspec.yaml`.
 
 Rule of thumb for new work: a new reusable core service or widget goes in
 root `lib/`; a new demo screen, app-specific behavior, or anything that only
@@ -183,11 +187,14 @@ above) with the `storage`/`locale`/`lifecycle`/`reminders` modules plus
 `audio` unless `withAudio: false` (e.g. under `isE2eTest`), registers
 `ReplayRecorder` directly (a pure in-memory debug aid, safe under E2E too),
 sets `NeonTheme.dark`/`NeonTheme.colorBlindSafe` from storage, wraps the root
-in `DebugQaOverlay`, and boots `GetMaterialApp`. Screens: `HomeScreen`
-(title + navigation), `SettingsScreen` (locale dropdown + audio mute
-toggle), `WidgetShowcaseScreen` (demos every `common/` widget, section by
-section), `GameDemoScreen` (embeds `RoyGame` inside a `GameWidget`). Any new
-demo screen or app-specific behavior belongs here, not in the package `lib/`.
+in `DebugQaOverlay`, and boots `GetMaterialApp`. Main example entrypoints live
+under `example/lib/screens/`: `HomeScreen` routes to the widget showcase,
+mini-game hub, cookbook, settings, rewards, shop, save/cloud, progression,
+season/leaderboard, monetization, and the analytics ACK demo. The mini-game hub
+selects `GameDemoScreen` (embeds `RoyGame` in a `GameWidget`), Sprite Arena,
+or Match-3 Lite. See `example/README.md` for the current navigation and file
+map. Any new demo screen or app-specific behavior belongs in `example/`, not
+in the package `lib/`.
 
 ## Key Conventions
 
