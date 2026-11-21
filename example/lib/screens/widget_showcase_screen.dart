@@ -469,14 +469,22 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   ) async {
     final key = _outboxConflictKeys[reference];
     if (key == null) throw StateError('Outbox item is no longer available');
-    final result = _outbox.resolveManual(
+    final result = await _outbox.resolveManualDurably(
       idempotencyKey: key,
       resolution: switch (resolution) {
         OutboxConflictResolution.keepLocal => ManualResolution.keepLocal,
         OutboxConflictResolution.acceptRemote => ManualResolution.acceptRemote,
       },
     );
-    if (result is SdkFailure<void>) throw StateError('Outbox choice failed');
+    if (!mounted) return;
+    if (result is SdkFailure<void>) {
+      ToastBanner.show(
+        context,
+        message: 'Could not save conflict choice',
+        color: NeonTheme.red,
+      );
+      return;
+    }
     await Future<void>.delayed(Duration.zero);
     if (mounted) setState(() {});
   }
@@ -5093,31 +5101,53 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                         children: [
                                           CommonButton(
                                             label: 'Enqueue OK',
-                                            onTap: () {
+                                            onTap: () async {
                                               _outboxCounter++;
-                                              _outbox.enqueue(
-                                                idempotencyKey:
-                                                    'score_$_outboxCounter',
-                                                payload: {
-                                                  'score': _outboxCounter * 10,
-                                                },
-                                              );
+                                              final result = await _outbox
+                                                  .enqueueDurably(
+                                                    idempotencyKey:
+                                                        'score_$_outboxCounter',
+                                                    payload: {
+                                                      'score':
+                                                          _outboxCounter * 10,
+                                                    },
+                                                  );
+                                              if (!context.mounted) return;
+                                              if (result is SdkFailure<void>) {
+                                                ToastBanner.show(
+                                                  context,
+                                                  message:
+                                                      'Could not save outbox item',
+                                                  color: NeonTheme.red,
+                                                );
+                                              }
                                             },
                                           ),
                                           CommonButton(
                                             label: 'Enqueue (conflict)',
                                             variant:
                                                 CommonButtonVariant.secondary,
-                                            onTap: () {
+                                            onTap: () async {
                                               _outboxCounter++;
-                                              _outbox.enqueue(
-                                                idempotencyKey:
-                                                    'score_$_outboxCounter',
-                                                payload: {
-                                                  'score': _outboxCounter * 10,
-                                                  'forceConflict': true,
-                                                },
-                                              );
+                                              final result = await _outbox
+                                                  .enqueueDurably(
+                                                    idempotencyKey:
+                                                        'score_$_outboxCounter',
+                                                    payload: {
+                                                      'score':
+                                                          _outboxCounter * 10,
+                                                      'forceConflict': true,
+                                                    },
+                                                  );
+                                              if (!context.mounted) return;
+                                              if (result is SdkFailure<void>) {
+                                                ToastBanner.show(
+                                                  context,
+                                                  message:
+                                                      'Could not save outbox item',
+                                                  color: NeonTheme.red,
+                                                );
+                                              }
                                             },
                                           ),
                                         ],

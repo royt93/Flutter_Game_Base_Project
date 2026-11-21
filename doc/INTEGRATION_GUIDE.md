@@ -220,7 +220,7 @@ cp.registerParticipant(
 await cp.requestCheckpoint();
 ```
 
-**Hàng đợi offline** — `OfflineOutboxService` xếp thay đổi cục bộ rồi `drain()` đẩy qua `uploader`; mọi hàm công khai trả `SdkResult`, không ném lỗi. Mỗi mục cần `idempotencyKey` không rỗng.
+**Hàng đợi offline** — `OfflineOutboxService` xếp thay đổi cục bộ rồi `drain()` đẩy qua `uploader`. `enqueue()`/`resolveManual()` là API đồng bộ best-effort: cập nhật memory ngay và lên lịch ghi storage, nhưng không thể báo lỗi ghi xảy ra sau khi hàm trả về. Dùng `enqueueDurably()`/`resolveManualDurably()` để chờ ghi snapshot; `SdkSuccess` xác nhận lần ghi đó hoàn tất, lỗi trả `SdkFailure(storage)`. Mỗi mục cần `idempotencyKey` không rỗng; backend nên dedupe retry bằng cùng key (at-least-once, không phải exactly-once).
 
 ```dart
 final outbox = Get.put(
@@ -233,9 +233,14 @@ final outbox = Get.put(
   ),
   permanent: true,
 );
-outbox.enqueue(idempotencyKey: 'score_42', payload: {'score': 42});
-await outbox.drain();
+final queued = await outbox.enqueueDurably(
+  idempotencyKey: 'score_42',
+  payload: {'score': 42},
+);
+if (queued.isSuccess) await outbox.drain();
 ```
+
+`enqueueDurably()`/`resolveManualDurably()` đợi ghi snapshot và trả `SdkFailure(storage)` nếu ghi thất bại. `enqueue()`/`resolveManual()` vẫn đồng bộ, cập nhật memory và ghi best-effort; không thể báo lỗi ghi xảy ra sau khi hàm trả về. Backend nên dedupe retry theo cùng `idempotencyKey`; outbox đảm bảo at-least-once, không đảm bảo exactly-once.
 
 **Giao dịch thưởng** — `RewardTransactionPipeline` thực thi kế hoạch thưởng idempotent trên ví: `preview(source:, transactionId:, currencyLines:, itemLines:)` trả `RewardPlan`, rồi `executePlan`; `resumePending()` hoàn tất giao dịch dở sau khi app bị kill. Ví dụ đăng ký (ví + kho đồ): `example/lib/screens/widget_showcase_screen.dart` quanh dòng 786, dùng `RewardTransactionPipeline.withInventory(wallet: ..., inventory: ...)`.
 

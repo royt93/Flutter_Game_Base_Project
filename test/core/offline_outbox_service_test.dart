@@ -27,6 +27,60 @@ OfflineOutboxService _service({
   retryPolicy: const RetryPolicy(maxAttempts: 2, baseDelay: Duration.zero),
 )..onInit();
 
+class _ThrowingOutboxStorage extends StorageService {
+  _ThrowingOutboxStorage(super.prefs, this.keyToFail);
+  final String keyToFail;
+
+  @override
+  Future<void> setString(String key, String value) {
+    if (key == keyToFail) {
+      return Future.error(StateError('outbox write failed'));
+    }
+    return super.setString(key, value);
+  }
+}
+
+class _BlockingOutboxStorage extends StorageService {
+  _BlockingOutboxStorage(super.prefs, this.keyToBlock);
+  final String keyToBlock;
+  final writeStarted = Completer<void>();
+  final releaseWrite = Completer<void>();
+  final writes = <String>[];
+  var _blocked = false;
+
+  @override
+  Future<void> setString(String key, String value) async {
+    if (key == keyToBlock) {
+      writes.add(value);
+      if (!_blocked) {
+        _blocked = true;
+        writeStarted.complete();
+        await releaseWrite.future;
+      }
+    }
+    await super.setString(key, value);
+  }
+}
+
+class _BlockingFailingOutboxStorage extends StorageService {
+  _BlockingFailingOutboxStorage(super.prefs, this.keyToFail);
+  final String keyToFail;
+  final writeStarted = Completer<void>();
+  final releaseWrite = Completer<void>();
+  var _failed = false;
+
+  @override
+  Future<void> setString(String key, String value) async {
+    if (key == keyToFail && !_failed) {
+      _failed = true;
+      writeStarted.complete();
+      await releaseWrite.future;
+      throw StateError('outbox write failed');
+    }
+    await super.setString(key, value);
+  }
+}
+
 class _RecordingCrashReporter implements CrashReporter {
   final errors = <Object>[];
   final reasons = <String?>[];
@@ -86,34 +140,37 @@ void main() {
       expect(service.items.single.payload, {'v': 1});
     });
 
-    test('onClose huỷ listener online: event sau dispose không drain', () async {
-      final signal = FakeConnectivitySignal();
-      final connectivity = ConnectivityCoordinator(
-        signal: signal,
-        probe: () async => true,
-        createTimer: (delay, callback) => Timer(Duration.zero, callback),
-      );
-      addTearDown(connectivity.onClose);
-      addTearDown(signal.dispose);
-      var uploads = 0;
-      final service = _service(
-        connectivity: connectivity,
-        uploader: (p, k) async {
-          uploads++;
-          return const SyncAck();
-        },
-      );
-      service.enqueue(idempotencyKey: 'k', payload: const {});
-      service.onClose();
-      await pumpEventQueue();
+    test(
+      'onClose huỷ listener online: event sau dispose không drain',
+      () async {
+        final signal = FakeConnectivitySignal();
+        final connectivity = ConnectivityCoordinator(
+          signal: signal,
+          probe: () async => true,
+          createTimer: (delay, callback) => Timer(Duration.zero, callback),
+        );
+        addTearDown(connectivity.onClose);
+        addTearDown(signal.dispose);
+        var uploads = 0;
+        final service = _service(
+          connectivity: connectivity,
+          uploader: (p, k) async {
+            uploads++;
+            return const SyncAck();
+          },
+        );
+        service.enqueue(idempotencyKey: 'k', payload: const {});
+        service.onClose();
+        await pumpEventQueue();
 
-      signal.setHasInterface(true);
-      await pumpEventQueue();
+        signal.setHasInterface(true);
+        await pumpEventQueue();
 
-      expect(connectivity.state, ConnectivityState.online);
-      expect(uploads, 0);
-      expect(service.items, hasLength(1));
-    });
+        expect(connectivity.state, ConnectivityState.online);
+        expect(uploads, 0);
+        expect(service.items, hasLength(1));
+      },
+    );
   });
 
   group('BUG-75: runtime capacity validation', () {
@@ -123,6 +180,264 @@ void main() {
         throwsArgumentError,
       );
     });
+  });
+
+  group('BUG-138: durable operations', () {
+    test(
+      'enqueueDurably waits for persisted snapshot and survives recreation',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final storage = StorageService(prefs);
+        final service = _service(
+          storage: storage,
+          uploader: (p, k) async => const SyncAck(),
+        );
+
+        final result = await service.enqueueDurably(
+          idempotencyKey: 'durable-k1',
+          payload: const {'score': 42},
+        );
+
+        expect(result, isA<SdkSuccess<void>>());
+        expect(
+          prefs.getString(StorageKeys.offlineOutboxV1),
+          contains('durable-k1'),
+        );
+        final restarted = _service(
+          storage: storage,
+          uploader: (p, k) async => const SyncAck(),
+        );
+        expect(restarted.items.single.idempotencyKey, 'durable-k1');
+      },
+    );
+
+    test(
+      'enqueueDurably restores replaced/evicted items on write failure',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString(
+          StorageKeys.offlineOutboxV1,
+          '[{"idempotencyKey":"same","payload":{"v":1},"priority":1}]',
+        );
+        final storage = _ThrowingOutboxStorage(
+          prefs,
+          StorageKeys.offlineOutboxV1,
+        );
+        final service = _service(
+          storage: storage,
+          capacity: 1,
+          uploader: (p, k) async => const SyncAck(),
+        );
+
+        final result = await service.enqueueDurably(
+          idempotencyKey: 'same',
+          payload: const {'v': 2},
+          priority: 2,
+        );
+
+        expect(result, isA<SdkFailure<void>>());
+        expect((result as SdkFailure<void>).kind, SdkErrorKind.storage);
+        expect(service.items.single.payload, {'v': 1});
+      },
+    );
+
+    test(
+      'failed durable write does not roll back intervening sync mutation',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final storage = _BlockingFailingOutboxStorage(
+          prefs,
+          StorageKeys.offlineOutboxV1,
+        );
+        final service = _service(
+          storage: storage,
+          uploader: (p, k) async => const SyncAck(),
+        );
+
+        final durable = service.enqueueDurably(
+          idempotencyKey: 'durable',
+          payload: const {'v': 1},
+        );
+        await storage.writeStarted.future;
+        service.enqueue(idempotencyKey: 'sync', payload: const {'v': 2});
+        storage.releaseWrite.complete();
+
+        final result = await durable;
+        await pumpEventQueue();
+        expect(result, isA<SdkFailure<void>>());
+        expect(service.items.map((item) => item.idempotencyKey), [
+          'durable',
+          'sync',
+        ]);
+        expect(prefs.getString(StorageKeys.offlineOutboxV1), contains('sync'));
+        expect(
+          prefs.getString(StorageKeys.offlineOutboxV1),
+          contains('durable'),
+        );
+      },
+    );
+
+    test(
+      'resolveManualDurably restores manual item when persistence fails',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final key = StorageKeys.offlineOutboxV1;
+        await prefs.setString(
+          key,
+          '[{"idempotencyKey":"review","payload":{"v":1},"manualReview":true,"remotePayload":{"v":2}}]',
+        );
+        final storage = _ThrowingOutboxStorage(prefs, key);
+        final service = _service(
+          storage: storage,
+          uploader: (p, k) async => const SyncAck(),
+        );
+
+        final result = await service.resolveManualDurably(
+          idempotencyKey: 'review',
+          resolution: ManualResolution.acceptRemote,
+        );
+
+        expect(result, isA<SdkFailure<void>>());
+        expect(service.manualReviewItems.single.idempotencyKey, 'review');
+        expect(service.manualReviewItems.single.remotePayload, {'v': 2});
+      },
+    );
+
+    test('enqueueDurably does not auto-drain if persistence fails', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      final storage = _ThrowingOutboxStorage(
+        prefs,
+        StorageKeys.offlineOutboxV1,
+      );
+      var uploads = 0;
+      final signal = FakeConnectivitySignal()..setHasInterface(true);
+      final connectivity = ConnectivityCoordinator(
+        signal: signal,
+        probe: () async => true,
+      );
+      addTearDown(connectivity.onClose);
+      addTearDown(signal.dispose);
+      final service = _service(
+        storage: storage,
+        connectivity: connectivity,
+        uploader: (p, k) async {
+          uploads++;
+          return const SyncAck();
+        },
+      );
+
+      final result = await service.enqueueDurably(
+        idempotencyKey: 'durable-fail',
+        payload: const {'v': 1},
+      );
+
+      await pumpEventQueue();
+      expect(result, isA<SdkFailure<void>>());
+      expect(uploads, 0);
+      expect(service.items, isEmpty);
+    });
+
+    test(
+      'durable resolve persists acceptRemote and keepLocal choices',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final storage = StorageService(prefs);
+        final service = _service(
+          storage: storage,
+          conflictPolicy: ConflictPolicy.manual,
+          uploader: (p, k) async => const SyncConflict({'server': true}),
+        );
+        final enqueue = await service.enqueueDurably(
+          idempotencyKey: 'review-keep',
+          payload: const {'local': true},
+        );
+        expect(enqueue.isSuccess, isTrue);
+        await service.drain();
+        final kept = await service.resolveManualDurably(
+          idempotencyKey: 'review-keep',
+          resolution: ManualResolution.keepLocal,
+        );
+        expect(kept.isSuccess, isTrue);
+        expect(service.items.single.manualReview, isFalse);
+
+        await service.drain();
+        final accepted = await service.resolveManualDurably(
+          idempotencyKey: 'review-keep',
+          resolution: ManualResolution.acceptRemote,
+        );
+        expect(accepted.isSuccess, isTrue);
+        expect(service.items, isEmpty);
+        expect(prefs.getString(StorageKeys.offlineOutboxV1), '[]');
+      },
+    );
+
+    test(
+      'concurrent durable calls wait and persist cumulative snapshots',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final storage = _BlockingOutboxStorage(
+          prefs,
+          StorageKeys.offlineOutboxV1,
+        );
+        final service = _service(
+          storage: storage,
+          uploader: (p, k) async => const SyncAck(),
+        );
+
+        final first = service.enqueueDurably(
+          idempotencyKey: 'first',
+          payload: const {},
+        );
+        await storage.writeStarted.future;
+        final second = service.enqueueDurably(
+          idempotencyKey: 'second',
+          payload: const {},
+        );
+        await pumpEventQueue();
+        expect(storage.writes, hasLength(1));
+        storage.releaseWrite.complete();
+
+        expect((await first).isSuccess, isTrue);
+        expect((await second).isSuccess, isTrue);
+        expect(storage.writes, hasLength(2));
+        expect(storage.writes.last, contains('first'));
+        expect(storage.writes.last, contains('second'));
+      },
+    );
+
+    test(
+      'durable operations serialize snapshots in invocation order',
+      () async {
+        SharedPreferences.setMockInitialValues({});
+        final prefs = await SharedPreferences.getInstance();
+        final storage = StorageService(prefs);
+        final service = _service(
+          storage: storage,
+          uploader: (p, k) async => const SyncAck(),
+        );
+        final first = service.enqueueDurably(
+          idempotencyKey: 'first',
+          payload: const {},
+        );
+        final second = service.enqueueDurably(
+          idempotencyKey: 'second',
+          payload: const {},
+        );
+
+        expect((await first).isSuccess, isTrue);
+        expect((await second).isSuccess, isTrue);
+        final saved = prefs.getString(StorageKeys.offlineOutboxV1)!;
+        expect(saved, contains('first'));
+        expect(saved, contains('second'));
+      },
+    );
   });
 
   group('OfflineOutboxService: enqueue cơ bản', () {
@@ -241,24 +556,29 @@ void main() {
   });
 
   group('OfflineOutboxService: conflict policy merge', () {
-    test('merge: sau khi merge server vẫn xung đột: chuyển sang review thủ công, giữ payload đã merge và payload server', () async {
-      final service = _service(
-        conflictPolicy: ConflictPolicy.merge,
-        merger: (local, remote) => {'v': (local['v'] as int) + (remote['v'] as int)},
-        uploader: (p, k) async => SyncConflict({'v': 100 + (p['v'] as int)}),
-      );
-      service.enqueue(idempotencyKey: 'k1', payload: const {'v': 5});
+    test(
+      'merge: sau khi merge server vẫn xung đột: chuyển sang review thủ công, giữ payload đã merge và payload server',
+      () async {
+        final service = _service(
+          conflictPolicy: ConflictPolicy.merge,
+          merger: (local, remote) => {
+            'v': (local['v'] as int) + (remote['v'] as int),
+          },
+          uploader: (p, k) async => SyncConflict({'v': 100 + (p['v'] as int)}),
+        );
+        service.enqueue(idempotencyKey: 'k1', payload: const {'v': 5});
 
-      await service.drain();
+        await service.drain();
 
-      expect(service.items, hasLength(1));
-      final item = service.items.single;
-      expect(item.manualReview, isTrue);
-      // Lần 1: local 5, remote 105 (=100+5) -> merge = 110; lần 2 upload 110 -> remote 210.
-      expect(item.payload, {'v': 110});
-      expect(item.remotePayload, {'v': 210});
-      expect(service.manualReviewItems.map((i) => i.idempotencyKey), ['k1']);
-    });
+        expect(service.items, hasLength(1));
+        final item = service.items.single;
+        expect(item.manualReview, isTrue);
+        // Lần 1: local 5, remote 105 (=100+5) -> merge = 110; lần 2 upload 110 -> remote 210.
+        expect(item.payload, {'v': 110});
+        expect(item.remotePayload, {'v': 210});
+        expect(service.manualReviewItems.map((i) => i.idempotencyKey), ['k1']);
+      },
+    );
 
     test(
       'conflict + merge: merger được gọi, upload lại payload merge, ack thì xoá item',
@@ -477,12 +797,18 @@ void main() {
 
         var connectivity = Get.put(makeConnectivity());
         var outbox = Get.put(makeOutbox(connectivity));
-        outbox.enqueue(idempotencyKey: 'resume-k1', payload: const {'score': 42});
+        outbox.enqueue(
+          idempotencyKey: 'resume-k1',
+          payload: const {'score': 42},
+        );
         await pumpEventQueue();
 
         expect(uploads, isEmpty);
         expect(outbox.items.map((item) => item.idempotencyKey), ['resume-k1']);
-        expect(prefs.getString(StorageKeys.offlineOutboxV1), contains('resume-k1'));
+        expect(
+          prefs.getString(StorageKeys.offlineOutboxV1),
+          contains('resume-k1'),
+        );
 
         Get.delete<OfflineOutboxService>(force: true);
         Get.delete<ConnectivityCoordinator>(force: true);
@@ -662,83 +988,77 @@ void main() {
   });
 
   group('BUG-89: enqueue giữa lúc drain đang chạy được xử lý CÙNG chu kỳ', () {
-    test(
-      'enqueue item MỚI (key khác) trong lúc drain đang upload item khác '
-      '-> item mới được upload trong CÙNG lần drain() đó (không phải chờ '
-      'lần drain kế tiếp)',
-      () async {
-        final uploadStarted = Completer<void>();
-        final releaseFirstUpload = Completer<void>();
-        final uploadedKeys = <String>[];
-        final service = _service(
-          uploader: (p, k) async {
-            uploadedKeys.add(k);
-            if (k == 'first') {
-              uploadStarted.complete();
-              await releaseFirstUpload.future;
-            }
-            return const SyncAck();
-          },
-        );
-        service.enqueue(idempotencyKey: 'first', payload: const {'v': 1});
-
-        final drainFuture = service.drain();
-        await uploadStarted.future;
-
-        // Enqueue TRONG LÚC drain() vẫn đang mid-flight (upload 'first'
-        // chưa resolve) — snapshot 'ordered' bên trong drain() đã chụp
-        // xong TRƯỚC dòng này, nên 'second' không nằm trong snapshot đó.
-        service.enqueue(idempotencyKey: 'second', payload: const {'v': 2});
-
-        releaseFirstUpload.complete();
-        await drainFuture;
-
-        expect(
-          uploadedKeys,
-          contains('second'),
-          reason:
-              'item enqueue giữa chu kỳ drain phải được xử lý trong CHÍNH '
-              'lần drain() đang chạy (dirty-flag -> thêm 1 vòng), không '
-              'phải nằm chờ vô định đến lần drain() kế tiếp',
-        );
-        expect(service.items, isEmpty);
-      },
-    );
-
-    test(
-      're-entry drain() khi đang drain: không tạo upload song song cho '
-      'cùng 1 item (drain lần 2 no-op ngay, không double-attempt)',
-      () async {
-        final uploadStarted = Completer<void>();
-        final releaseUpload = Completer<void>();
-        var attemptCount = 0;
-        final service = _service(
-          uploader: (p, k) async {
-            attemptCount++;
+    test('enqueue item MỚI (key khác) trong lúc drain đang upload item khác '
+        '-> item mới được upload trong CÙNG lần drain() đó (không phải chờ '
+        'lần drain kế tiếp)', () async {
+      final uploadStarted = Completer<void>();
+      final releaseFirstUpload = Completer<void>();
+      final uploadedKeys = <String>[];
+      final service = _service(
+        uploader: (p, k) async {
+          uploadedKeys.add(k);
+          if (k == 'first') {
             uploadStarted.complete();
-            await releaseUpload.future;
-            return const SyncAck();
-          },
-        );
-        service.enqueue(idempotencyKey: 'k1', payload: const {'v': 1});
+            await releaseFirstUpload.future;
+          }
+          return const SyncAck();
+        },
+      );
+      service.enqueue(idempotencyKey: 'first', payload: const {'v': 1});
 
-        final firstDrain = service.drain();
-        await uploadStarted.future;
+      final drainFuture = service.drain();
+      await uploadStarted.future;
 
-        // Gọi drain() LẦN 2 trong khi lần 1 vẫn đang mid-flight — phải
-        // no-op ngay (return sớm), không attempt lại 'k1' song song.
-        final secondDrain = service.drain();
+      // Enqueue TRONG LÚC drain() vẫn đang mid-flight (upload 'first'
+      // chưa resolve) — snapshot 'ordered' bên trong drain() đã chụp
+      // xong TRƯỚC dòng này, nên 'second' không nằm trong snapshot đó.
+      service.enqueue(idempotencyKey: 'second', payload: const {'v': 2});
 
-        releaseUpload.complete();
-        await Future.wait([firstDrain, secondDrain]);
+      releaseFirstUpload.complete();
+      await drainFuture;
 
-        expect(
-          attemptCount,
-          1,
-          reason: 're-entry không được double-attempt cùng 1 item',
-        );
-      },
-    );
+      expect(
+        uploadedKeys,
+        contains('second'),
+        reason:
+            'item enqueue giữa chu kỳ drain phải được xử lý trong CHÍNH '
+            'lần drain() đang chạy (dirty-flag -> thêm 1 vòng), không '
+            'phải nằm chờ vô định đến lần drain() kế tiếp',
+      );
+      expect(service.items, isEmpty);
+    });
+
+    test('re-entry drain() khi đang drain: không tạo upload song song cho '
+        'cùng 1 item (drain lần 2 no-op ngay, không double-attempt)', () async {
+      final uploadStarted = Completer<void>();
+      final releaseUpload = Completer<void>();
+      var attemptCount = 0;
+      final service = _service(
+        uploader: (p, k) async {
+          attemptCount++;
+          uploadStarted.complete();
+          await releaseUpload.future;
+          return const SyncAck();
+        },
+      );
+      service.enqueue(idempotencyKey: 'k1', payload: const {'v': 1});
+
+      final firstDrain = service.drain();
+      await uploadStarted.future;
+
+      // Gọi drain() LẦN 2 trong khi lần 1 vẫn đang mid-flight — phải
+      // no-op ngay (return sớm), không attempt lại 'k1' song song.
+      final secondDrain = service.drain();
+
+      releaseUpload.complete();
+      await Future.wait([firstDrain, secondDrain]);
+
+      expect(
+        attemptCount,
+        1,
+        reason: 're-entry không được double-attempt cùng 1 item',
+      );
+    });
   });
 
   group('BUG-44: eviction tôn trọng priority + không đụng manualReview', () {

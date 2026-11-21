@@ -57,11 +57,11 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(connectivity.state, ConnectivityState.offline);
-    outbox.enqueue(
+    final queued = await outbox.enqueueDurably(
       idempotencyKey: 'device-recovery-1',
       payload: const {'score': 42},
     );
-    await storage.flush();
+    expect(queued.isSuccess, isTrue);
     expect(uploads, isEmpty);
     expect(outbox.items, hasLength(1));
     expect(prefs.getString(storageKey), contains('device-recovery-1'));

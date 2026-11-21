@@ -611,9 +611,11 @@ unconditionally.
 ```dart
 final outbox = OfflineOutboxService(storage: StorageService.to, uploader: (payload, key) => myApi.sync(payload, key));
 Get.put(outbox, permanent: true);
-outbox.enqueue(idempotencyKey: 'score_sync_42', payload: {'score': 9800});
-await outbox.drain(); // priority-ordered sync attempt, retries with backoff
+final queued = await outbox.enqueueDurably(idempotencyKey: 'score_sync_42', payload: {'score': 9800});
+if (queued.isSuccess) await outbox.drain(); // priority-ordered, retries with backoff
 ```
+
+Use `enqueueDurably`/`resolveManualDurably` when caller must wait for the outbox snapshot write and observe storage failure. Synchronous `enqueue`/`resolveManual` remain best-effort: they update memory immediately, then schedule persistence; a later write failure cannot be returned through their synchronous `SdkResult<void>`. The uploader/backend should deduplicate retries using the same `idempotencyKey`; the outbox provides at-least-once delivery, not exactly-once effects.
 
 #### PersistentCooldownService
 ```dart

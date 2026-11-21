@@ -1,5 +1,5 @@
 {
-  "version": "0.7.0",
+  "version": "0.7.1",
   "entrypoint": "lib/roy_casual_kit.dart",
   "exports": [
     "core/achievement_service.dart",
@@ -1122,10 +1122,12 @@
     "core/neon_theme.dart:NeonTheme.textOnFill(Color fill): Color",
     "core/offline_outbox_service.dart:OfflineOutboxService.drain(): Future<void>",
     "core/offline_outbox_service.dart:OfflineOutboxService.enqueue({ required String idempotencyKey, required Map<String, Object?> payload, int priority = 0, int? expiresAtMs, }): SdkResult<void>",
+    "core/offline_outbox_service.dart:OfflineOutboxService.enqueueDurably({ required String idempotencyKey, required Map<String, Object?> payload, int priority = 0, int? expiresAtMs, }): Future<SdkResult<void>>",
     "core/offline_outbox_service.dart:OfflineOutboxService.new({ required this.storage, required this.uploader, this.connectivity, this.conflictPolicy = ConflictPolicy.manual, this.merger, this.capacity = 200, this.retryPolicy = const RetryPolicy(maxAttempts: 3), RetryExecutor? retryExecutor, String? storageKey, })",
     "core/offline_outbox_service.dart:OfflineOutboxService.onClose(): void",
     "core/offline_outbox_service.dart:OfflineOutboxService.onInit(): void",
     "core/offline_outbox_service.dart:OfflineOutboxService.resolveManual({ required String idempotencyKey, required ManualResolution resolution, }): SdkResult<void>",
+    "core/offline_outbox_service.dart:OfflineOutboxService.resolveManualDurably({ required String idempotencyKey, required ManualResolution resolution, }): Future<SdkResult<void>>",
     "core/offline_outbox_service.dart:OutboxItem.copyWith({ Map<String, Object?>? payload, bool? manualReview, Map<String, Object?>? remotePayload, }): OutboxItem",
     "core/offline_outbox_service.dart:OutboxItem.fromJson(Object? json): OutboxItem?",
     "core/offline_outbox_service.dart:OutboxItem.new({ required this.idempotencyKey, required this.payload, this.priority = 0, this.expiresAtMs, this.manualReview = false, this.remotePayload, })",

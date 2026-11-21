@@ -1,5 +1,7 @@
 ## 0.7.1
 
+- Added `OfflineOutboxService.enqueueDurably` and `resolveManualDurably`: await persistence and return a typed storage failure when the snapshot cannot be written. Existing synchronous `enqueue`/`resolveManual` remain best-effort and may not report a later write failure.
+
 - **Behavior change:** `tool/create_consumer_app.dart` now generates consumers with the hosted dependency `roy_casual_kit: ^0.7.0` by default (it was `^0.4.1`); pass `--kitVersion` or `--kitPath` to override. The generated template schema marker is now 4.
 - Clarified `WakeLockService.init()`: a registered `StorageService` is required and storage errors propagate; only platform wakelock failures are ignored. Behavior is unchanged.
 - README now names `nowMsClamped` and `todayEpochDayClamped` instead of a non-existent `ClampedClock` class.

@@ -195,6 +195,12 @@ class OutboxItem {
 /// unresolved [ConflictPolicy.merge] conflict parks it in
 /// [manualReviewItems] until [resolveManual].
 ///
+/// **Durability**: [enqueue] and [resolveManual] are synchronous best-effort
+/// operations: they update memory and schedule persistence, but cannot report
+/// a later storage error. Use [enqueueDurably] or [resolveManualDurably] when
+/// success must mean the snapshot was written. Durable operations wait for
+/// the write and return [SdkErrorKind.storage] on failure.
+///
 /// **Crash safety**: an item stays in the persisted outbox from [enqueue]
 /// until the exact call that removes it *also* persists that removal — so
 /// a crash at any point before that (including between the remote
@@ -282,6 +288,9 @@ class OfflineOutboxService extends GetxService {
   final RetryPolicy retryPolicy;
   final RetryExecutor _retryExecutor;
   final String _key;
+  Future<void> _persistTail = Future<void>.value();
+  Future<void> _durableTail = Future<void>.value();
+  int _mutationRevision = 0;
 
   /// All queued items, including those parked for manual review. Observable;
   /// treat as read-only and mutate through the service's methods.
@@ -324,35 +333,104 @@ class OfflineOutboxService extends GetxService {
     final raw = storage.getString(_key);
     if (raw == null) {
       items.clear();
+      _mutationRevision++;
       return;
     }
     try {
       final decoded = jsonDecode(raw);
       if (decoded is! List) return;
       items.assignAll(decoded.map(OutboxItem.fromJson).whereType<OutboxItem>());
+      _mutationRevision++;
     } catch (_) {
       items.clear();
+      _mutationRevision++;
     }
   }
 
-  Future<void> _persist() => storage.setString(
-    _key,
-    jsonEncode(items.map((i) => i.toJson()).toList()),
-  );
+  Future<void> _persist() => _queueSnapshot(_snapshot());
 
-  /// Queues [payload] under [idempotencyKey] — replaces any existing item
-  /// with the same key rather than duplicating it. Bounded at [capacity]:
-  /// once full, the lowest-[priority] item is evicted to make room, but only
-  /// an item with strictly lower priority than this one and not parked for
-  /// manual review. Returns an [SdkErrorKind.validation] failure (nothing
-  /// queued) for an empty [idempotencyKey], or when full with nothing
-  /// evictable. When connectivity reports online, a [drain] starts
-  /// automatically; otherwise the caller drains.
-  SdkResult<void> enqueue({
+  List<OutboxItem> _snapshot() => List<OutboxItem>.unmodifiable(items);
+
+  String _encodeSnapshot(List<OutboxItem> snapshot) =>
+      jsonEncode(snapshot.map((i) => i.toJson()).toList());
+
+  Future<void> _queueSnapshot(List<OutboxItem> snapshot) {
+    final previous = _persistTail;
+    final write = previous.then<void>(
+      (_) => storage.setString(_key, _encodeSnapshot(snapshot)),
+      onError: (_, _) => storage.setString(_key, _encodeSnapshot(snapshot)),
+    );
+    _persistTail = write.then<void>((_) {}, onError: (_, _) {});
+    return write;
+  }
+
+  Future<T> _serializeDurable<T>(Future<T> Function() action) {
+    final previous = _durableTail;
+    final priorWrites = _persistTail;
+    final done = Completer<void>();
+    _durableTail = done.future;
+    return previous
+        .then((_) async {
+          try {
+            await priorWrites;
+          } catch (_) {
+            // Best-effort writes report their own failure; durable call still
+            // attempts to persist the current snapshot after them.
+          }
+          return action();
+        })
+        .whenComplete(() {
+          if (!done.isCompleted) done.complete();
+        });
+  }
+
+  void _replaceItems(List<OutboxItem> snapshot) {
+    items.assignAll(snapshot);
+    _mutationRevision++;
+  }
+
+  void _persistBestEffort() {
+    unawaited(
+      _serializeDurable(() => _persist()).catchError((
+        Object error,
+        StackTrace stack,
+      ) {
+        CrashReporter.maybe?.recordError(
+          error,
+          stack,
+          reason: 'OfflineOutboxService: best-effort persistence failed',
+        );
+      }),
+    );
+  }
+
+  SdkResult<List<OutboxItem>> _resolveManualCandidate({
+    required String idempotencyKey,
+    required ManualResolution resolution,
+  }) {
+    final next = [...items];
+    final index = next.indexWhere(
+      (item) => item.idempotencyKey == idempotencyKey && item.manualReview,
+    );
+    if (index < 0) {
+      return const SdkFailure(
+        kind: SdkErrorKind.validation,
+        message: 'No manual-review item with that idempotencyKey',
+      );
+    }
+    if (resolution == ManualResolution.acceptRemote) {
+      next.removeAt(index);
+    } else {
+      next[index] = next[index].copyWith(manualReview: false);
+    }
+    return SdkSuccess<List<OutboxItem>>(List<OutboxItem>.unmodifiable(next));
+  }
+
+  SdkResult<List<OutboxItem>> _enqueueCandidate({
     required String idempotencyKey,
     required Map<String, Object?> payload,
-    int priority = 0,
-    int? expiresAtMs,
+    required int priority,
+    required int? expiresAtMs,
   }) {
     if (idempotencyKey.isEmpty) {
       return const SdkFailure(
@@ -363,13 +441,8 @@ class OfflineOutboxService extends GetxService {
     final next = [...items]
       ..removeWhere((i) => i.idempotencyKey == idempotencyKey);
     if (next.length >= capacity) {
-      // BUG-44: eviction candidates exclude any item already parked in
-      // manualReview (never auto-discard something only a human decision
-      // can resolve) and must have STRICTLY LOWER priority than the
-      // incoming item (a low/equal-priority newcomer can't bump an
-      // existing higher-or-equal-priority item). If nothing qualifies,
-      // the outbox is genuinely full for this item — reject it loudly
-      // instead of silently evicting something it has no right to.
+      // Manual-review work requires a human decision and cannot be evicted;
+      // a new item also needs strictly greater priority than its victim.
       final evictable = [
         for (var i = 0; i < next.length; i++)
           if (!next[i].manualReview && next[i].priority < priority) i,
@@ -396,25 +469,81 @@ class OfflineOutboxService extends GetxService {
         expiresAtMs: expiresAtMs,
       ),
     );
-    items.assignAll(next);
-    // BUG-89: a drain() pass already in flight took its `ordered` snapshot
-    // before this item existed, so it won't see it — flag it so drain()'s
-    // own loop runs one more pass after this one finishes instead of
-    // leaving this item stuck until some later, not-guaranteed-to-happen
-    // drain() call.
+    return SdkSuccess<List<OutboxItem>>(List<OutboxItem>.unmodifiable(next));
+  }
+
+  /// Queues [payload] in memory immediately and schedules best-effort
+  /// persistence without waiting. This method cannot report a later storage
+  /// failure; use [enqueueDurably] when persistence must be confirmed.
+  /// Replaces any existing item with the same key rather than duplicating it.
+  /// Bounded at [capacity]:
+  /// once full, the lowest-[priority] item is evicted to make room, but only
+  /// an item with strictly lower priority than this one and not parked for
+  /// manual review. Returns an [SdkErrorKind.validation] failure (nothing
+  /// queued) for an empty [idempotencyKey], or when full with nothing
+  /// evictable. When connectivity reports online, a [drain] starts
+  /// automatically; otherwise the caller drains.
+  SdkResult<void> enqueue({
+    required String idempotencyKey,
+    required Map<String, Object?> payload,
+    int priority = 0,
+    int? expiresAtMs,
+  }) {
+    final result = _enqueueCandidate(
+      idempotencyKey: idempotencyKey,
+      payload: payload,
+      priority: priority,
+      expiresAtMs: expiresAtMs,
+    );
+    if (result is SdkFailure<List<OutboxItem>>) {
+      return SdkFailure<void>(kind: result.kind, message: result.message);
+    }
+    final next = (result as SdkSuccess<List<OutboxItem>>).value;
+    _replaceItems(next);
     if (_draining) _dirtyDuringDrain = true;
-    unawaited(_persist());
-    // Auto-drain only when a ConnectivityCoordinator confirms we're online
-    // right now — without one, the caller drives drain() explicitly (e.g.
-    // this SDK's own tests, or an app not wiring FEAT-62 in). Auto-draining
-    // unconditionally here would race a caller enqueuing several items
-    // back-to-back against each one's own fire-and-forget drain attempt,
-    // breaking the priority ordering a single drain() call guarantees.
+    _persistBestEffort();
     if (connectivity?.state == ConnectivityState.online) {
       unawaited(drain());
     }
     return const SdkSuccess(null);
   }
+
+  Future<SdkResult<void>> enqueueDurably({
+    required String idempotencyKey,
+    required Map<String, Object?> payload,
+    int priority = 0,
+    int? expiresAtMs,
+  }) => _serializeDurable(() async {
+    final before = _snapshot();
+    final candidate = _enqueueCandidate(
+      idempotencyKey: idempotencyKey,
+      payload: payload,
+      priority: priority,
+      expiresAtMs: expiresAtMs,
+    );
+    if (candidate is SdkFailure<List<OutboxItem>>) {
+      return SdkFailure<void>(kind: candidate.kind, message: candidate.message);
+    }
+    final next = (candidate as SdkSuccess<List<OutboxItem>>).value;
+    _replaceItems(next);
+    if (_draining) _dirtyDuringDrain = true;
+    final revision = _mutationRevision;
+    try {
+      await _queueSnapshot(next);
+    } catch (error, stack) {
+      if (_mutationRevision == revision) _replaceItems(before);
+      return SdkFailure<void>(
+        kind: SdkErrorKind.storage,
+        message: 'Could not persist outbox item',
+        cause: error,
+        stackTrace: stack,
+      );
+    }
+    if (connectivity?.state == ConnectivityState.online) {
+      unawaited(drain());
+    }
+    return const SdkSuccess(null);
+  });
 
   /// Attempts to sync every non-[OutboxItem.manualReview] item,
   /// highest-[OutboxItem.priority] first. Safe to call concurrently with
@@ -521,16 +650,15 @@ class OfflineOutboxService extends GetxService {
     OutboxItem item,
     Map<String, Object?> remote,
   ) async {
-    final idx = items.indexWhere(
-      (i) => i.idempotencyKey == item.idempotencyKey,
-    );
+    final next = [...items];
+    final idx = next.indexWhere((i) => i.idempotencyKey == item.idempotencyKey);
     final updated = item.copyWith(manualReview: true, remotePayload: remote);
     if (idx < 0) {
-      items.add(updated);
+      next.add(updated);
     } else {
-      items[idx] = updated;
+      next[idx] = updated;
     }
-    items.refresh();
+    _replaceItems(next);
     await _persist();
   }
 
@@ -545,7 +673,9 @@ class OfflineOutboxService extends GetxService {
   /// `items.contains(item)` check — `identical` here is just explicit
   /// about relying on that.
   Future<void> _remove(OutboxItem item) async {
-    items.removeWhere((i) => identical(i, item));
+    final next = [...items]..removeWhere((i) => identical(i, item));
+    if (next.length == items.length) return;
+    _replaceItems(next);
     await _persist();
   }
 
@@ -555,28 +685,54 @@ class OfflineOutboxService extends GetxService {
   /// abandoned, nothing further is attempted. Returns an
   /// [SdkErrorKind.validation] failure if no manual-review item has
   /// [idempotencyKey]. Re-queuing does not start a drain by itself.
+  /// Applies the review decision in memory and schedules best-effort storage.
+  /// Use [resolveManualDurably] to await persistence and observe write errors.
   SdkResult<void> resolveManual({
     required String idempotencyKey,
     required ManualResolution resolution,
   }) {
-    final idx = items.indexWhere(
-      (i) => i.idempotencyKey == idempotencyKey && i.manualReview,
+    final result = _resolveManualCandidate(
+      idempotencyKey: idempotencyKey,
+      resolution: resolution,
     );
-    if (idx < 0) {
-      return const SdkFailure(
-        kind: SdkErrorKind.validation,
-        message: 'No manual-review item with that idempotencyKey',
-      );
+    if (result is SdkFailure<List<OutboxItem>>) {
+      return SdkFailure<void>(kind: result.kind, message: result.message);
     }
-    if (resolution == ManualResolution.acceptRemote) {
-      items.removeAt(idx);
-    } else {
-      items[idx] = items[idx].copyWith(manualReview: false);
-    }
-    items.refresh();
-    unawaited(_persist());
+    _replaceItems((result as SdkSuccess<List<OutboxItem>>).value);
+    _persistBestEffort();
     return const SdkSuccess(null);
   }
+
+  /// Applies a manual conflict decision and waits for its snapshot to persist.
+  /// On failure, returns a storage failure; any intervening mutation is kept.
+  Future<SdkResult<void>> resolveManualDurably({
+    required String idempotencyKey,
+    required ManualResolution resolution,
+  }) => _serializeDurable(() async {
+    final before = _snapshot();
+    final result = _resolveManualCandidate(
+      idempotencyKey: idempotencyKey,
+      resolution: resolution,
+    );
+    if (result is SdkFailure<List<OutboxItem>>) {
+      return SdkFailure<void>(kind: result.kind, message: result.message);
+    }
+    final next = (result as SdkSuccess<List<OutboxItem>>).value;
+    _replaceItems(next);
+    final revision = _mutationRevision;
+    try {
+      await _queueSnapshot(next);
+      return const SdkSuccess(null);
+    } catch (error, stack) {
+      if (_mutationRevision == revision) _replaceItems(before);
+      return SdkFailure<void>(
+        kind: SdkErrorKind.storage,
+        message: 'Could not persist manual outbox resolution',
+        cause: error,
+        stackTrace: stack,
+      );
+    }
+  });
 
   @override
   void onClose() {
