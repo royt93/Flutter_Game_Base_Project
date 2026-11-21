@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart';
@@ -20,6 +21,17 @@ class _FakeAssetBundle extends AssetBundle {
     if (content == null) throw Exception('Asset not found: $key');
     return ByteData.sublistView(Uint8List.fromList(utf8.encode(content)));
   }
+}
+
+class _SequencedAssetBundle extends AssetBundle {
+  _SequencedAssetBundle(this._first, this._later);
+  final Future<ByteData> _first;
+  final ByteData _later;
+  var _calls = 0;
+
+  @override
+  Future<ByteData> load(String key) =>
+      _calls++ == 0 ? _first : Future.value(_later);
 }
 
 const _assetPath = 'assets/level_pack_fallback.json';
@@ -57,6 +69,25 @@ class _ThrowingOnceStorage extends StorageService {
       throw StateError('write failed');
     }
     return super.setString(key, value);
+  }
+}
+
+class _DelayedWriteStorage extends StorageService {
+  _DelayedWriteStorage(super.prefs, this.targetKey);
+  final String targetKey;
+  final writeStarted = Completer<void>();
+  final allowWrite = Completer<void>();
+
+  final writes = <String>[];
+
+  @override
+  Future<void> setString(String key, String value) async {
+    if (key == targetKey) {
+      writes.add(value);
+      if (!writeStarted.isCompleted) writeStarted.complete();
+      if (writes.length == 1) await allowWrite.future;
+    }
+    await super.setString(key, value);
   }
 }
 
@@ -1021,6 +1052,230 @@ void main() {
         expect(failure.cause, isA<StateError>());
         expect(failure.stackTrace, isNotNull);
         expect(failing.current!.name, before);
+      },
+    );
+
+    test(
+      'BUG-137: latest load invocation wins for overlapping fetches',
+      () async {
+        final older = Completer<Map<String, Object?>>();
+        final newer = Completer<Map<String, Object?>>();
+        var calls = 0;
+        final pack = RemoteContentPack<_Level>(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          contentSecret: _secret,
+          bundle: _asset('Asset'),
+          fetchRemote: () => ++calls == 1 ? older.future : newer.future,
+        );
+
+        await pack.load();
+        final olderRefresh = pack.refreshed;
+        await pack.load();
+        final newerRefresh = pack.refreshed;
+        expect(calls, 2);
+        expect(identical(olderRefresh, newerRefresh), isFalse);
+
+        newer.complete(
+          signExport({'id': 2, 'name': 'Newer', 'schemaVersion': 1}, _secret),
+        );
+        await newerRefresh;
+        older.complete(
+          signExport({'id': 1, 'name': 'Older', 'schemaVersion': 1}, _secret),
+        );
+        await olderRefresh;
+
+        expect(pack.current!.name, 'Newer');
+      },
+    );
+
+    test(
+      'BUG-137: load generation starts before an older asset read completes',
+      () async {
+        final oldAsset = Completer<ByteData>();
+        final oldFetch = Completer<Map<String, Object?>>();
+        final newFetch = Completer<Map<String, Object?>>();
+        var fetchCalls = 0;
+        final pack = RemoteContentPack<_Level>(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          contentSecret: _secret,
+          bundle: _SequencedAssetBundle(
+            oldAsset.future,
+            ByteData.sublistView(
+              Uint8List.fromList(
+                utf8.encode(
+                  jsonEncode({
+                    'id': 1,
+                    'name': 'Newer Asset',
+                    'schemaVersion': 1,
+                  }),
+                ),
+              ),
+            ),
+          ),
+          fetchRemote: () =>
+              ++fetchCalls == 1 ? newFetch.future : oldFetch.future,
+        );
+
+        final oldLoad = pack.load();
+        final oldRefresh = pack.refreshed;
+        final newLoad = pack.load();
+        final newRefresh = pack.refreshed;
+        expect(identical(oldRefresh, newRefresh), isFalse);
+        await newLoad;
+
+        newFetch.complete(
+          signExport({'id': 2, 'name': 'Newer', 'schemaVersion': 1}, _secret),
+        );
+        await newRefresh;
+        oldAsset.complete(
+          ByteData.sublistView(
+            Uint8List.fromList(
+              utf8.encode(
+                jsonEncode({'id': 1, 'name': 'Late Asset', 'schemaVersion': 1}),
+              ),
+            ),
+          ),
+        );
+        await oldLoad;
+        expect(identical(pack.refreshed, newRefresh), isTrue);
+        oldFetch.complete(
+          signExport({
+            'id': 3,
+            'name': 'Old Fetch',
+            'schemaVersion': 1,
+          }, _secret),
+        );
+        await oldRefresh;
+
+        expect(fetchCalls, 2);
+        expect(pack.current!.name, 'Newer');
+      },
+    );
+
+    test(
+      'BUG-137: stale withCache response cannot overwrite current or disk cache',
+      () async {
+        final older = Completer<Map<String, Object?>>();
+        final newer = Completer<Map<String, Object?>>();
+        var calls = 0;
+        final pack = RemoteContentPack<_Level>.withCache(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          contentSecret: _secret,
+          storage: storage,
+          cacheKey: cacheKey,
+          bundle: _asset('Asset'),
+          fetchRemote: () => ++calls == 1 ? older.future : newer.future,
+        );
+
+        await pack.load();
+        final olderRefresh = pack.refreshed;
+        await pack.load();
+        final newerRefresh = pack.refreshed;
+        newer.complete(
+          signExport({'id': 2, 'name': 'Newer', 'schemaVersion': 1}, _secret),
+        );
+        await newerRefresh;
+        older.complete(
+          signExport({'id': 1, 'name': 'Older', 'schemaVersion': 1}, _secret),
+        );
+        await olderRefresh;
+
+        final restarted = RemoteContentPack<_Level>.withCache(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          storage: storage,
+          cacheKey: cacheKey,
+          bundle: _asset('Different Asset'),
+        );
+        await restarted.load();
+        expect(pack.current!.name, 'Newer');
+        expect(restarted.current!.name, 'Newer');
+      },
+    );
+
+    test(
+      'BUG-137: delayed stale cache write is followed by latest commit',
+      () async {
+        final firstFetch = Completer<Map<String, Object?>>();
+        final secondFetch = Completer<Map<String, Object?>>();
+        var calls = 0;
+        final delayedPrefs = await SharedPreferences.getInstance();
+        final delayedStorage = _DelayedWriteStorage(delayedPrefs, cacheKey);
+        final pack = RemoteContentPack<_Level>.withCache(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          contentSecret: _secret,
+          storage: delayedStorage,
+          cacheKey: cacheKey,
+          bundle: _asset('Asset'),
+          fetchRemote: () =>
+              ++calls == 1 ? firstFetch.future : secondFetch.future,
+        );
+
+        await pack.load();
+        final firstRefresh = pack.refreshed;
+        firstFetch.complete(
+          signExport({'id': 1, 'name': 'Older', 'schemaVersion': 1}, _secret),
+        );
+        await delayedStorage.writeStarted.future;
+
+        await pack.load();
+        final secondRefresh = pack.refreshed;
+        secondFetch.complete(
+          signExport({'id': 2, 'name': 'Newer', 'schemaVersion': 1}, _secret),
+        );
+        await Future<void>.delayed(Duration.zero);
+        delayedStorage.allowWrite.complete();
+        await firstRefresh;
+        await secondRefresh;
+        expect(delayedStorage.writes, hasLength(2));
+        expect(jsonDecode(delayedStorage.writes.last)['name'], 'Newer');
+
+        final restarted = RemoteContentPack<_Level>.withCache(
+          assetPath: _assetPath,
+          schemaVersion: 1,
+          fromJson: _Level.fromJson,
+          storage: StorageService(delayedPrefs),
+          cacheKey: cacheKey,
+          bundle: _asset('Different Asset'),
+        );
+        await restarted.load();
+        expect(pack.current!.name, 'Newer');
+        expect(restarted.current!.name, 'Newer');
+      },
+    );
+
+    test(
+      'BUG-137: equal/default history revisions still honor invocation order',
+      () async {
+        final older = Completer<Map<String, Object?>>();
+        final newer = Completer<Map<String, Object?>>();
+        var calls = 0;
+        final pack = packWithHistory(
+          useStorage: storage,
+          fetchRemote: () => ++calls == 1 ? older.future : newer.future,
+        );
+
+        await pack.load();
+        final olderRefresh = pack.refreshed;
+        await pack.load();
+        final newerRefresh = pack.refreshed;
+        newer.complete(envelopeFor(2, 'Newer', contentVersion: 0));
+        await newerRefresh;
+        older.complete(envelopeFor(1, 'Older', contentVersion: 0));
+        await olderRefresh;
+
+        expect(pack.current!.name, 'Newer');
+        expect(pack.currentContentVersion, 0);
+        expect(pack.history.last.checksum, isNotEmpty);
       },
     );
 

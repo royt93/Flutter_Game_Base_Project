@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/services.dart' show AssetBundle, rootBundle;
@@ -274,6 +275,8 @@ class RemoteContentPack<T> {
       _history.isEmpty ? null : _history.last.checksum;
 
   T? _current;
+  int _loadGeneration = 0;
+  Future<void> _commitTail = Future.value();
 
   /// The latest applied content: the asset fallback until (if ever) a
   /// verified fetch replaces it. `null` only if the asset itself was
@@ -470,6 +473,10 @@ class RemoteContentPack<T> {
   }
 
   Future<T?> load() async {
+    final generation = ++_loadGeneration;
+    final fetch = fetchRemote;
+    final refreshCompleter = fetch == null ? null : Completer<void>();
+    if (refreshCompleter != null) _refreshFuture = refreshCompleter.future;
     final withHistory = historyCapacity != null;
     final loadedCache = withHistory ? await _ensureHistoryLoaded() : false;
     // ENH-94: a verified cache entry always wins over the bundled asset —
@@ -479,21 +486,32 @@ class RemoteContentPack<T> {
     // of any timestamp on either side (the asset carries none at all).
     final cached = !withHistory
         ? _tryLoadFromCache()
-        : loadedCache || (!_combinedRecordLoaded && _tryLoadFromCache());
+        : loadedCache ||
+              (_combinedRecordLoaded == false &&
+                  generation == _loadGeneration &&
+                  _tryLoadFromCache());
     if (!cached && _current == null) {
       try {
         final raw = await _bundle.loadString(assetPath);
         final decoded = jsonDecode(raw);
         final validated = _validateSchema(decoded);
-        if (validated != null) _current = fromJson(validated);
+        if (validated != null && generation == _loadGeneration) {
+          _current = fromJson(validated);
+        }
       } catch (_) {
         // No bundled asset (or invalid JSON/shape) → _current stays
         // whatever it was (null on first load).
       }
     }
 
-    final fetch = fetchRemote;
-    if (fetch != null) _refreshFuture = _refreshFromRemote(fetch);
+    if (fetch != null) {
+      final completion = refreshCompleter!;
+      unawaited(
+        _refreshFromRemote(fetch, generation).whenComplete(() {
+          if (!completion.isCompleted) completion.complete();
+        }),
+      );
+    }
     return _current;
   }
 
@@ -547,11 +565,45 @@ class RemoteContentPack<T> {
     await store.setString(key, jsonEncode(_cacheValue(json)));
   }
 
+  Future<void> _commitRefresh(
+    int generation, {
+    required String? storageKey,
+    required Future<void Function()> Function() prepareCommit,
+  }) {
+    final done = Completer<void>();
+    final previous = _commitTail;
+    _commitTail = done.future;
+    return previous.then((_) async {
+      try {
+        if (generation != _loadGeneration) return;
+        final previousValue = storageKey == null
+            ? null
+            : storage?.getString(storageKey);
+        final apply = await prepareCommit();
+        if (generation != _loadGeneration) {
+          if (storageKey != null) {
+            if (previousValue == null) {
+              await storage?.remove(storageKey);
+            } else {
+              await storage?.setString(storageKey, previousValue);
+            }
+          }
+          return;
+        }
+        apply();
+      } finally {
+        done.complete();
+      }
+    });
+  }
+
   Future<void> _refreshFromRemote(
     Future<Map<String, Object?>> Function() fetch,
+    int generation,
   ) async {
     try {
       final envelope = await fetch();
+      if (generation != _loadGeneration) return;
       final verified = _verifySignature(envelope);
       if (verified == null) return;
       final validated = _validateSchema(verified);
@@ -574,23 +626,36 @@ class RemoteContentPack<T> {
       // below catches it too, so `_current` is left untouched rather than
       // pointing at content the disk doesn't actually have a record of.
       final nextCurrent = fromJson(validated);
-      if (resolver != null) {
-        final history = _nextHistory(
-          _HistoryRecord(
-            schemaVersion: schemaVersion,
-            contentVersion: resolver(validated),
-            checksum: _persistedChecksum(envelope),
-            appliedAtMs: nowMsClamped(storage),
-            json: validated,
-          ),
-        );
-        await _writeCombined(_cacheValue(validated), history);
-        _combinedRecordLoaded = true;
-        _commitHistory(history);
-      } else {
-        await _writeCache(validated);
-      }
-      _current = nextCurrent;
+      final key = resolver == null ? cacheKey : _combinedStorageKey;
+      await _commitRefresh(
+        generation,
+        storageKey: key,
+        prepareCommit: () async {
+          if (generation != _loadGeneration) return () {};
+          if (resolver != null) {
+            final history = _nextHistory(
+              _HistoryRecord(
+                schemaVersion: schemaVersion,
+                contentVersion: resolver(validated),
+                checksum: _persistedChecksum(envelope),
+                appliedAtMs: nowMsClamped(storage),
+                json: validated,
+              ),
+            );
+            await _writeCombined(_cacheValue(validated), history);
+            return () {
+              if (generation != _loadGeneration) return;
+              _combinedRecordLoaded = true;
+              _commitHistory(history);
+              _current = nextCurrent;
+            };
+          }
+          await _writeCache(validated);
+          return () {
+            if (generation == _loadGeneration) _current = nextCurrent;
+          };
+        },
+      );
     } catch (_) {
       // Network failure, bad signature/schema, a fromJson throw on a
       // wrong-typed field, or a cache-write failure → keep whatever
