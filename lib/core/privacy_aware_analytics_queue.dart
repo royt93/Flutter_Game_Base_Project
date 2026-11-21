@@ -292,7 +292,11 @@ class PrivacyAwareAnalyticsQueue implements AnalyticsProvider {
 
   Future<SdkResult<int>> _flushInternal() async {
     try {
-      await flushPersistence();
+      try {
+        await flushPersistence();
+      } catch (_) {
+        await _persistSnapshot();
+      }
       if (_disposed || !consent.isGranted(ConsentCategory.analytics)) {
         await _purge();
         return const SdkFailure(
@@ -327,12 +331,36 @@ class PrivacyAwareAnalyticsQueue implements AnalyticsProvider {
       }
 
       final ids = batch.map((event) => event.id).toSet();
-      final before = _pending.length;
-      _pending.removeWhere((event) => ids.contains(event.id));
-      final removed = before - _pending.length;
-      _uploaded += removed;
-      await _persistSnapshot();
-      return SdkSuccess(removed);
+      var removed = 0;
+      await _enqueuePersistence(() async {
+        if (!consent.isGranted(ConsentCategory.analytics)) {
+          return;
+        }
+        final remaining = _pending
+            .where((event) => !ids.contains(event.id))
+            .toList();
+        if (remaining.isEmpty) {
+          await storage.remove(storageKey);
+        } else {
+          await storage.setString(
+            storageKey,
+            jsonEncode(remaining.map((event) => event.toJson()).toList()),
+          );
+        }
+        if (consent.isGranted(ConsentCategory.analytics)) {
+          final before = _pending.length;
+          _pending.removeWhere((event) => ids.contains(event.id));
+          removed = before - _pending.length;
+          _uploaded += removed;
+        }
+      });
+      if (!consent.isGranted(ConsentCategory.analytics)) {
+        return const SdkFailure<int>(
+          kind: SdkErrorKind.validation,
+          message: 'Analytics consent revoked during persistence',
+        );
+      }
+      return SdkSuccess<int>(removed);
     } catch (error, stack) {
       return SdkFailure(
         kind: SdkErrorKind.storage,
@@ -349,8 +377,8 @@ class PrivacyAwareAnalyticsQueue implements AnalyticsProvider {
   }
 
   Future<void> _persistSnapshot() {
-    final snapshot = List<QueuedAnalyticsEvent>.from(_pending);
     return _enqueuePersistence(() async {
+      final snapshot = List<QueuedAnalyticsEvent>.from(_pending);
       if (snapshot.isEmpty) {
         await storage.remove(storageKey);
       } else {

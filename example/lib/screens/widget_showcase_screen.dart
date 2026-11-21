@@ -674,14 +674,17 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
           },
         ),
       );
+    _analyticsDemoStorage = _DemoAnalyticsStorage();
     _analyticsQueue = PrivacyAwareAnalyticsQueue(
-      storage: StorageService.to,
+      storage: _analyticsDemoStorage,
       consent: _consent,
       registry: analyticsRegistry,
+      storageKey: 'widget_showcase_analytics_queue_demo',
       uploader: (batch) async {
         if (_analyticsUploadFails) throw StateError('demo offline');
-        if (mounted) {
-          setState(() => _analyticsUploadedCount += batch.length);
+        if (_failNextAnalyticsAckPersistence) {
+          _analyticsDemoStorage.failNextRemoval = true;
+          _failNextAnalyticsAckPersistence = false;
         }
       },
       retryPolicy: const RetryPolicy(maxAttempts: 1, baseDelay: Duration.zero),
@@ -1193,9 +1196,12 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _demoQueueRanCount = 0;
   late final ConsentGatedAnalyticsProvider _gatedAnalytics;
   int _demoAnalyticsEventCount = 0;
+  late final _DemoAnalyticsStorage _analyticsDemoStorage;
   late final PrivacyAwareAnalyticsQueue _analyticsQueue;
   int _analyticsUploadedCount = 0;
+  String? _analyticsFlushStatus;
   bool _analyticsUploadFails = true;
+  bool _failNextAnalyticsAckPersistence = false;
   late final DeepLinkCommandRouter _deepLinks;
   final _deepLinkController = TextEditingController(
     text: 'roycasualkit://open/level/5',
@@ -3757,6 +3763,10 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Dropped: ${_analyticsQueue.auditSnapshot.totalDropped} · '
                                       'Uploaded: $_analyticsUploadedCount',
                                     ),
+                                    if (_analyticsFlushStatus != null)
+                                      Text(
+                                        'Storage demo: $_analyticsFlushStatus',
+                                      ),
                                     const SizedBox(height: NeonTheme.s8),
                                     Wrap(
                                       spacing: NeonTheme.s8,
@@ -3803,13 +3813,38 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           },
                                         ),
                                         CommonButton(
+                                          label: 'Fail next ACK save',
+                                          variant:
+                                              CommonButtonVariant.secondary,
+                                          onTap: () {
+                                            setState(() {
+                                              _analyticsUploadFails = false;
+                                              _failNextAnalyticsAckPersistence =
+                                                  true;
+                                              _analyticsFlushStatus =
+                                                  'Next ACK removal will fail (demo storage only)';
+                                            });
+                                          },
+                                        ),
+                                        CommonButton(
                                           label: 'Flush success',
                                           variant:
                                               CommonButtonVariant.secondary,
                                           onTap: () async {
                                             _analyticsUploadFails = false;
-                                            await _analyticsQueue.flush();
-                                            if (mounted) setState(() {});
+                                            final result = await _analyticsQueue
+                                                .flush();
+                                            if (!mounted) return;
+                                            setState(() {
+                                              _analyticsFlushStatus =
+                                                  result is SdkFailure<int>
+                                                  ? 'ACK received; save failed, event retained for retry'
+                                                  : 'Flush saved; retry complete';
+                                              if (result is SdkSuccess<int>) {
+                                                _analyticsUploadedCount +=
+                                                    result.value;
+                                              }
+                                            });
                                           },
                                         ),
                                         CommonButton(
@@ -8398,6 +8433,21 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
 /// FEAT-61: fake "real" analytics provider for the ConsentStateService
 /// demo — just counts events it actually received, so the demo can prove
 /// ConsentGatedAnalyticsProvider really did (or didn't) forward the call.
+class _DemoAnalyticsStorage extends StorageService {
+  _DemoAnalyticsStorage() : super(null);
+
+  bool failNextRemoval = false;
+
+  @override
+  Future<void> remove(String key) {
+    if (key == 'widget_showcase_analytics_queue_demo' && failNextRemoval) {
+      failNextRemoval = false;
+      return Future.error(StateError('simulated queue removal failure'));
+    }
+    return super.remove(key);
+  }
+}
+
 class _DemoAnalyticsProvider implements AnalyticsProvider {
   _DemoAnalyticsProvider(this.onEvent);
 

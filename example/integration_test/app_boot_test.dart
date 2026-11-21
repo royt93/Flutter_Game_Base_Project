@@ -64,7 +64,7 @@ Future<void> _goToCookbook(WidgetTester tester) async {
     Get.back();
     await tester.pump(const Duration(milliseconds: 300));
   }
-  final cookbookButton = find.byType(NeonButton).last;
+  final cookbookButton = find.byKey(const ValueKey('cookbookEntry'));
   await tester.ensureVisible(cookbookButton);
   await tester.pump(const Duration(milliseconds: 100));
   await tester.tap(cookbookButton);

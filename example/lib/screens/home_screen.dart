@@ -3,6 +3,7 @@ import 'package:get/get.dart';
 
 import 'package:roy_casual_kit/roy_casual_kit.dart';
 
+import 'analytics_ack_demo_screen.dart';
 import 'cookbook_screen.dart';
 import 'daily_reward_screen.dart';
 import 'mini_game_hub_screen.dart';
@@ -86,9 +87,17 @@ class HomeScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 16),
                 NeonButton(
+                  key: const ValueKey('cookbookEntry'),
                   label: 'cookbook'.tr,
                   color: NeonTheme.purple,
                   onTap: () => Get.to(() => const CookbookScreen()),
+                ),
+                const SizedBox(height: 16),
+                NeonButton(
+                  key: const ValueKey('analyticsAckSmokeEntry'),
+                  label: 'Analytics ACK smoke',
+                  color: NeonTheme.red,
+                  onTap: () => Get.to(() => const AnalyticsAckDemoScreen()),
                 ),
               ],
             ),

@@ -8,11 +8,11 @@ import 'package:roy_casual_kit_example/screens/home_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Widget _wrap(Widget child) => GetMaterialApp(
-      translations: AppTranslations(),
-      locale: AppTranslations.fallback,
-      fallbackLocale: AppTranslations.fallback,
-      home: child,
-    );
+  translations: AppTranslations(),
+  locale: AppTranslations.fallback,
+  fallbackLocale: AppTranslations.fallback,
+  home: child,
+);
 
 void main() {
   tearDown(Get.reset);
@@ -28,7 +28,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 100));
 
     expect(find.text('Roy Casual Kit Example'), findsNWidgets(2));
-    expect(find.byType(NeonButton), findsNWidgets(10));
+    expect(find.byType(NeonButton), findsNWidgets(11));
     final labels = find
         .byType(NeonButton)
         .evaluate()
@@ -39,6 +39,7 @@ void main() {
       containsAll([
         'Settings',
         'Widget Kit',
+        'Analytics ACK smoke',
         'Flame Demo',
         'Daily Rewards',
         'Shop',

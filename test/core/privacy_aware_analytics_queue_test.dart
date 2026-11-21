@@ -13,13 +13,41 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class _FailingAnalyticsStorage extends StorageService {
   _FailingAnalyticsStorage(super.prefs);
+  bool failWrites = true;
+  bool failRemovals = false;
+
+  @override
+  Future<void> remove(String key) {
+    if (failRemovals && key == StorageKeys.analyticsQueueV1) {
+      throw StateError('disk full');
+    }
+    return super.remove(key);
+  }
 
   @override
   Future<void> setString(String key, String value) {
-    if (key == StorageKeys.analyticsQueueV1) {
+    if (failWrites && key == StorageKeys.analyticsQueueV1) {
       throw StateError('disk full');
     }
     return super.setString(key, value);
+  }
+}
+
+class _BlockedAckStorage extends StorageService {
+  _BlockedAckStorage(super.prefs);
+  final started = Completer<void>();
+  final release = Completer<void>();
+  bool _blocked = false;
+
+  @override
+  Future<void> remove(String key) async {
+    if (key == StorageKeys.analyticsQueueV1 && !_blocked) {
+      _blocked = true;
+      started.complete();
+      await release.future;
+      throw StateError('simulated ACK removal failure');
+    }
+    await super.remove(key);
   }
 }
 
@@ -279,6 +307,114 @@ void main() {
       release.complete();
       expect((await flush).isSuccess, isFalse);
       q.dispose();
+    },
+  );
+
+  test(
+    'ACK persistence failure retains batch for same-instance retry',
+    () async {
+      consent.grant(ConsentCategory.analytics);
+      final failingStorage = _FailingAnalyticsStorage(
+        await SharedPreferences.getInstance(),
+      );
+      var uploads = 0;
+      final uploadedIds = <String>[];
+      final q = PrivacyAwareAnalyticsQueue(
+        storage: failingStorage,
+        consent: consent,
+        registry: registry,
+        uploader: (batch) async {
+          uploads++;
+          uploadedIds.addAll(batch.map((event) => event.id));
+        },
+        idGenerator: () => 'ack-retry-id',
+      );
+      failingStorage.failWrites = false;
+      expect(await q.enqueueDurably('level_start', {'level': 1}), isTrue);
+      expect(
+        failingStorage.getString(StorageKeys.analyticsQueueV1),
+        contains('ack-retry-id'),
+      );
+
+      failingStorage.failRemovals = true;
+      final failedFlush = await q.flush();
+      expect(failedFlush, isA<SdkFailure<int>>());
+      expect((failedFlush as SdkFailure<int>).kind, SdkErrorKind.storage);
+      expect(q.pendingCount, 1);
+      expect(q.auditSnapshot.uploaded, 0);
+      expect(
+        failingStorage.getString(StorageKeys.analyticsQueueV1),
+        contains('ack-retry-id'),
+      );
+
+      failingStorage.failRemovals = false;
+      final retriedFlush = await q.flush();
+      expect(retriedFlush, isA<SdkSuccess<int>>());
+      expect((retriedFlush as SdkSuccess<int>).value, 1);
+      expect(q.pendingCount, 0);
+      expect(q.auditSnapshot.uploaded, 1);
+      expect(uploads, 2);
+      expect(uploadedIds, ['ack-retry-id', 'ack-retry-id']);
+      expect(failingStorage.getString(StorageKeys.analyticsQueueV1), isNull);
+      q.dispose();
+    },
+  );
+
+  test('failed ACK removal preserves a concurrently enqueued event', () async {
+    consent.grant(ConsentCategory.analytics);
+    final blocked = _BlockedAckStorage(await SharedPreferences.getInstance());
+    final q = PrivacyAwareAnalyticsQueue(
+      storage: blocked,
+      consent: consent,
+      registry: registry,
+      uploader: (_) async {},
+      idGenerator: () => 'concurrent-${id++}',
+    );
+    addTearDown(q.dispose);
+    await q.enqueueDurably('level_start', {'level': 1});
+    final flush = q.flush();
+    await blocked.started.future;
+    final enqueue = q.enqueueDurably('level_start', {'level': 2});
+    blocked.release.complete();
+    expect(await flush, isA<SdkFailure<int>>());
+    expect(await enqueue, isTrue);
+    expect(q.pendingEvents.map((event) => event.id), [
+      'concurrent-0',
+      'concurrent-1',
+    ]);
+    expect(q.auditSnapshot.uploaded, 0);
+    final restarted = PrivacyAwareAnalyticsQueue(
+      storage: blocked,
+      consent: consent,
+      registry: registry,
+      uploader: (_) async {},
+    );
+    addTearDown(restarted.dispose);
+    expect(restarted.pendingCount, 2);
+  });
+
+  test(
+    'consent revoke during failed ACK removal cannot restore events',
+    () async {
+      consent.grant(ConsentCategory.analytics);
+      final blocked = _BlockedAckStorage(await SharedPreferences.getInstance());
+      final q = PrivacyAwareAnalyticsQueue(
+        storage: blocked,
+        consent: consent,
+        registry: registry,
+        uploader: (_) async {},
+      );
+      addTearDown(q.dispose);
+      await q.enqueueDurably('level_start', {'level': 1});
+      final flush = q.flush();
+      await blocked.started.future;
+      consent.deny(ConsentCategory.analytics);
+      blocked.release.complete();
+      expect(await flush, isA<SdkFailure<int>>());
+      await q.flushPersistence();
+      expect(q.pendingCount, 0);
+      expect(q.auditSnapshot.uploaded, 0);
+      expect(blocked.getString(StorageKeys.analyticsQueueV1), isNull);
     },
   );
 

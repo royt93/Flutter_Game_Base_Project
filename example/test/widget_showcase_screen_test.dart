@@ -32,6 +32,7 @@ import 'package:roy_casual_kit/core/utils/smart_reminder_scheduling.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_dialog.dart';
 import 'package:roy_casual_kit/presentation/widgets/spring_scale_transition.dart';
+import 'package:roy_casual_kit_example/screens/home_screen.dart';
 import 'package:roy_casual_kit_example/screens/widget_showcase_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -101,6 +102,28 @@ class _ThrowingOnKeyStorage extends StorageService {
 
 void main() {
   tearDown(Get.reset);
+
+  testWidgets('direct Home entry opens analytics ACK demo section', (
+    tester,
+  ) async {
+    SharedPreferences.setMockInitialValues({});
+    Get.put(
+      StorageService(await SharedPreferences.getInstance()),
+      permanent: true,
+    );
+    await tester.pumpWidget(_wrap(const HomeScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    final entry = find.byKey(const ValueKey('analyticsAckSmokeEntry'));
+    await tester.ensureVisible(entry);
+    await tester.tap(entry);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Fail next ACK save'), findsOneWidget);
+    expect(find.text('Flush / retry'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('renders every section without throwing', (tester) async {
     await _pumpShowcase(tester);
@@ -4038,6 +4061,55 @@ void main() {
         expect(tester.takeException(), isNull);
       },
     );
+
+    testWidgets('ACK removal failure remains visible until retry persists', (
+      tester,
+    ) async {
+      await _pumpShowcase(tester);
+      await tester.tap(find.text('Grant analytics').last);
+      await tester.pump();
+      await tester.tap(find.text('Queue valid + PII').last);
+      await tester.pump();
+      expect(
+        find.textContaining('Analytics queue — Pending: 1'),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Fail next ACK save').last);
+      await tester.pump();
+      await tester.tap(find.text('Flush success').last);
+      await tester.pump();
+
+      expect(
+        find.text(
+          'Storage demo: ACK received; save failed, event retained for retry',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Analytics queue — Pending: 1'),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Uploaded: 0'), findsOneWidget);
+
+      await tester.tap(find.text('Flush success').last);
+      await tester.pump();
+      expect(
+        find.text('Storage demo: Flush saved; retry complete'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining('Analytics queue — Pending: 0'),
+        findsOneWidget,
+      );
+      expect(
+        find.textContaining(
+          'Analytics queue — Pending: 0 · Dropped: 0 · Uploaded: 1',
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets('revoke consent purges pending queue and persisted payload', (
       tester,
