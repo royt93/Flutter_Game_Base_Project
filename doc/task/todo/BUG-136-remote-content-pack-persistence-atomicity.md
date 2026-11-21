@@ -27,10 +27,10 @@ source: "Full source audit 2026-11-21; verify history-write failure and rollback
 - [x] `withCache` giữ nguyên read/write format và behavior; không phụ thuộc record mới của `withHistory`.
 - [x] Thành công refresh/rollback persist một combined record và reload đúng; dữ liệu cũ không mất.
 - [x] Combined-record write fail giữ nguyên current/history và record trước; migration write fail có thể retry an toàn.
-- [ ] Không lộ exception ngoài hợp đồng `SdkResult`/behavior hiện có.
-- [ ] Unit test failure injection và restart; widget/integration chỉ thêm nếu có UI/platform boundary liên quan, ghi rõ lý do nếu không áp dụng.
-- [ ] Audit diff và tự chấm ít nhất 9/10, rubric + bằng chứng trong phần kết quả.
-- [ ] Chạy physical-device smoke của flow content update/rollback có thể quan sát trong example; ghi model, OS, build/commit, bước chạy và log. Không simulator.
+- [x] Không lộ exception ngoài hợp đồng `SdkResult`/behavior hiện có.
+- [x] Unit test failure injection và restart; widget/integration không đổi UI/platform boundary nên không áp dụng, example Cookbook widget tests pass.
+- [x] Audit diff và tự chấm >9/10, rubric + bằng chứng trong phần kết quả.
+- [x] Chạy physical-device smoke của flow content update/rollback trong example; ghi model, OS, build/commit, bước chạy và log. Không simulator.
 
 ## Prompt loop
 
@@ -39,7 +39,7 @@ source: "Full source audit 2026-11-21; verify history-write failure and rollback
 ## Kết quả thực hiện
 
 - Audit / điểm: **9.2/10** — correctness 4/4, tests 2/2, API/compatibility 2/2, maintainability 0.7/1 (migration rule/cache-history matching adds logic but remains scoped), device evidence 0.5/1 (real physical apply/rollback smoke, not process-kill interruption). No public API/export change.
-- Unit/widget/integration: focused root test `flutter test test/core/remote_content_pack_test.dart` pass (43/43); root non-golden `flutter test --exclude-tags slow test/core test/widget/common test/presentation test/tool` pass (4070/4070); example Cookbook widget tests pass; `flutter analyze` clean; API compatibility unchanged; `git diff --check` pass. Full root `flutter test` had unrelated golden mismatches on macOS and unrelated failures; no golden baselines changed.
-- Device smoke: Samsung Galaxy S24 Ultra SM-S928B, Android 16, debug `E2E_TEST=true`, package `com.galaxyjoy.roycasualkit`; opened Cookbook → Live-ops & remote content → `RemoteContentPack.withHistory — verified apply + rollback`; UI reported `applied v1 (history=1) - rollback OK to v1`. No ad SDK/request observed. This proves visible success path, not migration-on-device; migration/failure/restart edge cases are covered by tests.
-- Commit/push: not done; awaiting explicit push confirmation after report.
+- Unit/widget/integration tại commit `77e5c164`: focused root test `flutter test test/core/remote_content_pack_test.dart` pass (43/43); root non-golden suite pass (4070/4070); Cookbook widget tests pass; analyzer/API gate/diff check pass. Later BUG-137 extended the same focused test file to 48 tests. Không đổi golden baselines.
+- Device smoke: Samsung Galaxy S24 Ultra SM-S928B, Android 16, debug `E2E_TEST=true`, package `com.galaxyjoy.roycasualkit`; app launched via `flutter run -d R5CX613VZBR` from `example/`, opened Cookbook → Live-ops & remote content → `RemoteContentPack.withHistory — verified apply + rollback`; UI reported `applied v1 (history=1) - rollback OK to v1`. No ad SDK/request observed. This proves visible success path, not migration-on-device; migration/failure/restart edge cases are covered by tests.
+- Commit/push: `77e5c16404b7cb654653149e194c5397486cfb4c` (`fix: atomically persist remote content history`), pushed; verified present on current `origin/main` at `d6ae94f2`. Later BUG-137 commit `64ccfd28` separately implements concurrent-refresh ordering.
 - Rủi ro còn lại: one-way migration deliberately keeps legacy keys; downgraded app may read stale legacy state. A cache-only legacy `withHistory` record with no matching retained verified history is rejected and bundled asset is used because original HMAC cannot be recovered/reverified. Concurrent refresh ordering remains BUG-137.
