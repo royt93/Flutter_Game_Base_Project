@@ -37,7 +37,8 @@ Workflow hiện có Flutter analyze/host tests và consumer smoke, trong khi `ex
 
 - Test matrix/decision: chọn `analytics_ack_recovery` (46 dòng), `offline_outbox_recovery` (86), `experiment_build_mode` (57): user-visible golden path, ngắn, không phụ thuộc đo hardware. Giữ manual: 15 `*_perf_test.dart` + `d4_perf_memory_test.dart` (đo frame/memory, nhạy thiết bị), `app_boot_test.dart` (~6k dòng).
 - Runtime/stability evidence: Pixel 7 Pro, 3 lần/test với `--dart-define=E2E_TEST=true`: 9/9 pass, ~26-37s/test. Không có `E2E_TEST`, `analytics_ack_recovery` fail 3/3 (audioplayers frame callback sau dispose), nên CI bắt buộc truyền cờ. Chưa có số liệu runtime trên emulator CI.
-- Thay đổi: job `example-integration` trong `.github/workflows/ci.yml` (paths-filter lib/example/pubspec/asset/ci.yml, emulator API 34, timeout 30 phút), `example/README.md`. YAML parse OK. Không dispatch CI.
-- Audit / điểm: chưa chấm; cần 1 lần CI thật xác nhận emulator ổn định.
+- Quyết định: **manual-only**. Đã thử job `example-integration` trên emulator CI, 3 lần đều đỏ vì hạ tầng chứ không phải test: (1) `45035954309` Gradle GC thrash với `-Xmx8G`; (2) `45037169741` thiếu `android.useAndroidX` vì `example/android/gradle.properties` bị gitignore; (3) `45038360508` `Java heap space` ở `JetifyTransform` dù đã hạ `-Xmx3G` (cùng triệu chứng `benchmark.yml` đã ghi). Runner chia RAM giữa Gradle và emulator quá chặt cho app example nặng. Job đã gỡ (không để job đỏ trên main).
+- Chạy tay: 3 test `analytics_ack_recovery`, `offline_outbox_recovery`, `experiment_build_mode`, lệnh trong `example/README.md`, cờ `E2E_TEST=true` bắt buộc.
+- Audit / điểm: ~8.5/10. Trừ điểm: mục tiêu CI tự động không đạt; đã ghi rationale + evidence thiết bị thật 9/9.
 - Tests/device smoke: 3 test trên thiết bị thật (xem trên).
 - Commit/push:

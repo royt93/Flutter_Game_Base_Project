@@ -29,7 +29,7 @@ This single flow demonstrates gameplay events, reward economy, achievement unloc
 
 ## Proof tests
 
-CI (`example-integration` job) runs three stable golden-path integration tests on an Android emulator; run them locally with `E2E_TEST=true` (skips audio init, otherwise `audioplayers` leaves a frame callback after teardown and `analytics_ack_recovery` fails):
+Three stable golden-path integration tests are run manually on a physical device (not in CI, see ENH-110); use `E2E_TEST=true` (skips audio init, otherwise `audioplayers` leaves a frame callback after teardown and `analytics_ack_recovery` fails):
 
 ```bash
 for t in analytics_ack_recovery offline_outbox_recovery experiment_build_mode; do
