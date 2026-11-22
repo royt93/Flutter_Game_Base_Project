@@ -29,6 +29,16 @@ This single flow demonstrates gameplay events, reward economy, achievement unloc
 
 ## Proof tests
 
+CI (`example-integration` job) runs three stable golden-path integration tests on an Android emulator; run them locally with `E2E_TEST=true` (skips audio init, otherwise `audioplayers` leaves a frame callback after teardown and `analytics_ack_recovery` fails):
+
+```bash
+for t in analytics_ack_recovery offline_outbox_recovery experiment_build_mode; do
+  flutter test integration_test/${t}_test.dart --dart-define=E2E_TEST=true -d <device-id>
+done
+```
+
+`*_perf_test.dart`, `d4_perf_memory_test.dart` and `app_boot_test.dart` (~6k lines) stay manual: they measure frame/memory on real hardware or are too long for a per-PR emulator job.
+
 Focused D4 proof:
 
 ```bash

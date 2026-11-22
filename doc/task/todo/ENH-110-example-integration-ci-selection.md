@@ -35,8 +35,9 @@ Workflow hiện có Flutter analyze/host tests và consumer smoke, trong khi `ex
 
 ## Kết quả thực hiện
 
-- Test matrix/decision:
-- Runtime/stability evidence:
-- Audit / điểm:
-- Tests/device smoke:
+- Test matrix/decision: chọn `analytics_ack_recovery` (46 dòng), `offline_outbox_recovery` (86), `experiment_build_mode` (57): user-visible golden path, ngắn, không phụ thuộc đo hardware. Giữ manual: 15 `*_perf_test.dart` + `d4_perf_memory_test.dart` (đo frame/memory, nhạy thiết bị), `app_boot_test.dart` (~6k dòng).
+- Runtime/stability evidence: Pixel 7 Pro, 3 lần/test với `--dart-define=E2E_TEST=true`: 9/9 pass, ~26-37s/test. Không có `E2E_TEST`, `analytics_ack_recovery` fail 3/3 (audioplayers frame callback sau dispose), nên CI bắt buộc truyền cờ. Chưa có số liệu runtime trên emulator CI.
+- Thay đổi: job `example-integration` trong `.github/workflows/ci.yml` (paths-filter lib/example/pubspec/asset/ci.yml, emulator API 34, timeout 30 phút), `example/README.md`. YAML parse OK. Không dispatch CI.
+- Audit / điểm: chưa chấm; cần 1 lần CI thật xác nhận emulator ổn định.
+- Tests/device smoke: 3 test trên thiết bị thật (xem trên).
 - Commit/push:
