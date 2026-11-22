@@ -43,4 +43,5 @@ Partner biết chính xác package tự làm gì, chỗ nào cần adapter/backe
 - Không trùng IDEA-90 (doctor) hay intake checklist: ghi rõ ranh giới trong file.
 - Checks: link/path check OK; `test/tool/release_readiness_check_test.dart` pass. Unit/widget/integration không áp dụng vì docs-only, không đổi API/runtime. Device smoke không cần: chỉ trích dẫn record S24U đã có trong `device_matrix.md`.
 - Audit / điểm: ~9.2/10. Trừ điểm: chỉ 8 capability, chưa có test tự động giữ bảng khớp code (chỉ review tay).
-- Commit/push:
+- Cập nhật 0.8.0: đã bỏ dòng Rewarded ad khỏi matrix vì tính năng ad đã gỡ, ghi "ads out of scope since 0.8.0".
+- Commit/push: commit `9da5d6f5`; đã nằm trong `origin/main` từ push `bad30f70`.

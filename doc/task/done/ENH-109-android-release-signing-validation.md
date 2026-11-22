@@ -39,3 +39,4 @@ Nếu xác minh lỗi thực sự không rõ hoặc build có thể đi sai sign
 - Tests/build: debug apk build OK cả khi xoá tạm `app.properties`. Release thiếu config: fail sớm với hướng dẫn đúng. Release với `app.properties` hiện có: build OK 69.4MB, cùng signing config.
 - Audit / điểm: ~9.3/10. Certificate: SHA-256 của keystore khớp apk release (`30:98:3F:E2:...:3B:9C`, fingerprint công khai, không lộ secret). Điểm trừ: check Gradle chưa có test tự động, chỉ verify tay 3 case. Check dùng cùng cách resolve path `file(KEYSTORE_PATH)` với signingConfig nên không lệch.
 - Device smoke: không áp dụng (chỉ đổi Gradle build logic, không đổi runtime app).
+- Commit/push: `db86c69b`, đã push lên `origin/main`.

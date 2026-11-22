@@ -41,4 +41,5 @@ Workflow hiện có Flutter analyze/host tests và consumer smoke, trong khi `ex
 - Chạy tay: 3 test `analytics_ack_recovery`, `offline_outbox_recovery`, `experiment_build_mode`, lệnh trong `example/README.md`, cờ `E2E_TEST=true` bắt buộc.
 - Audit / điểm: ~8.5/10. Trừ điểm: mục tiêu CI tự động không đạt; đã ghi rationale + evidence thiết bị thật 9/9.
 - Tests/device smoke: 3 test trên thiết bị thật (xem trên).
-- Commit/push:
+- Ghi chú CI: run `45038360508` cũng có `consumer-smoke` đỏ do emulator treo 20 phút ở step emulator (không liên quan thay đổi này, run `bad30f70` trước đó xanh); đã được checklist 0.6.3 ghi nhận là hạ tầng emulator không ổn định.
+- Commit/push: `775018f3`, `bad30f70`, `802be22f` (thử job), `318a346f` (gỡ job, manual-only).
