@@ -38,8 +38,9 @@ Partner biết chính xác package tự làm gì, chỗ nào cần adapter/backe
 
 ## Kết quả thực hiện
 
-- Capabilities covered:
-- Audit / điểm:
-- Checks:
-- Device evidence (nếu cần):
+- Deliverable: `docs/qa/capability_evidence_matrix.md` (8 capability đại diện: save integrity, storage/versioned save, cloud save seam, offline progression, IAP, rewarded ad, analytics ACK, offline outbox), nhãn `local`/`seam`/`demo`/`device verified`/`not verified`, mỗi dòng có cột "Not proven". Link từ `README.md` mục Device proof. Có quy tắc cập nhật + owner/cadence (mỗi release, khi export đổi).
+- Cross-check: mọi path code/test dẫn trong bảng đều tồn tại (script kiểm tra); claim save_integrity đối chiếu doc comment trong `lib/core/save_integrity.dart` (secret do app cấp, vẫn recover được từ binary, chỉ chống sửa save thông thường). Không ghi backend/payout/analytics transport là verified.
+- Không trùng IDEA-90 (doctor) hay intake checklist: ghi rõ ranh giới trong file.
+- Checks: link/path check OK; `test/tool/release_readiness_check_test.dart` pass. Unit/widget/integration không áp dụng vì docs-only, không đổi API/runtime. Device smoke không cần: chỉ trích dẫn record S24U đã có trong `device_matrix.md`.
+- Audit / điểm: ~9.2/10. Trừ điểm: chỉ 8 capability, chưa có test tự động giữ bảng khớp code (chỉ review tay).
 - Commit/push:

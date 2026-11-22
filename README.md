@@ -30,7 +30,9 @@ What this proves:
 
 Evidence is scoped to the recorded build and flow, not a claim that the current
 release passed every device check. See the [device QA matrix](docs/qa/device_matrix.md)
-for commands, limitations, and the record format.
+for commands, limitations, and the record format. For what each capability
+actually does locally versus needs an adapter or backend, see the
+[capability evidence matrix](docs/qa/capability_evidence_matrix.md).
 
 | Date | Device / build | Evidence type | Result and scope |
 | --- | --- | --- | --- |
