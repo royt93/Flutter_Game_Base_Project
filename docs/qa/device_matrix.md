@@ -1,47 +1,119 @@
 # Device QA Matrix
 
-## Latest physical smoke
+Records describe one build and one exercised flow. Install/launch smoke,
+interactive integration, and performance measurements are separate evidence.
+They do not certify every feature or the current release.
 
-| Date | Device | OS source | Build | Result |
+## Recorded evidence
+
+| Date | Device / OS | Source and build | Type | Result / evidence |
 | --- | --- | --- | --- | --- |
-| 2026-09-26 | TECNO KJ7 (`115333744A005844`) | Android 14, arm64-v8a, 1080×2436, ~7.5GB RAM | `example` release APK | PASS — install + launch smoke, live process pid confirmed, no `FATAL EXCEPTION` / `AndroidRuntime` crash in scanned logcat |
+| 2026-11-21 | Samsung Galaxy S24 Ultra `SM-S928B`, Android 16 | Source later committed as `d6ae94f2`; example debug, `E2E_TEST=true` | Interactive integration | `analytics_ack_recovery_test.dart` passed: simulated ACK-save failure retains Pending=1 / Uploaded=0; retry produces Pending=0 / Uploaded=1. [Saved run log](../../doc/task/evidence/BUG-139-s24u-analytics-ack-recovery.log). |
+| 2026-11-21 16:12:30.507 UTC | Samsung Galaxy S24 Ultra `SM-S928B`, Android 16 | Source `d6ae94f2`; baseline commit `d3a9326c`; debug integration | Boot-test command wall time | `example_app_boot_wall_ms=32952 ms`, source `realDevice`, `recordedAtMs=1795277550507`. [Committed baseline](../../tool/performance_budget_baseline.json). No separate raw benchmark run log was retained. |
+| 2026-09-26 | TECNO KJ7, Android 14, arm64-v8a, 1080×2436, ~7.5GB RAM | Historical example release APK, `61.6MB`; source commit not recorded | Install / launch smoke | Historical PASS: install succeeded, process pid confirmed, no `FATAL EXCEPTION` / `AndroidRuntime` found in scanned logcat. Raw log and APK hash were not retained here; not current-release proof. |
 
-## TECNO KJ7 proof commands
+### Scope and limitations
+
+- The ACK integration uses synthetic events, a local fake uploader, and isolated
+  `StorageService(null)` RAM storage. It does not prove real backend delivery,
+  real disk-failure handling, fsync durability, or exactly-once effects. The
+  screenshot previously named `ack-retry` still shows the failure state, so it
+  is not used as successful-retry proof; the saved integration log is the
+  passing flow evidence.
+- The boot metric times the full `flutter test` subprocess around
+  `app boots to HomeScreen` in `app_boot_test.dart`, including build/install/test
+  overhead. It is not isolated app startup latency, frame time, memory, or FPS.
+  The tool does not establish a controlled cold-start environment.
+- Performance freshness is evaluated by
+  `tool/performance_budget_policy.json` against each metric's `recordedAtMs`.
+  A previously passing result can expire; use the current check instead of
+  treating this table as an indefinitely passing gate.
+- Old records remain historical. Missing metadata is marked unknown, not
+  reconstructed from an unrelated build or newer device run.
+
+## Reproduce on a physical device
+
+From the repository root, discover the current serial; stored serials below
+identify past runs only. Check the foreground app and obtain permission before
+interrupting unrelated device work.
 
 ```bash
-adb -s 115333744A005844 shell getprop ro.product.brand
-adb -s 115333744A005844 shell getprop ro.product.model
+adb devices -l
+adb -s <device-id> shell getprop ro.product.model
+adb -s <device-id> shell getprop ro.build.version.release
+```
+
+ACK failure/retry integration:
+
+```bash
+cd example
+flutter test integration_test/analytics_ack_recovery_test.dart -d <device-id> --dart-define=E2E_TEST=true
+```
+
+The recorded S24U run used `R5CX613VZBR`. The test opens Home → **Analytics ACK
+smoke** and exercises the demo controls. No external analytics or ad request is
+part of this flow.
+
+Performance freshness/budget check (read-only; from repository root):
+
+```bash
+dart run tool/performance_budget_check.dart check
+```
+
+Collect a new measurement only when authorized; `snapshot` writes the baseline
+and refreshes host measurements too:
+
+```bash
+dart run tool/performance_budget_check.dart snapshot --device=<device-id> --deviceSource=realDevice
+```
+
+Do not refresh only the timestamp, relax the policy, or label an emulator run
+`realDevice` to make a gate pass.
+
+## Historical TECNO install / launch procedure
+
+These commands describe the 2026-09-26 procedure, not a new execution. The old
+serial was `115333744A005844`; discover the current serial before reuse. Release
+signing requires private configuration. Inspect only log output relevant to
+the run; no unrelated device data belongs in shared proof.
+
+```bash
 cd example
 flutter build apk --release
-adb -s 115333744A005844 install -r build/app/outputs/flutter-apk/app-release.apk
-adb -s 115333744A005844 logcat -c
-adb -s 115333744A005844 shell monkey -p com.galaxyjoy.roycasualkit 1
-sleep 6
-adb -s 115333744A005844 shell pidof com.galaxyjoy.roycasualkit
-adb -s 115333744A005844 logcat -d -t 200 | grep -Ei "FATAL EXCEPTION|AndroidRuntime"
+adb -s <device-id> install -r build/app/outputs/flutter-apk/app-release.apk
+adb -s <device-id> shell monkey -p com.galaxyjoy.roycasualkit 1
+adb -s <device-id> shell pidof com.galaxyjoy.roycasualkit
+adb -s <device-id> logcat -d -t 200 | grep -Ei "FATAL EXCEPTION|AndroidRuntime"
 ```
 
-Expected:
+A pid plus no matching fatal error only establishes launch smoke for that
+scanned window; it does not establish gameplay, pause/resume, or performance.
 
-- brand: `TECNO`
-- model: `TECNO KJ7`
-- APK builds successfully
-- install returns `Success`
-- launch returns a process id
-- final crash grep returns no fatal crash
+## Manual Classic Flame scenario (not a new recorded result)
 
-## Manual Game Demo smoke
-
-1. Open app.
-2. Open **Game Demo**.
-3. Tap circle 10 times.
-4. Verify `tap: 10/10`, `gems: 20`, star icon, and confetti.
-5. Background and resume app.
-6. Verify pause panel appears while backgrounded and disappears after resume.
-
-## Automated proof
+1. Open Home → **Flame Demo** → **Classic Flame Demo** (English labels).
+2. Tap the circle 10 times.
+3. Verify `tap: 10/10`, `gems: 20`, star icon, and confetti.
+4. Background and resume the app; verify lifecycle behavior using visible
+   state and logs. Do not infer background-state visibility from a foreground
+   screenshot.
 
 ```bash
 cd example
-flutter test integration_test/d4_perf_memory_test.dart
+flutter test integration_test/d4_perf_memory_test.dart -d <device-id> --dart-define=E2E_TEST=true
 ```
+
+## Record format
+
+Use this same metadata for a README summary and its detailed matrix entry:
+
+- Date/time and timezone; device model, OS, physical/emulator classification.
+- Source commit (or clearly described working-tree state); build mode, defines,
+  package, and artifact hash when captured.
+- Evidence type: install/launch, interactive integration, or named measurement.
+- Exact command/selector and exercised route/actions.
+- Observed result, log/screenshot path, and what the evidence does **not** prove.
+- Missing metadata, historical/freshness status, and any failed attempts.
+
+Retain logs under `doc/task/evidence/` rather than linking only to temporary
+files. A new run adds a record; it does not silently rewrite old proof.

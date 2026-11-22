@@ -1,5 +1,9 @@
 # 0.6.3 intake checklist
 
+Historical release checklist; its results are not current-release proof.
+For new runs, use the dated record format and evidence boundaries in the
+[device QA matrix](../../docs/qa/device_matrix.md#record-format).
+
 ## Release-cycle retrospective (Waves 30–33)
 - Keep Flutter test selectors exact. `--name='Wave 2'` can match every Wave 20–29 test; Wave33 was initially invoked with a selector that matched zero tests. Check log for the named test and `All tests passed`, not only build/exit wrapper output.
 - Flutter Driver does not support release mode on Android. `flutter test --release` is unsupported; use `flutter drive --profile` for supported performance-like mode. For actual release UI inspection, use a temporary app harness via `flutter run --release` and inspect rendered widget tree/log output; delete the harness afterwards.

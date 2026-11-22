@@ -28,16 +28,17 @@ What this proves:
 
 ## Device proof
 
-Latest physical-device smoke proof:
+Evidence is scoped to the recorded build and flow, not a claim that the current
+release passed every device check. See the [device QA matrix](docs/qa/device_matrix.md)
+for commands, limitations, and the record format.
 
-- Device: **TECNO KJ7**
-- Build: `example/build/app/outputs/flutter-apk/app-release.apk`
-- APK size: `61.6MB`
-- Install: `Success`
-- Launch package: `com.galaxyjoy.roycasualkit`
-- Smoke result: app launched with a running pid and no `FATAL EXCEPTION` / `AndroidRuntime` crash in scanned logcat output.
+| Date | Device / build | Evidence type | Result and scope |
+| --- | --- | --- | --- |
+| 2026-11-21 | Samsung Galaxy S24 Ultra `SM-S928B`, Android 16; debug + `E2E_TEST=true`; source later committed as `d6ae94f2` | Interactive integration | Analytics ACK demo: failed simulated save retains the event, then retry clears it. Local fake uploader and RAM storage only; [passing log](doc/task/evidence/BUG-139-s24u-analytics-ack-recovery.log). |
+| 2026-11-21 16:12:30.507 UTC | Same S24U; debug integration at source `d6ae94f2`; baseline committed in `d3a9326c` | Boot-test command wall time | `example_app_boot_wall_ms=32952 ms`; includes build/install/test overhead, **not** app-only startup latency or FPS. [Recorded metric](tool/performance_budget_baseline.json). |
+| 2026-09-26 | TECNO KJ7, Android 14; historical example release APK (`61.6MB`) | Install / launch smoke | Install succeeded, process was alive, no fatal crash found in the scanned logcat window. Historical record; no current-release or interactive-feature coverage implied. |
 
-Re-run the focused performance/memory proof:
+Re-run the focused performance/memory test (instructions, not a new recorded result):
 
 ```bash
 cd example
