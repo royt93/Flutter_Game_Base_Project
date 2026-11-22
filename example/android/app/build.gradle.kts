@@ -61,6 +61,26 @@ android {
     }
 }
 
+// Fail fast (before compile) when a release build is requested without the
+// private signing config. Debug builds never reach this. Only key NAMES are
+// reported, never values.
+gradle.taskGraph.whenReady {
+    if (allTasks.none { it.name == "packageRelease" || it.name == "packageReleaseBundle" }) return@whenReady
+    val missing = listOf("KEYSTORE_PATH", "KS_ALIAS", "KS_PW")
+        .filter { appProperties.getProperty(it).isNullOrBlank() }
+    val keystoreMissing = missing.isEmpty() &&
+        !file(appProperties.getProperty("KEYSTORE_PATH")).exists()
+    if (missing.isNotEmpty() || keystoreMissing) {
+        throw GradleException(
+            "Release signing not configured. " +
+                (if (missing.isNotEmpty()) "Missing in example/android/app.properties: ${missing.joinToString()}. "
+                else "KEYSTORE_PATH does not point to an existing file. ") +
+                "Copy example/android/app.properties.example to app.properties and fill it in " +
+                "(debug builds do not need it)."
+        )
+    }
+}
+
 flutter {
     source = "../.."
 }

@@ -34,9 +34,8 @@ Nếu xác minh lỗi thực sự không rõ hoặc build có thể đi sai sign
 
 ## Kết quả thực hiện
 
-- Kết quả xác minh:
-- Audit / điểm:
-- Tests/build:
-- Device smoke:
-- Certificate unchanged:
-- Commit/push:
+- Kết quả xác minh: lỗi thật. Thiếu `app.properties`, `flutter build apk --release` chạy ~2 phút rồi mới fail ở `:app:packageRelease` với `SigningConfig "release" is missing required property "storeFile"`.
+- Fix: `example/android/app/build.gradle.kts` thêm check trong `gradle.taskGraph.whenReady`, chỉ chạy khi graph có `packageRelease`/`packageReleaseBundle`. Thiếu `KEYSTORE_PATH`/`KS_ALIAS`/`KS_PW` hoặc keystore không tồn tại thì fail sớm, chỉ in tên key, không in value. Signing config, `.gitignore` không đổi.
+- Tests/build: debug apk build OK cả khi xoá tạm `app.properties`. Release thiếu config: fail sớm với hướng dẫn đúng. Release với `app.properties` hiện có: build OK 69.4MB, cùng signing config.
+- Audit / điểm: ~9.3/10. Certificate: SHA-256 của keystore khớp apk release (`30:98:3F:E2:...:3B:9C`, fingerprint công khai, không lộ secret). Điểm trừ: check Gradle chưa có test tự động, chỉ verify tay 3 case. Check dùng cùng cách resolve path `file(KEYSTORE_PATH)` với signingConfig nên không lệch.
+- Device smoke: không áp dụng (chỉ đổi Gradle build logic, không đổi runtime app).
