@@ -43,3 +43,9 @@ Không triển khai khi chưa có partner xác nhận use case; trạng thái hi
 - Commit/push:
 - Blockers/rủi ro:
 Hai trong bốn kiểm tra của ý tưởng gốc không chạy được: (1) font Baloo2 do package tự đóng gói (`NeonTheme.fontFamily = 'packages/roy_casual_kit/Baloo2'`), consumer không phải khai báo; (2) seam `PurchaseSeam`/`CrashReporter`/`AnalyticsProvider` đăng ký lúc chạy bằng `Get.put`, phân tích tĩnh không đọc được. Còn đứng được: có gọi `RoyCasualKit.initialize`, có phụ thuộc `roy_casual_kit`, khoá orientation; ba mục này gần như đã được `consumer-smoke` và `tool/create_consumer_app.dart` phủ. Nếu mở lại, hướng ít dương tính giả hơn là hàm runtime gọi sau `initialize` báo seam nào còn `Noop` hoặc chưa đăng ký (là API công khai mới: cần snapshot và CHANGELOG), và chỉ khi có đối tác xác nhận nhu cầu.
+
+## Quyết định đóng (2026-11-22): won't-do
+
+- Owner xác nhận giữ quyết định "không xây" (đã ghi 2026-11-17). Không có partner/consumer thật yêu cầu; hướng hiện tại là tập trung tính năng làm game.
+- Lý do kỹ thuật: font Baloo2 do package tự đóng gói, seam đăng ký lúc chạy bằng `Get.put` nên phân tích tĩnh không đọc được; các kiểm tra còn lại gần như `consumer-smoke` đã phủ; doctor sẽ là CLI công khai mới phải bảo trì.
+- Mở lại khi có partner xác nhận use case cụ thể, và chứng minh `consumer-smoke` chưa đáp ứng gap.
