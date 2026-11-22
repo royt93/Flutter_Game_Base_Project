@@ -20,19 +20,6 @@ class _DefaultDemoPurchaseAdapter implements PurchaseSeam {
   Future<void> restorePurchases() async {}
 }
 
-/// In-app demo ad adapter when no mediation SDK is registered.
-// ponytail: fake ad seam for example app. Plug in applovin_admob_sdk here in production.
-class _DefaultDemoAdRewardAdapter implements AdRewardSeam {
-  @override
-  bool get isReady => true;
-
-  @override
-  Future<bool> showRewardedAd({String? placement}) async {
-    await Future<void>.delayed(const Duration(milliseconds: 50));
-    return true;
-  }
-}
-
 class MonetizationScreen extends StatefulWidget {
   const MonetizationScreen({super.key});
 
@@ -45,11 +32,10 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
 
   late final PurchaseSeam _purchases;
   late final PurchaseLedgerService _ledger;
-  late final AdRewardSeam _ads;
   late final EconomyWallet _wallet;
   final _haptics = HapticChoreographer();
 
-  String _status = 'Browse store offers or earn rewards through ads.';
+  String _status = 'Browse store offers.';
   bool _actionInFlight = false;
 
   Future<void> _runMonetizationAction(Future<void> Function() action) async {
@@ -79,9 +65,6 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
     _ledger =
         PurchaseLedgerService.maybe ??
         Get.put(PurchaseLedgerService(), permanent: true);
-    _ads =
-        AdRewardSeam.maybe ??
-        Get.put<AdRewardSeam>(_DefaultDemoAdRewardAdapter(), permanent: true);
     _wallet =
         EconomyWallet.maybe ??
         Get.put(EconomyWallet(storage: StorageService.to), permanent: true);
@@ -135,7 +118,7 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
     _ledger.grantPermanent(_vipSku);
     _haptics.play(HapticPattern.reward);
     if (!mounted) return;
-    setState(() => _status = 'Unlocked VIP No-Ads Pass permanently!');
+    setState(() => _status = 'Unlocked VIP Pass permanently!');
   });
 
   Future<void> _restorePurchases() => _runMonetizationAction(() async {
@@ -146,62 +129,6 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
     _haptics.play(HapticPattern.reward);
     if (!mounted) return;
     setState(() => _status = 'Purchases restored successfully.');
-  });
-
-  Future<void> _watchRewardedAd() => _runMonetizationAction(() async {
-    // If player owns VIP No-Ads, skip ad playback directly as a VIP benefit.
-    if (_isVip) {
-      final earnResult = await _wallet.earn(
-        currency: 'coins',
-        amount: 50,
-        transactionId: 'ad_vip_skip_${DateTime.now().microsecondsSinceEpoch}',
-      );
-      if (!earnResult.isSuccess) {
-        _haptics.play(HapticPattern.error);
-        if (!mounted) return;
-        setState(
-          () => _status = 'Wallet could not be updated. Please try again.',
-        );
-        return;
-      }
-      _haptics.play(HapticPattern.reward);
-      if (!mounted) return;
-      setState(() => _status = 'VIP Perk: Ad skipped! Received 50 coins.');
-      return;
-    }
-
-    if (!_ads.isReady) {
-      _haptics.play(HapticPattern.error);
-      if (!mounted) return;
-      setState(() => _status = 'Ad is not ready yet. Please try again soon.');
-      return;
-    }
-
-    final rewarded = await _ads.showRewardedAd(placement: 'store_free_coins');
-    if (rewarded) {
-      final earnResult = await _wallet.earn(
-        currency: 'coins',
-        amount: 50,
-        transactionId: 'ad_reward_${DateTime.now().microsecondsSinceEpoch}',
-      );
-      if (!earnResult.isSuccess) {
-        _haptics.play(HapticPattern.error);
-        if (!mounted) return;
-        setState(
-          () => _status = 'Wallet could not be updated. Please try again.',
-        );
-        return;
-      }
-      _haptics.play(HapticPattern.reward);
-      if (!mounted) return;
-      setState(() => _status = 'Watched ad! Received 50 coins.');
-    } else {
-      _haptics.play(HapticPattern.error);
-      if (!mounted) return;
-      setState(
-        () => _status = 'Ad closed before completion. No reward earned.',
-      );
-    }
   });
 
   @override
@@ -252,9 +179,7 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
                                   ),
                                   const SizedBox(height: 4),
                                   Text(
-                                    _isVip
-                                        ? 'No-Ads Active (Instant ad skip)'
-                                        : 'Ads enabled',
+                                    _isVip ? 'VIP active' : 'Standard',
                                     style: TextStyle(
                                       color: NeonTheme.inkSoft,
                                       fontSize: 12,
@@ -325,10 +250,10 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
                           ),
                           const SizedBox(height: NeonTheme.s8),
                           CommonListTile(
-                            title: 'VIP No-Ads Pass',
+                            title: 'VIP Pass',
                             subtitle: _isVip
                                 ? 'Owned (Permanent unlock)'
-                                : r'Remove all ads & instant claim • $2.99',
+                                : r'Permanent unlock • $2.99',
                             trailing: CommonButton(
                               width: 90,
                               label: _isVip ? 'Owned' : r'$2.99',
@@ -343,55 +268,6 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
                             label: 'Restore Purchases',
                             variant: CommonButtonVariant.secondary,
                             onTap: _actionInFlight ? null : _restorePurchases,
-                          ),
-                        ],
-                      ),
-                    ),
-                    const SizedBox(height: NeonTheme.s16),
-                    // Rewarded Ads Section (Ready for applovin_admob_sdk)
-                    PanelCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Expanded(
-                                child: Text(
-                                  'Rewarded Ads (AppLovin / AdMob)',
-                                  style: TextStyle(
-                                    color: NeonTheme.ink,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 16,
-                                  ),
-                                ),
-                              ),
-                              if (_isVip) ...[
-                                const SizedBox(width: 8),
-                                Text(
-                                  'Instant VIP Skip',
-                                  style: TextStyle(
-                                    color: NeonTheme.lime,
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ],
-                          ),
-                          const SizedBox(height: NeonTheme.s8),
-                          Text(
-                            _isVip
-                                ? 'As a VIP, you earn full rewards instantly without watching any video ad.'
-                                : 'Watch a short rewarded video ad to receive bonus game currency.',
-                            style: TextStyle(color: NeonTheme.inkSoft),
-                          ),
-                          const SizedBox(height: 12),
-                          CommonButton(
-                            label: _isVip
-                                ? 'Claim Free 50 Coins (VIP Skip)'
-                                : 'Watch Ad for +50 Coins',
-                            onTap: _actionInFlight ? null : _watchRewardedAd,
                           ),
                         ],
                       ),

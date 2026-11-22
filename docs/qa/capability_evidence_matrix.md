@@ -13,12 +13,12 @@ only as strong as its evidence column. Device proof lives in
 | `seam` | Package defines an interface only. No store/ads/cloud SDK ships; the consuming app writes the adapter. |
 | `demo` | `example/` wires it with a fake or local implementation to show the shape. |
 | `device verified` | A dated physical-device record exists in `device_matrix.md` (scope-limited to that build and flow). |
-| `not verified` | No evidence of real backend, network, store, or ad delivery. |
+| `not verified` | No evidence of real backend, network, or store behavior. |
 
 A row never claims backend behavior. "Verified" for a seam means the contract
 and fake adapter are tested, not that any real provider was exercised.
 
-## Matrix (representative, not exhaustive)
+## Matrix (representative, not exhaustive; ads are out of scope since 0.8.0)
 
 | Capability | Code | Type | Evidence | Not proven |
 | --- | --- | --- | --- | --- |
@@ -27,7 +27,6 @@ and fake adapter are tested, not that any real provider was exercised.
 | Cloud save sync + conflict resolution | `lib/core/cloud_save_provider.dart` | `seam` | `test/core/cloud_save_provider_test.dart`, `test/core/plugin_adapter_conformance_suite_test.dart` | No Play Games / Game Center / Firebase adapter exercised. |
 | Offline progression, energy, daily login | `lib/core/offline_progression_service.dart`, `energy_service.dart`, `daily_login_service.dart` | `local` | `test/core/offline_progression_service_test.dart`, `energy_service_test.dart`, `daily_login_service_test.dart`, `test/tool/economy_sim_test.dart` | Clock-tamper resistance is local only; no server time check. |
 | In-app purchase | `lib/core/purchase_seam.dart`, `purchase_ledger_service.dart` | `seam` + `local` ledger, `demo` | `test/core/purchase_seam_test.dart`, `test/core/purchase_ledger_service_test.dart`, `example/test/monetization_screen_test.dart` | No store receipt, entitlement, or refund flow. The ledger records a result the app already verified. |
-| Rewarded ad | `lib/core/ad_reward_seam.dart` | `seam`, `demo` (fake adapter) | `test/core/ad_reward_seam_test.dart`, `example/test/monetization_screen_test.dart` | No ad network, no real reward delivery or payout. |
 | Analytics consent + ACK/retry | `lib/core/analytics_provider.dart`, `consent_state_service.dart` | `seam` + `local`, `demo` | `test/core/consent_state_service_test.dart`, `test/core/consent_gated_analytics_provider_test.dart`, `example/test/analytics_ack_demo_screen_test.dart`; device: S24U `analytics_ack_recovery_test.dart` in [device_matrix.md](device_matrix.md) | Fake uploader and RAM storage only. No analytics transport or backend was reached. |
 | Offline outbox + conflict policy | `lib/core/offline_outbox_service.dart` | `local` | `test/core/offline_outbox_service_test.dart`; `example/integration_test/offline_outbox_recovery_test.dart` | No real remote authority; conflicts are against a test double. |
 

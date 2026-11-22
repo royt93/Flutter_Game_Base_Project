@@ -145,9 +145,9 @@ delivery (`ContentPackStatusCard`, `ScenePreloadStatusPanel`,
 operational status (`RemoteKillSwitchPanel`, `PlatformCapabilityMatrix`,
 `DeepLinkResultCard`), session/trust/rollout status (`SessionTimelineInspector`,
 `EconomyCertificateStatusCard`, `GuardrailStatusPanel`), analytics/restore
-(`AnalyticsQueueStatusCard`, `SaveRestorePreviewPanel`) and QA/rewarded-ad
+(`AnalyticsQueueStatusCard`, `SaveRestorePreviewPanel`) and QA
 status (`MemoryWatchdogPanel`, `AnnouncementPreviewCard`,
-`RewardedAdResultCard`, `RemoteConfigHealthCard`, `ReminderPreferencesPanel`,
+`RemoteConfigHealthCard`, `ReminderPreferencesPanel`,
 `ConnectivityStatusCard`) and reward/replay inspection (`RewardPlanPreviewCard`,
 `ReplayVerificationResultCard`, `RewardAuditTrailPanel`), onboarding/experiment
 (`OnboardingFlowQueueCard`, `ExperimentVariantAssignmentCard`) and analytics

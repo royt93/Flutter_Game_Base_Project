@@ -45,3 +45,8 @@ Trước khi code, hỏi owner mọi quyết định gate còn thiếu (provider
 - Physical-device smoke:
 - Commit/push:
 - Rủi ro còn lại:
+
+## Kết quả thực hiện
+
+- **Won't-do (2026-11-22).** Owner quyết định không cần tính năng ad trong kit vì đã phát triển ad SDK riêng; kit chỉ tập trung tính năng làm game. Không thêm `google_mobile_ads`, không làm adapter live.
+- Thay vì thêm, đã gỡ toàn bộ tính năng ad hiện có trong 0.8.0 (BREAKING): `AdRewardSeam`, `RewardedAdResultCard`/`RewardedAdStatus`, `verifyAdRewardSeam`/`FakeAdRewardSeam`, demo ad trong `monetization_screen.dart`, 28 golden `wave27_ad_*`. Xem `CHANGELOG.md` mục 0.8.0.

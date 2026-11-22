@@ -354,8 +354,6 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   int _w28Flushes = 0;
   int _w28Restores = 0;
   bool _w28Consent = true;
-  RewardedAdStatus _w27AdStatus = RewardedAdStatus.idle;
-  int _w27RewardGrants = 0;
   int _w27AnnouncementPreviews = 0;
   int _w27WatchdogRefreshes = 0;
   int _w26CertificateVerifications = 0;
@@ -4236,7 +4234,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                 ),
                               ),
                               _Demo(
-                                label: 'Wave 27 QA and rewarded ad states',
+                                label: 'Wave 27 QA states',
                                 child: Column(
                                   children: [
                                     MemoryWatchdogPanel(
@@ -4274,40 +4272,6 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                       'Demo previews: $_w27AnnouncementPreviews',
                                       key: const ValueKey(
                                         'w27AnnouncementPreviews',
-                                      ),
-                                    ),
-                                    const SizedBox(height: 12),
-                                    RewardedAdResultCard(
-                                      status: _w27AdStatus,
-                                      rewardText: 'Demo reward: 50 coins',
-                                      onWatch: () async {
-                                        setState(() {
-                                          _w27AdStatus =
-                                              RewardedAdStatus.loading;
-                                        });
-                                        await Future<void>.delayed(
-                                          const Duration(milliseconds: 150),
-                                        );
-                                        if (!mounted) return;
-                                        setState(() {
-                                          _w27AdStatus =
-                                              RewardedAdStatus.rewarded;
-                                          _w27RewardGrants++;
-                                        });
-                                      },
-                                    ),
-                                    Text(
-                                      'Caller demo grants: $_w27RewardGrants',
-                                      key: const ValueKey('w27RewardGrants'),
-                                    ),
-                                    TextButton(
-                                      key: const ValueKey('w27AdCancel'),
-                                      onPressed: () => setState(
-                                        () => _w27AdStatus =
-                                            RewardedAdStatus.cancelled,
-                                      ),
-                                      child: const Text(
-                                        'Simulate ad cancelled',
                                       ),
                                     ),
                                   ],

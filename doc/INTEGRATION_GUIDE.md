@@ -273,19 +273,18 @@ Get.put<AnalyticsProvider>(myAnalyticsAdapter, permanent: true);
 Get.put<CrashReporter>(myCrashAdapter, permanent: true);
 Get.put<CloudSaveProvider>(myCloudAdapter, permanent: true);
 Get.put<PurchaseSeam>(myPurchaseAdapter, permanent: true);
-Get.put<AdRewardSeam>(myRewardedAdAdapter, permanent: true);
 ```
 
 Kiểm tra adapter:
 
 ```dart
-final report = await PluginAdapterConformanceSuite.verifyAdRewardSeam(
-  myRewardedAdAdapter,
+final report = await PluginAdapterConformanceSuite.verifyPurchaseSeam(
+  myPurchaseAdapter,
 );
 assert(report.passed, report.failures.join(', '));
 ```
 
-`applovin_admob_sdk` chưa tích hợp theo chủ đích. Khi làm, adapter nằm trong app consumer/example, không nằm trong core kit.
+Kit không có tính năng quảng cáo (đã gỡ ở 0.8.0): nếu game cần ad, tích hợp SDK riêng trong app consumer, không đưa vào core kit.
 
 ## 8. Checklist trước release
 

@@ -1,3 +1,9 @@
+## 0.8.0
+
+- **BREAKING:** removed the rewarded-ad feature: `AdRewardSeam`, `RewardedAdResultCard`/`RewardedAdStatus`, `PluginAdapterConformanceSuite.verifyAdRewardSeam` and `FakeAdRewardSeam`. The kit focuses on game features; wire your own ad SDK in the consuming app. In-app purchases (`PurchaseSeam`, `PurchaseLedgerService`, the `remove_ads` SKU style) are unchanged.
+- Removed the rewarded-ad demo card and VIP ad-skip flow from the example Monetization screen, and the ad state from the widget showcase.
+- Removed the 28 `wave27_ad_*` golden baselines together with their test states.
+
 ## 0.7.1
 
 - Fixed `PrivacyAwareAnalyticsQueue.flush()` removing ACKed events from memory before the queue-removal snapshot was persisted. A storage failure now restores the batch in the same instance, leaves `uploaded` unchanged, and allows a later flush retry; an uploader should continue deduplicating by event ID because a remote ACK can still be replayed if local persistence fails.

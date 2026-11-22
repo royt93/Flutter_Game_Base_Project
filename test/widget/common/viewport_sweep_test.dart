@@ -4375,11 +4375,6 @@ void main() {
           receivedLabel: '2h ago',
           onOpen: () {},
         ),
-        'RewardedAdResultCard': () => RewardedAdResultCard(
-          status: RewardedAdStatus.rewarded,
-          rewardText: '+50 coins',
-          onWatch: () async {},
-        ),
         'SyncStatusCard': () => SyncStatusCard(
           status: SyncStatus.failed,
           lastSyncedText: '5 minutes ago',

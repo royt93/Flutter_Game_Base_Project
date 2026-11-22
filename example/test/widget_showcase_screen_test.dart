@@ -765,9 +765,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('Wave 27: watchdog, announcement preview and ad result', (
-    tester,
-  ) async {
+  testWidgets('Wave 27: watchdog and announcement preview', (tester) async {
     await _pumpShowcase(tester);
     final scrollable = find
         .descendant(
@@ -791,14 +789,6 @@ void main() {
     await tester.pump(const Duration(milliseconds: 20));
     expect(find.text('Demo previews: 1'), findsOneWidget);
 
-    final watch = find.byKey(const ValueKey('rewardedAdWatch'));
-    await tester.ensureVisible(watch);
-    await tester.tap(watch);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-    expect(find.text('Reward earned'), findsOneWidget);
-    expect(find.text('Demo reward: 50 coins'), findsOneWidget);
-    expect(find.text('Caller demo grants: 1'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 

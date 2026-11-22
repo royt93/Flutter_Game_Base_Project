@@ -36,30 +36,12 @@ void main() {
         ),
       ],
     ),
-    'announcement' => AnnouncementPreviewCard(
+    _ => AnnouncementPreviewCard(
       messageText: 'Level 7 complete. 250 coins earned.',
       localeLabel: 'English',
       categoryLabel: 'Reward',
       throttleText: '1.5 seconds per category',
       onPreview: () async {},
-    ),
-    'ad_idle' => RewardedAdResultCard(
-      status: RewardedAdStatus.idle,
-      rewardText: '50 coins',
-      onWatch: () async {},
-    ),
-    'ad_loading' => RewardedAdResultCard(
-      status: RewardedAdStatus.loading,
-      onWatch: () async {},
-    ),
-    'ad_rewarded' => RewardedAdResultCard(
-      status: RewardedAdStatus.rewarded,
-      rewardText: '50 coins',
-      onWatch: () async {},
-    ),
-    _ => RewardedAdResultCard(
-      status: RewardedAdStatus.cancelled,
-      onWatch: () async {},
     ),
   };
 
@@ -68,10 +50,6 @@ void main() {
     'watchdog_orphans',
     'watchdog_disposed',
     'announcement',
-    'ad_idle',
-    'ad_loading',
-    'ad_rewarded',
-    'ad_cancelled',
   ]) {
     testWidgets('Wave 27 $state golden matrix', (tester) async {
       tester.view.physicalSize = const Size(390, 844);

@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
-import 'package:roy_casual_kit/core/ad_reward_seam.dart';
 import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
@@ -56,22 +55,6 @@ class _ScriptedPurchases implements PurchaseSeam {
   }
 }
 
-class _ScriptedAds implements AdRewardSeam {
-  _ScriptedAds({required this.isReady, this.rewarded = true, this.onShow});
-
-  @override
-  final bool isReady;
-  final bool rewarded;
-  final Future<bool> Function(String? placement)? onShow;
-  int shown = 0;
-
-  @override
-  Future<bool> showRewardedAd({String? placement}) {
-    shown++;
-    return onShow?.call(placement) ?? Future<bool>.value(rewarded);
-  }
-}
-
 Future<void> _boot() async {
   SharedPreferences.setMockInitialValues({});
   Get.put(
@@ -83,7 +66,7 @@ Future<void> _boot() async {
 void main() {
   tearDown(Get.reset);
 
-  testWidgets('renders MonetizationScreen with wallet, IAP packs, and ads', (
+  testWidgets('renders MonetizationScreen with wallet and IAP packs', (
     tester,
   ) async {
     await _boot();
@@ -96,7 +79,7 @@ void main() {
     expect(find.text('Coins: 0 | Gems: 0'), findsOneWidget);
     expect(find.text('Pouch of Coins (+100 Coins)'), findsOneWidget);
     expect(find.text('Handful of Gems (+20 Gems)'), findsOneWidget);
-    expect(find.text('VIP No-Ads Pass'), findsOneWidget);
+    expect(find.text('VIP Pass'), findsOneWidget);
     expect(_button(r'$0.99'), findsOneWidget);
     expect(_button(r'$1.99'), findsOneWidget);
     expect(_button(r'$2.99'), findsOneWidget);
@@ -136,9 +119,7 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('buying VIP activates permanent VIP and instant ad skip', (
-    tester,
-  ) async {
+  testWidgets('buying VIP activates permanent VIP', (tester) async {
     await _boot();
 
     await tester.pumpWidget(_wrap(const MonetizationScreen()));
@@ -149,48 +130,14 @@ void main() {
     await tester.pump(const Duration(milliseconds: 500));
 
     expect(find.text('VIP Member'), findsOneWidget);
-    expect(find.text('No-Ads Active (Instant ad skip)'), findsOneWidget);
+    expect(find.text('VIP active'), findsOneWidget);
     expect(find.text('Owned'), findsOneWidget);
     expect(
-      find.textContaining('Unlocked VIP No-Ads Pass permanently!'),
+      find.textContaining('Unlocked VIP Pass permanently!'),
       findsOneWidget,
     );
     expect(PurchaseLedgerService.maybe!.owns('pack_vip_no_ads'), isTrue);
 
-    // Watch Ad button changes to VIP Skip button and grants rewards instantly.
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
-    await tester.pump();
-    final vipAdBtn = _button('Claim Free 50 Coins (VIP Skip)').first;
-    await tester.ensureVisible(vipAdBtn);
-    await tester.tap(vipAdBtn);
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(EconomyWallet.maybe!.balanceOf('coins'), 50);
-    expect(
-      find.textContaining('VIP Perk: Ad skipped! Received 50 coins.'),
-      findsOneWidget,
-    );
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('watching rewarded ad grants coins when not VIP', (tester) async {
-    await _boot();
-
-    await tester.pumpWidget(_wrap(const MonetizationScreen()));
-    await tester.pump(const Duration(milliseconds: 500));
-
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
-    await tester.pump();
-    final adBtn = _button('Watch Ad for +50 Coins').first;
-    await tester.ensureVisible(adBtn);
-    await tester.tap(adBtn);
-    await tester.pump(const Duration(milliseconds: 500));
-
-    expect(EconomyWallet.maybe!.balanceOf('coins'), 50);
-    expect(
-      find.textContaining('Watched ad! Received 50 coins.'),
-      findsOneWidget,
-    );
     expect(tester.takeException(), isNull);
   });
 
@@ -348,21 +295,6 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  Future<Finder> showAdButton(WidgetTester tester, String label) async {
-    await tester.drag(find.byType(ListView), const Offset(0, -500));
-    await tester.pump();
-    final button = _button(label).first;
-    await tester.ensureVisible(button);
-    await tester.pump();
-    return button;
-  }
-
-  Future<void> scrollToAdButton(WidgetTester tester, String label) async {
-    final button = await showAdButton(tester, label);
-    await tester.tap(button);
-    await tester.pump(const Duration(milliseconds: 500));
-  }
-
   testWidgets('mua consumable thất bại: không cộng tiền, ledger giữ nguyên', (
     tester,
   ) async {
@@ -419,100 +351,6 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('ad provider exception grants nothing and permits retry', (
-    tester,
-  ) async {
-    await _boot();
-    var shouldThrow = true;
-    final ads = _ScriptedAds(
-      isReady: true,
-      onShow: (_) async {
-        if (shouldThrow) throw StateError('private ad provider details');
-        return true;
-      },
-    );
-    Get.put<AdRewardSeam>(ads);
-
-    await tester.pumpWidget(_wrap(const MonetizationScreen()));
-    await tester.pump(const Duration(milliseconds: 500));
-    final button = await showAdButton(tester, 'Watch Ad for +50 Coins');
-    await tester.tap(button);
-    await tester.pump();
-    await tester.pump(const Duration(milliseconds: 200));
-
-    expect(find.text('Action failed. Please try again.'), findsOneWidget);
-    expect(find.textContaining('private ad provider details'), findsNothing);
-    expect(EconomyWallet.maybe!.balanceOf('coins'), 0);
-    expect(ads.shown, 1);
-    expect(tester.takeException(), isNull);
-
-    shouldThrow = false;
-    await tester.tap(button);
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(EconomyWallet.maybe!.balanceOf('coins'), 50);
-    expect(ads.shown, 2);
-  });
-
-  testWidgets('concurrent rewarded-ad taps are ignored while ad is pending', (
-    tester,
-  ) async {
-    await _boot();
-    final pending = Completer<bool>();
-    final ads = _ScriptedAds(isReady: true, onShow: (_) => pending.future);
-    Get.put<AdRewardSeam>(ads);
-
-    await tester.pumpWidget(_wrap(const MonetizationScreen()));
-    await tester.pump(const Duration(milliseconds: 500));
-    final button = await showAdButton(tester, 'Watch Ad for +50 Coins');
-    await tester.tap(button);
-    await tester.pump();
-
-    expect(tester.widget<CommonButton>(button).onTap, isNull);
-    expect(ads.shown, 1);
-    pending.complete(true);
-    await tester.pump(const Duration(milliseconds: 500));
-    expect(EconomyWallet.maybe!.balanceOf('coins'), 50);
-    expect(ads.shown, 1);
-  });
-
-  testWidgets('quảng cáo chưa sẵn sàng: không phát, không cộng coins', (
-    tester,
-  ) async {
-    await _boot();
-    final ads = _ScriptedAds(isReady: false);
-    Get.put<AdRewardSeam>(ads);
-
-    await tester.pumpWidget(_wrap(const MonetizationScreen()));
-    await tester.pump(const Duration(milliseconds: 500));
-    await scrollToAdButton(tester, 'Watch Ad for +50 Coins');
-
-    expect(ads.shown, 0);
-    expect(
-      find.textContaining('Ad is not ready yet. Please try again soon.'),
-      findsOneWidget,
-    );
-    expect(EconomyWallet.maybe!.balanceOf('coins'), 0);
-    expect(tester.takeException(), isNull);
-  });
-
-  testWidgets('đóng quảng cáo trước khi xong: không thưởng', (tester) async {
-    await _boot();
-    final ads = _ScriptedAds(isReady: true, rewarded: false);
-    Get.put<AdRewardSeam>(ads);
-
-    await tester.pumpWidget(_wrap(const MonetizationScreen()));
-    await tester.pump(const Duration(milliseconds: 500));
-    await scrollToAdButton(tester, 'Watch Ad for +50 Coins');
-
-    expect(ads.shown, 1);
-    expect(
-      find.textContaining('Ad closed before completion. No reward earned.'),
-      findsOneWidget,
-    );
-    expect(EconomyWallet.maybe!.balanceOf('coins'), 0);
-    expect(tester.takeException(), isNull);
-  });
-
   group('BUG-101: wallet earn failure consistency', () {
     testWidgets(
       'mua consumable khi wallet earn fail: không tăng ledger, không báo thành công',
@@ -534,64 +372,6 @@ void main() {
         expect(find.text('Coins: 0 | Gems: 0'), findsOneWidget);
         expect(find.textContaining('Purchased Pouch of Coins!'), findsNothing);
         expect(PurchaseLedgerService.maybe!.balanceOf('pack_coins_100'), 0);
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets(
-      'xem ad khi wallet earn fail: không báo nhận coin, báo lỗi wallet',
-      (tester) async {
-        await _boot();
-        Get.put<EconomyWallet>(_FailingWallet());
-        final ads = _ScriptedAds(isReady: true, rewarded: true);
-        Get.put<AdRewardSeam>(ads);
-
-        await tester.pumpWidget(_wrap(const MonetizationScreen()));
-        await tester.pump(const Duration(milliseconds: 500));
-        await scrollToAdButton(tester, 'Watch Ad for +50 Coins');
-
-        expect(ads.shown, 1);
-        expect(
-          find.textContaining('Wallet could not be updated. Please try again.'),
-          findsOneWidget,
-        );
-        expect(
-          find.textContaining('Watched ad! Received 50 coins.'),
-          findsNothing,
-        );
-        expect(EconomyWallet.maybe!.balanceOf('coins'), 0);
-        expect(tester.takeException(), isNull);
-      },
-    );
-
-    testWidgets(
-      'VIP ad skip khi wallet earn fail: không báo nhận coin, báo lỗi wallet',
-      (tester) async {
-        await _boot();
-        Get.put<EconomyWallet>(_FailingWallet());
-        final ledger = Get.put(PurchaseLedgerService(), permanent: true);
-        ledger.grantPermanent('pack_vip_no_ads');
-
-        await tester.pumpWidget(_wrap(const MonetizationScreen()));
-        await tester.pump(const Duration(milliseconds: 500));
-
-        await tester.drag(find.byType(ListView), const Offset(0, -500));
-        await tester.pump();
-        final vipAdBtn = _button('Claim Free 50 Coins (VIP Skip)').first;
-        await tester.ensureVisible(vipAdBtn);
-        await tester.pump();
-        await tester.tap(vipAdBtn);
-        await tester.pump(const Duration(milliseconds: 500));
-
-        expect(
-          find.textContaining('Wallet could not be updated. Please try again.'),
-          findsOneWidget,
-        );
-        expect(
-          find.textContaining('VIP Perk: Ad skipped! Received 50 coins.'),
-          findsNothing,
-        );
-        expect(EconomyWallet.maybe!.balanceOf('coins'), 0);
         expect(tester.takeException(), isNull);
       },
     );
