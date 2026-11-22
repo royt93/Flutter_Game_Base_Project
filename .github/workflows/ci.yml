@@ -218,6 +218,18 @@ jobs:
         if: steps.changes.outputs.relevant == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: example
         run: flutter pub get
+      # Build trước khi bật emulator: example đặt -Xmx8G, chạy chung với emulator
+      # trên runner ~16GB làm Gradle GC thrash (run 45035954309). Heap hạ ở
+      # GRADLE_USER_HOME (ưu tiên hơn gradle.properties của project), chỉ trong CI.
+      - name: Build example debug APK (before emulator)
+        if: steps.changes.outputs.relevant == 'true' || github.event_name == 'workflow_dispatch'
+        timeout-minutes: 15
+        working-directory: example
+        run: |
+          mkdir -p "$HOME/.gradle"
+          echo 'org.gradle.jvmargs=-Xmx4G -XX:MaxMetaspaceSize=1G' >> "$HOME/.gradle/gradle.properties"
+          flutter build apk --debug --dart-define=E2E_TEST=true
+          (cd android && ./gradlew --stop) || true
       - name: Example golden-path integration tests on emulator
         if: steps.changes.outputs.relevant == 'true' || github.event_name == 'workflow_dispatch'
         timeout-minutes: 20
