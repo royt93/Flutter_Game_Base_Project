@@ -3,6 +3,8 @@ import 'package:get/get.dart';
 
 import 'package:roy_casual_kit/roy_casual_kit.dart';
 
+import '../game/match3_boosters.dart';
+
 class ShopScreen extends StatefulWidget {
   const ShopScreen({super.key});
 
@@ -11,12 +13,6 @@ class ShopScreen extends StatefulWidget {
 }
 
 class _ShopScreenState extends State<ShopScreen> {
-  static const _catalog = {
-    'potion': ItemDefinition(id: 'potion', maxStack: 99),
-    'sword': ItemDefinition(id: 'sword', maxStack: 1, equippable: true),
-    'skin_dragon': ItemDefinition(id: 'skin_dragon', maxStack: 1),
-  };
-
   late final EconomyWallet _wallet;
   late final InventoryService _inventory;
   final _haptics = HapticChoreographer();
@@ -34,7 +30,10 @@ class _ShopScreenState extends State<ShopScreen> {
     _inventory =
         InventoryService.maybe ??
         Get.put(
-          InventoryService(storage: StorageService.to, itemCatalog: _catalog),
+          InventoryService(
+            storage: StorageService.to,
+            itemCatalog: exampleInventoryCatalog,
+          ),
           permanent: true,
         );
   }

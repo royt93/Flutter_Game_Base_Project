@@ -6,6 +6,7 @@ import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/roy_casual_kit.dart';
+import 'package:roy_casual_kit_example/game/match3_boosters.dart';
 import 'package:roy_casual_kit_example/screens/match3_lite_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -642,5 +643,169 @@ void main() {
       findsOneWidget,
     );
     expect(tester.takeException(), isNull);
+  });
+
+  group('boosters', () {
+    List<int> flatBoard() => List.generate(
+      Match3Config.classic.cellCount,
+      (index) =>
+          (index + index ~/ Match3Config.classic.width) %
+          Match3Config.classic.tileKinds,
+    );
+
+    Future<Match3Engine> openRunning(WidgetTester tester) async {
+      tester.view.physicalSize = const Size(400, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final game = Match3Engine(
+        initialBoard: flatBoard(),
+        random: math.Random(2),
+      );
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en'),
+          fallbackLocale: AppTranslations.fallback,
+          home: Match3LiteScreen(engine: game),
+        ),
+      );
+      await tester.pump();
+      return game;
+    }
+
+    Future<void> start(WidgetTester tester) async {
+      final startButton = find
+          .ancestor(
+            of: find.text('Start Run (-1 Energy)').first,
+            matching: find.byType(CommonButton),
+          )
+          .first;
+      await tester.ensureVisible(startButton);
+      await tester.tap(startButton);
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
+    InventoryService inventory() => Get.find<InventoryService>();
+
+    Finder slotTap(String id) => find.byKey(ValueKey('boosterSlotTap_$id'));
+
+    testWidgets('starter boosters are granted once and shown on the bar', (
+      tester,
+    ) async {
+      await openRunning(tester);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.byKey(const ValueKey('match3_booster_bar')), findsOneWidget);
+      for (final id in match3BoosterItemIds.values) {
+        expect(inventory().snapshot.value.quantityOf(id), 1);
+      }
+      // Opening the screen again must not grant a second starter set.
+      await grantStarterBoosters(inventory());
+      expect(inventory().snapshot.value.quantityOf('booster_bomb'), 1);
+    });
+
+    testWidgets('armed bomb clears an area, uses one booster, no move', (
+      tester,
+    ) async {
+      final game = await openRunning(tester);
+      await start(tester);
+      final movesBefore = game.moves;
+      await tester.tap(slotTap('booster_bomb'));
+      await tester.pump();
+      expect(find.text('Pick a tile for Bomb.'), findsOneWidget);
+
+      await tester.ensureVisible(find.byKey(const ValueKey('match3_tile_14')));
+      await tester.tap(find.byKey(const ValueKey('match3_tile_14')));
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(game.score, greaterThan(0));
+      expect(game.moves, movesBefore);
+      expect(inventory().snapshot.value.quantityOf('booster_bomb'), 0);
+      expect(inventory().snapshot.value.quantityOf('booster_row'), 1);
+    });
+
+    testWidgets('two boosters in one run each cost one from stock', (
+      tester,
+    ) async {
+      await openRunning(tester);
+      await start(tester);
+      for (final id in ['booster_row', 'booster_column']) {
+        await tester.tap(slotTap(id));
+        await tester.pump();
+        await tester.ensureVisible(
+          find.byKey(const ValueKey('match3_tile_14')),
+        );
+        await tester.tap(find.byKey(const ValueKey('match3_tile_14')));
+        await tester.pump(const Duration(milliseconds: 600));
+        await tester.pump(const Duration(milliseconds: 600));
+      }
+      expect(inventory().snapshot.value.quantityOf('booster_row'), 0);
+      expect(inventory().snapshot.value.quantityOf('booster_column'), 0);
+      expect(inventory().snapshot.value.quantityOf('booster_bomb'), 1);
+    });
+
+    testWidgets('tapping the armed booster again cancels it free of charge', (
+      tester,
+    ) async {
+      final game = await openRunning(tester);
+      await start(tester);
+      await tester.tap(slotTap('booster_row'));
+      await tester.pump();
+      await tester.tap(slotTap('booster_row'));
+      await tester.pump();
+      expect(find.text('Booster cancelled.'), findsOneWidget);
+      expect(inventory().snapshot.value.quantityOf('booster_row'), 1);
+
+      // After cancelling, a normal tap selects a tile instead of firing.
+      await tester.ensureVisible(find.byKey(const ValueKey('match3_tile_0')));
+      await tester.tap(find.byKey(const ValueKey('match3_tile_0')));
+      await tester.pump();
+      expect(game.score, 0);
+    });
+
+    testWidgets('boosters are locked until the run is started', (tester) async {
+      final game = await openRunning(tester);
+      await tester.tap(slotTap('booster_bomb'));
+      await tester.pump();
+      expect(find.text('Pick a tile for Bomb.'), findsNothing);
+      expect(inventory().snapshot.value.quantityOf('booster_bomb'), 1);
+      expect(game.score, 0);
+    });
+
+    testWidgets('empty slot buys with coins; too few coins buys nothing', (
+      tester,
+    ) async {
+      await openRunning(tester);
+      await start(tester);
+      // Use up the starter row booster so the slot is empty.
+      await tester.tap(slotTap('booster_row'));
+      await tester.pump();
+      await tester.tap(find.byKey(const ValueKey('match3_tile_14')));
+      await tester.pump(const Duration(milliseconds: 600));
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(inventory().snapshot.value.quantityOf('booster_row'), 0);
+
+      // No coins: buy must fail and change nothing.
+      await tester.tap(slotTap('booster_row'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(find.text('Not enough coins (30 needed).'), findsOneWidget);
+      expect(inventory().snapshot.value.quantityOf('booster_row'), 0);
+      expect(Get.find<EconomyWallet>().balanceOf('coins'), 0);
+
+      // With coins: pays exactly the price and grants exactly one.
+      await Get.find<EconomyWallet>().earn(
+        currency: 'coins',
+        amount: 100,
+        transactionId: 'test_seed',
+      );
+      await tester.tap(slotTap('booster_row'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
+      expect(inventory().snapshot.value.quantityOf('booster_row'), 1);
+      expect(Get.find<EconomyWallet>().balanceOf('coins'), 70);
+      expect(find.text('Bought 1 Row for 30 coins.'), findsOneWidget);
+    });
   });
 }

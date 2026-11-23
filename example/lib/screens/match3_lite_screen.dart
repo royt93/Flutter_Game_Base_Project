@@ -8,6 +8,8 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/roy_casual_kit.dart';
 
+import '../game/match3_boosters.dart';
+
 const _questId = 'match3_win_daily';
 const _questRewardGems = 20;
 const _achievementId = 'match3_first_win';
@@ -45,6 +47,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
   late final Match3Engine _game;
   late final EnergyService _energy;
   late final EconomyWallet _wallet;
+  late final InventoryService _inventory;
   late final DailyQuestService _quests;
   late final AchievementService _achievements;
   late final LocalScoreboardService _scoreboard;
@@ -53,6 +56,8 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
       widget.cloudProvider ?? _Match3CloudProvider();
   final _runRandom = math.Random();
   int? _selected;
+  Match3Booster? _armedBooster;
+  int _boosterUses = 0;
   int _runId = 0;
   int _level = 1;
   int _highestUnlockedLevel = 1;
@@ -75,6 +80,17 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     _wallet =
         EconomyWallet.maybe ??
         Get.put(EconomyWallet(storage: StorageService.to), permanent: true);
+    _inventory =
+        InventoryService.maybe ??
+        Get.put(
+          InventoryService(
+            storage: StorageService.to,
+            itemCatalog: exampleInventoryCatalog,
+            capacity: 4,
+          ),
+          permanent: true,
+        );
+    unawaited(grantStarterBoosters(_inventory));
     _quests =
         DailyQuestService.maybe ??
         Get.put(DailyQuestService(), permanent: true);
@@ -239,6 +255,11 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
 
   Future<void> _swap(int index) async {
     if (!_running || _game.isTerminal || _animating) return;
+    final armed = _armedBooster;
+    if (armed != null) {
+      await _applyBooster(armed, index);
+      return;
+    }
     final selected = _selected;
     if (selected == null) {
       setState(() => _selected = index);
@@ -268,6 +289,131 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     if (mounted) setState(() {});
     await _persist();
   }
+
+  void _onBoosterSlotTap(String id) {
+    if (!_running || _game.isTerminal || _animating) return;
+    final booster = _boosterForSlot(id);
+    if (booster == null) return;
+    setState(() {
+      _selected = null;
+      if (_armedBooster == booster) {
+        _armedBooster = null;
+        _status = 'match3_booster_cancel'.tr;
+      } else {
+        _armedBooster = booster;
+        _status = 'match3_booster_pick'.trParams({
+          'booster': _boosterName(booster),
+        });
+      }
+    });
+  }
+
+  Future<void> _onBoosterSlotEmptyTap(String id) async {
+    final booster = _boosterForSlot(id);
+    if (booster == null || _animating) return;
+    final result = await buyBooster(
+      wallet: _wallet,
+      inventory: _inventory,
+      booster: booster,
+      purchaseId: '${booster.name}_${DateTime.now().microsecondsSinceEpoch}',
+    );
+    if (!mounted) return;
+    setState(() {
+      _status = switch (result) {
+        SdkSuccess() => 'match3_booster_bought'.trParams({
+          'booster': _boosterName(booster),
+          'price': '$match3BoosterPrice',
+        }),
+        SdkFailure(kind: SdkErrorKind.validation) =>
+          'match3_booster_poor'.trParams({'price': '$match3BoosterPrice'}),
+        SdkFailure() => 'match3_booster_failed'.tr,
+      };
+    });
+  }
+
+  Future<void> _applyBooster(Match3Booster booster, int index) async {
+    setState(() => _armedBooster = null);
+    final paid = await consumeBooster(
+      inventory: _inventory,
+      booster: booster,
+      useId: '${_runId}_${_boosterUses++}',
+    );
+    if (!mounted) return;
+    if (!paid) {
+      setState(() => _status = 'match3_booster_failed'.tr);
+      return;
+    }
+    final steps = _game.useBooster(booster, index);
+    if (steps == null) {
+      await _inventory.grant(
+        lines: [
+          InventoryLine(itemId: match3BoosterItemIds[booster]!, quantity: 1),
+        ],
+        transactionId: 'match3_refund_${_runId}_${_boosterUses - 1}',
+      );
+      if (mounted) setState(() => _status = 'match3_booster_failed'.tr);
+      return;
+    }
+    _animating = true;
+    final generation = ++_animationGeneration;
+    if (_game.score > _bestScore) _bestScore = _game.score;
+    if (_game.isTerminal && _game.status == Match3Status.won) {
+      _highestUnlockedLevel = math.max(
+        _highestUnlockedLevel,
+        math.min(_level + 1, Match3Config.classic.levels.length),
+      );
+    }
+    setState(
+      () => _status = 'match3_booster_used'.trParams({
+        'booster': _boosterName(booster),
+      }),
+    );
+    await _animateCascade(steps, generation);
+    if (!mounted || generation != _animationGeneration) return;
+    _game.showResolvedBoard();
+    _animating = false;
+    if (_game.isTerminal) await _finishRun();
+    if (mounted) setState(() {});
+    await _persist();
+  }
+
+  Match3Booster? _boosterForSlot(String id) {
+    for (final entry in match3BoosterItemIds.entries) {
+      if (entry.value == id) return entry.key;
+    }
+    return null;
+  }
+
+  String _boosterName(Match3Booster booster) => switch (booster) {
+    Match3Booster.rowClear => 'match3_booster_row'.tr,
+    Match3Booster.columnClear => 'match3_booster_column'.tr,
+    Match3Booster.bomb => 'match3_booster_bomb'.tr,
+  };
+
+  Widget _buildBoosterBar() => Obx(() {
+    final snapshot = _inventory.snapshot.value;
+    return BoosterSlotBar(
+      key: const ValueKey('match3_booster_bar'),
+      semanticLabel: 'match3_booster_bar_semantics'.tr,
+      activeColor: NeonTheme.gold,
+      slots: [
+        for (final entry in match3BoosterItemIds.entries)
+          BoosterSlot(
+            id: entry.value,
+            label: _boosterName(entry.key),
+            iconData: switch (entry.key) {
+              Match3Booster.rowClear => Icons.swap_horiz_rounded,
+              Match3Booster.columnClear => Icons.swap_vert_rounded,
+              Match3Booster.bomb => Icons.local_fire_department_rounded,
+            },
+            count: snapshot.quantityOf(entry.value),
+            isLocked: !_running || _game.isTerminal,
+          ),
+      ],
+      onSlotTap: _onBoosterSlotTap,
+      onEmptySlotTap: _onBoosterSlotEmptyTap,
+    );
+  });
 
   bool get _animationValid => mounted && !_disposed;
 
@@ -437,6 +583,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     _level = level;
     _game.reset(level: level);
     _selected = null;
+    _armedBooster = null;
     _rewarded = false;
     _running = true;
     _runId = DateTime.now().microsecondsSinceEpoch;
@@ -524,6 +671,8 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
                                 ),
                               ),
                             ),
+                            const SizedBox(height: 12),
+                            _buildBoosterBar(),
                             const SizedBox(height: 12),
                             _buildActions(),
                             if (_status != null) ...[

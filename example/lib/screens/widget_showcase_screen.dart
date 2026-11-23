@@ -53,6 +53,8 @@ import 'package:roy_casual_kit/presentation/widgets/neon_app_bar.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_bg.dart';
 import 'package:roy_casual_kit/presentation/widgets/neon_dialog.dart';
 
+import '../game/match3_boosters.dart';
+
 /// Living demo of every widget in `lib/presentation/widgets/common/` — the
 /// reference a future developer reads to see how each one is meant to be
 /// used. Each section is a minimal, realistic call, not a stress test.
@@ -786,7 +788,7 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
         Get.put(
           InventoryService(
             storage: StorageService.to,
-            itemCatalog: _inventoryCatalog,
+            itemCatalog: exampleInventoryCatalog,
             capacity: 4,
           ),
           permanent: true,
@@ -1247,16 +1249,6 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
   // from _progression.onLevelUp during its grantXp call — the overlay
   // never calls grantXp/pipeline.grant itself.
   final _levelUpController = LevelUpOverlayController();
-  // FEAT-44: catalog riêng cho demo — potion stack tới 10, sword không
-  // stack nhưng equip được.
-  static const _inventoryCatalog = {
-    'potion': ItemDefinition(id: 'potion', maxStack: 10),
-    'sword': ItemDefinition(
-      id: 'sword',
-      equippable: true,
-      rarity: ItemRarity.rare,
-    ),
-  };
   late final InventoryService _inventory;
   String _inventoryStatus = '';
   String _rewardPlanStatus = '';
@@ -4963,7 +4955,8 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                                           ),
                                       itemBuilder: (context, slot, isSelected) {
                                         final def =
-                                            _inventoryCatalog[slot.itemId];
+                                            exampleInventoryCatalog[slot
+                                                .itemId];
                                         final rarityColor = switch (def
                                             ?.rarity) {
                                           ItemRarity.rare => NeonTheme.cyan,
