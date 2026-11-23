@@ -28,3 +28,24 @@ Xung đột với back-swipe của hệ điều hành và cuộn; phải thử t
 - Golden: commit widget + test trước, sinh baseline bằng workflow `regenerate-goldens.yml` trên Linux, chỉ chép PNG thay đổi (KHÔNG sinh trên macOS).
 - Accessibility: nhãn semantics đúng, vùng chạm >= 44-48dp, kiểm tra RTL, `tool/accessibility_audit_check.dart` pass.
 - Mọi invariant constructor kiểm bằng `ArgumentError`, không chỉ `assert` (ENH-85). Không thêm dependency.
+
+## Các bước (mỗi bước một commit, tick khi xong)
+
+- [ ] 1. Phần 1 (logic): chốt tham số `minDistance`/`minVelocity`/`axisDominance` và giá trị mặc định trong dartdoc.
+- [ ] 2. Viết test đỏ cho `SwipeClassifier`: 4 hướng, chéo mơ hồ, quá ngắn, quá chậm, NaN/vô cực; rồi cài đặt thuần Dart; `ArgumentError` cho tham số sai.
+- [ ] 3. Mutation check phần logic.
+- [ ] 4. Phần 2 (widget): `SwipeDirectionDetector(onSwipe, child)`; ghi rõ vuốt trái = trái màn hình kể cả RTL; test widget bằng `tester.fling/drag`.
+- [ ] 5. Kiểm trên S24U (chọn theo model, không dùng simulator): vuốt từ mép trái không mất cử chỉ back; vuốt trong `ListView` không phá cuộn. Ghi kết quả; nếu không có máy, ghi rõ chưa kiểm.
+- [ ] 6. Thêm vào `widget_showcase_screen.dart`, viewport sweep, golden qua workflow (xem Chuẩn widget).
+- [ ] 7. Export + `dart run tool/api_compatibility.dart snapshot` rồi `check` (export công khai mới); ghi CHANGELOG `## Unreleased`.
+- [ ] 8. Cổng cuối: `flutter analyze`, `flutter test --exclude-tags slow test/widget/common test/core test/tool test/presentation`, `dart run tool/api_compatibility.dart check`, 5 tool quality-gate; ghi kết quả, chuyển sang `doc/task/done/`.
+
+## Tiêu chí nghiệm thu
+
+- [ ] Phần logic có test host đầy đủ và mutation check.
+- [ ] Widget không nuốt cuộn của cha trong `ListView` (hoặc tài liệu ghi giới hạn).
+- [ ] Đã kiểm hoặc ghi rõ CHƯA kiểm back-swipe trên thiết bị.
+
+## Lệnh kiểm chứng nhanh
+
+- `flutter test test/core/utils test/widget/common`

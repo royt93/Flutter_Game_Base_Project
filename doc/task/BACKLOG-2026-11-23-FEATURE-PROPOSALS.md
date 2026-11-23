@@ -1,6 +1,6 @@
 # Backlog 2026-11-23: đề xuất tính năng owner đã chọn
 
-Nguồn: owner chọn từng đề xuất qua hỏi đáp ngày 2026-11-23. Mỗi task nằm ở `doc/task/todo/`. File này chỉ là chỉ mục: thứ tự gợi ý, phụ thuộc, cỡ việc. Chưa task nào được bắt đầu.
+Nguồn: owner chọn từng đề xuất qua hỏi đáp ngày 2026-11-23. Mỗi task nằm ở `doc/task/todo/` và có sẵn 3 mục để làm theo: **Các bước** (checklist có thứ tự, mỗi bước một commit), **Tiêu chí nghiệm thu** và **Lệnh kiểm chứng nhanh** (đường dẫn test đã kiểm tồn tại; riêng lệnh của BUG-143 đã chạy thử, pass). File này chỉ là chỉ mục: thứ tự gợi ý, phụ thuộc, cỡ việc. Chưa task nào được bắt đầu.
 
 Định hướng owner: trọng tâm là SDK game + widget common + hàm/helper dùng chung; demo chỉ cần sơ sơ; chỉ hỗ trợ Android và iOS.
 

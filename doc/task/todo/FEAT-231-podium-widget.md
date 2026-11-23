@@ -26,3 +26,25 @@ source: "Đề xuất của Claude 2026-11-23, owner chọn đưa vào backlog"
 - Golden: commit widget + test trước, sinh baseline bằng workflow `regenerate-goldens.yml` trên Linux, chỉ chép PNG thay đổi (KHÔNG sinh trên macOS).
 - Accessibility: nhãn semantics đúng, vùng chạm >= 44-48dp, kiểm tra RTL, `tool/accessibility_audit_check.dart` pass.
 - Mọi invariant constructor kiểm bằng `ArgumentError`, không chỉ `assert` (ENH-85). Không thêm dependency.
+
+## Các bước (mỗi bước một commit, tick khi xong)
+
+- [ ] 1. Đọc widget liên quan đã có (ghi trong mục Hiện trạng) và chốt API `PodiumWidget` bằng 3-5 dòng trong mục "Kết quả thực hiện", chỉ code sau khi chốt.
+- [ ] 2. Viết `PodiumWidget` + export trong `common_widgets.dart` + invariant constructor bằng `ArgumentError`.
+- [ ] 3. Tái dùng `LeaderboardEntry` (không tạo kiểu mới). Test 0/1/2/3/>3 mục, điểm bằng nhau giữ thứ tự `rank` đầu vào, tên rất dài bị cắt.
+- [ ] 4. Viết test widget: trạng thái chính, biên, disabled, RTL, text scale 2.0 (không tràn); chạy mutation check (bỏ logic chính, test phải đỏ).
+- [ ] 5. Thêm fixture `runViewportSweep` (568x320, 640x320 @1x; 568x320 @2x text).
+- [ ] 6. Thêm vào `widget_showcase_screen.dart`; chạy `flutter test` trong `example/` (showcase không tràn).
+- [ ] 7. Kiểm accessibility: nhãn semantics, vùng chạm >= 44dp, `dart run tool/accessibility_audit_check.dart` pass.
+- [ ] 8. Commit + push widget và test, CHƯA có golden. Chạy `gh workflow run regenerate-goldens.yml --ref main`, tải artifact `regenerated-goldens`, chỉ chép PNG của widget này vào `test/widget/goldens/goldens/` (KHÔNG chép cả artifact, KHÔNG sinh trên macOS), commit + push.
+- [ ] 9. Cập nhật API snapshot + CHANGELOG: `dart run tool/api_compatibility.dart snapshot` rồi `check` (export công khai mới); ghi CHANGELOG `## Unreleased`.
+- [ ] 10. Chạy cổng cuối: `flutter analyze`, `flutter test --exclude-tags slow test/widget/common test/core test/tool test/presentation`, `dart run tool/api_compatibility.dart check`, 5 tool quality-gate. Ghi kết quả vào "Kết quả thực hiện", chuyển file sang `doc/task/done/` (kiểm staged diff trước khi commit, tránh race git mv).
+
+## Tiêu chí nghiệm thu
+
+- [ ] 0-2 mục hiển thị bục trống, không ném.
+- [ ] Semantics đọc theo thứ tự hạng, không theo thứ tự trái-phải 2-1-3.
+
+## Lệnh kiểm chứng nhanh
+
+- `flutter test test/widget/common`
