@@ -21,3 +21,10 @@ Gộp 4 mục nhỏ, không mục nào mất dữ liệu:
 - RTL trên máy thật: chưa chạy (chỉ có golden `rtl` trên Linux).
 - Season anchor ở tương lai, `PersistentCooldownService` với end-time xa tương lai: đọc code, chưa chứng minh bằng test.
 - Font scale 2.0 chỉ cuộn một lượt qua showcase trên Pixel 7 Pro (không phải S24U theo quy tắc; owner đồng ý ngoại lệ ngày 2026-11-23).
+
+## Kết quả thực hiện (2026-11-23)
+
+- Mục 1: demo `TooltipBubble` `Row` -> `Wrap` (`widget_showcase_screen.dart`); chưa đo lại trên máy sau sửa (chỉ analyze + 472 test example).
+- Mục 2: README (EconomyWallet) ghi trần 2,147,483,647 mỗi số dư.
+- Mục 3: `SaveMigrationRegistry` ném `SaveMigrationException` lúc tạo nếu chuỗi hop có khoảng trống trước `currentVersion`. Test cũ "missing step" cập nhật (lỗi chuyển từ lúc `migrate` sang lúc tạo) + 2 case mới. CHANGELOG ghi Behavior change vì consumer tạo registry thiếu hop giờ ném sớm.
+- Mục 4: chỉ ghi nhận, không sửa.

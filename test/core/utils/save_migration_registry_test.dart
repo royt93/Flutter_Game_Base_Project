@@ -43,12 +43,25 @@ void main() {
       () => SaveMigrationRegistry(currentVersion: 2, steps: [step(1, 3, 'a')]),
       throwsA(isA<SaveMigrationException>()),
     );
-    final missing = SaveMigrationRegistry(
-      currentVersion: 3,
-      steps: [step(1, 2, 'a')],
+    // ENH-115: a gap (no 2->3) fails at construction, not on a later load.
+    expect(
+      () => SaveMigrationRegistry(currentVersion: 3, steps: [step(1, 2, 'a')]),
+      throwsA(isA<SaveMigrationException>()),
     );
     expect(
-      () => missing.migrate(1, {}),
+      () => SaveMigrationRegistry(
+        currentVersion: 4,
+        steps: [step(1, 2, 'a'), step(3, 4, 'c')],
+      ),
+      throwsA(isA<SaveMigrationException>()),
+    );
+    // A save older than the lowest step is still reported when migrated.
+    final fromBelow = SaveMigrationRegistry(
+      currentVersion: 3,
+      steps: [step(1, 2, 'a'), step(2, 3, 'b')],
+    );
+    expect(
+      () => fromBelow.migrate(0, {}),
       throwsA(isA<SaveMigrationException>()),
     );
   });

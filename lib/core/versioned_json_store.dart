@@ -142,7 +142,17 @@ class VersionedJsonStore<T> {
   /// [schemaVersion] and a clamped `syncedAtMs` (used for last-write-wins in
   /// [syncWith]). Uses the unbuffered `setString`, so the write is not lost on
   /// a kill.
+  ///
+  /// BUG-141: if the raw value currently stored under [key] exists but is not
+  /// usable (corrupt JSON, a NEWER schema, a failing migration), it is first
+  /// copied to [backupKey] instead of being silently overwritten, so a
+  /// downgrade or a migration bug cannot destroy the player's only copy. One
+  /// backup is kept: a later unusable value replaces it.
   Future<void> save(T value) async {
+    // Not awaited unless a backup is needed: callers rely on an ordinary save
+    // starting its write synchronously (an `await` here would defer it).
+    final backup = _backupIfUnreadable();
+    if (backup != null) await backup;
     final json = {
       ...toJson(value),
       'schemaVersion': schemaVersion,
@@ -154,6 +164,19 @@ class VersionedJsonStore<T> {
       'syncedAtMs': nowMsClamped(storage),
     };
     await storage.setString(key, jsonEncode(json));
+  }
+
+  /// How far ahead of this device's clock a cloud `syncedAtMs` may be before
+  /// it stops winning last-write-wins (BUG-142): 24 hours of clock skew.
+  static const int maxCloudClockSkewMs = 24 * 60 * 60 * 1000;
+
+  /// Storage key holding the last unusable raw value [save] replaced (BUG-141).
+  String get backupKey => '$key.bak';
+
+  Future<void>? _backupIfUnreadable() {
+    final raw = storage.getString(key);
+    if (raw == null || raw.isEmpty || _readLocalJson() != null) return null;
+    return storage.setString(backupKey, raw);
   }
 
   /// Returns `null` if nothing has been saved yet, or if what's saved
@@ -312,12 +335,21 @@ class VersionedJsonStore<T> {
     final cloudJson = _validate(cloudRaw);
     final localJson = _readLocalJson();
 
-    final cloudTime = cloudJson == null
-        ? -1
-        : asIntOr(cloudJson['syncedAtMs'], -1);
     final localTime = localJson == null
         ? -1
         : asIntOr(localJson['syncedAtMs'], -1);
+    final cloudTime = cloudJson == null
+        ? -1
+        : asIntOr(cloudJson['syncedAtMs'], -1);
+    // BUG-142: a cloud stamp far in the future would win last-write-wins on
+    // every later sync and keep overwriting honest local saves. With a local
+    // save present it never wins by timestamp alone (the [onConflict] handler,
+    // below, still sees the real value); with nothing local there is nothing
+    // to lose, so it may still restore.
+    final cloudWinsByTime =
+        cloudTime > localTime &&
+        !(localJson != null &&
+            cloudTime > nowMsClamped(storage) + maxCloudClockSkewMs);
 
     if (onConflict != null &&
         cloudJson != null &&
@@ -334,7 +366,7 @@ class VersionedJsonStore<T> {
       if (resolved != null) return resolved;
     }
 
-    if (cloudJson != null && cloudTime > localTime) {
+    if (cloudJson != null && cloudWinsByTime) {
       try {
         fromJson(cloudJson);
       } catch (_) {
@@ -343,6 +375,7 @@ class VersionedJsonStore<T> {
         // anywhere near local storage.
         return const SdkSuccess(null);
       }
+      await _backupIfUnreadable();
       await storage.setString(key, jsonEncode(cloudJson));
     } else if (localJson != null) {
       try {

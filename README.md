@@ -248,6 +248,7 @@ await wallet.earn(currency: 'coins', amount: 50, transactionId: 'quest_12');
 final result = await wallet.trySpend(currency: 'coins', amount: 20, transactionId: 'shop_buy_3');
 final coins = wallet.balanceOf('coins');
 ```
+Each balance is capped at 2,147,483,647 (`0x7fffffff`): an `earn` that would exceed it, or a `trySpend` that would go below 0, fails with `SdkFailure` (validation) and changes nothing. A game with idle-scale numbers must keep its big values outside the wallet.
 
 #### RewardTransactionPipeline
 ```dart

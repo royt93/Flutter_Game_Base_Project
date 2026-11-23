@@ -2184,11 +2184,12 @@ class _WidgetShowcaseScreenState extends State<WidgetShowcaseScreen> {
                               ),
                               _Demo(
                                 label: 'TooltipBubble',
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
+                                child: Wrap(
+                                  spacing: NeonTheme.s24,
+                                  runSpacing: NeonTheme.s16,
+                                  crossAxisAlignment: WrapCrossAlignment.center,
                                   children: [
                                     TooltipBubble.text('Tap to pop!'),
-                                    const SizedBox(width: NeonTheme.s24),
                                     TooltipBubble(
                                       color: NeonTheme.cyan,
                                       direction: TooltipPointerDirection.down,

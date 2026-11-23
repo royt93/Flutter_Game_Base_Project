@@ -31,3 +31,11 @@ Trước khi `save()` ghi đè một raw không đọc được: (a) sao lưu sa
 - Ghi **Behavior change** vào CHANGELOG nếu đổi hợp đồng.
 - Kiểm `SaveSlotManager`, `SeasonEventService`, các service dùng `VersionedJsonStore` không bị ảnh hưởng.
 - Chưa phủ trong survey: field sai kiểu bên trong `fromJson` (đã có `loadResult()`), slot metadata trỏ payload thiếu.
+
+## Kết quả thực hiện (2026-11-23)
+
+- Chọn phương án sao lưu `.bak` (owner chọn). `VersionedJsonStore.save()` và nhánh `syncWith` thay bản local bằng cloud gọi `_backupIfUnreadable()`: raw hiện có nhưng `_readLocalJson()` trả null thì chép sang `backupKey` (`<key>.bak`), một bản. Save đọc được không bao giờ sao lưu; lần save đầu không tạo `.bak`.
+- Test: 6 test mới trong `versioned_json_store_test.dart` (schema mới hơn, JSON hỏng, migrate ném, save đọc được không backup, save đầu không backup, cloud thay local không đọc được). Mutation (bỏ ghi `.bak`) làm 4 test đỏ.
+- Phát hiện khi làm: bản đầu dùng `await` vô điều kiện trong `save()` làm 7 test đỏ (daily_login, achievement, seeded_challenge) vì chúng dựa vào lượt ghi bắt đầu đồng bộ; đã sửa để chỉ await khi cần backup.
+- Chưa làm: API để game đọc/khôi phục `.bak` (chỉ có `backupKey`); game tự đọc `storage.getString(store.backupKey)`.
+- Root 4132 + example 472 pass, analyze sạch, API gate unchanged (thêm `backupKey`), 5 quality-gate tool pass. CHANGELOG `## Unreleased` có Behavior change.

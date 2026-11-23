@@ -106,6 +106,107 @@ void main() {
     );
   }
 
+  group('BUG-141 unreadable raw is backed up before save overwrites it', () {
+    const future = '{"schemaVersion":99,"name":"Future","level":7}';
+
+    test('save from a newer schema keeps the original under .bak', () async {
+      await store.setString('profile', future);
+      final s = makeStore();
+      expect(s.load(), isNull);
+      await s.save(const _Profile(name: 'New', level: 1));
+      expect(store.getString('profile.bak'), future);
+      expect(s.load()!.name, 'New');
+    });
+
+    test('corrupt JSON is backed up', () async {
+      await store.setString('profile', '{"name": "cut');
+      await makeStore().save(const _Profile(name: 'New', level: 1));
+      expect(store.getString('profile.bak'), '{"name": "cut');
+    });
+
+    test('a migration that throws keeps the old raw under .bak', () async {
+      const old = '{"schemaVersion":1,"name":"Old","level":3}';
+      await store.setString('profile', old);
+      final s = makeStore(migrate: (_, _) => throw StateError('boom'));
+      await s.save(const _Profile(name: 'New', level: 1));
+      expect(store.getString('profile.bak'), old);
+    });
+
+    test('a readable save is NOT backed up', () async {
+      final s = makeStore();
+      await s.save(const _Profile(name: 'A', level: 1));
+      await s.save(const _Profile(name: 'B', level: 2));
+      expect(store.getString('profile.bak'), isNull);
+    });
+
+    test('first save with nothing stored writes no backup', () async {
+      await makeStore().save(const _Profile(name: 'A', level: 1));
+      expect(store.getString('profile.bak'), isNull);
+    });
+
+    test('cloud copy replacing an unusable local save backs it up', () async {
+      await store.setString('profile', future);
+      final cloud = _FakeCloudSaveProvider()
+        ..cloudData = {
+          'schemaVersion': 2,
+          'syncedAtMs': 5,
+          'name': 'Cloud',
+          'level': 2,
+        };
+      await makeStore().syncWith(cloud);
+      expect(store.getString('profile.bak'), future);
+      expect(makeStore().load()!.name, 'Cloud');
+    });
+  });
+
+  group('BUG-142 cloud syncedAtMs far in the future does not win', () {
+    Map<String, Object?> cloudAt(int ms) => {
+      'schemaVersion': 2,
+      'syncedAtMs': ms,
+      'name': 'Cloud',
+      'level': 9,
+    };
+
+    test('far-future cloud keeps local and uploads it', () async {
+      final s = makeStore();
+      await s.save(const _Profile(name: 'Local', level: 1));
+      final cloud = _FakeCloudSaveProvider()..cloudData = cloudAt(9999999999999);
+      await s.syncWith(cloud);
+      expect(s.load()!.name, 'Local');
+      expect(cloud.cloudData!['name'], 'Local');
+    });
+
+    test('far-future cloud with NO local save still restores', () async {
+      final cloud = _FakeCloudSaveProvider()..cloudData = cloudAt(9999999999999);
+      await makeStore().syncWith(cloud);
+      expect(makeStore().load()!.name, 'Cloud');
+    });
+
+    test('cloud inside the skew allowance still wins when newer', () async {
+      final s = makeStore();
+      await s.save(const _Profile(name: 'Local', level: 1));
+      final soon = DateTime.now().millisecondsSinceEpoch + 60 * 60 * 1000;
+      final cloud = _FakeCloudSaveProvider()..cloudData = cloudAt(soon);
+      await s.syncWith(cloud);
+      expect(s.load()!.name, 'Cloud');
+    });
+
+    test('onConflict still sees the real cloud timestamp', () async {
+      final s = makeStore();
+      await s.save(const _Profile(name: 'Local', level: 1));
+      final cloud = _FakeCloudSaveProvider()..cloudData = cloudAt(9999999999999);
+      int? seen;
+      await s.syncWith(
+        cloud,
+        onConflict: (c) {
+          seen = c.cloud.syncedAtMs;
+          return VersionedSyncConflictResolution.preferLocal();
+        },
+      );
+      expect(seen, 9999999999999);
+    });
+  });
+
   test(
     'migration registry supersedes legacy callback and applies every hop',
     () async {

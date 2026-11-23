@@ -23,3 +23,10 @@ Khi đọc `cloudTime`, nếu `cloudTime > nowMsClamped(storage) + dung sai` (vd
 - Test: cloud xa tương lai không ghi đè local; cloud hợp lệ mới hơn vẫn thắng; cloud trong dung sai vẫn thắng.
 - Ghi **Behavior change** CHANGELOG.
 - Lưu ý: `asIntOr` đã chặn non-finite; đây là giá trị hữu hạn hợp lệ nhưng phi lý.
+
+## Kết quả thực hiện (2026-11-23)
+
+- `syncWithResult`: cloud thắng theo thời gian chỉ khi `cloudTime > localTime` VÀ không (có local và `cloudTime > nowMsClamped + maxCloudClockSkewMs`). Dung sai 24h (`VersionedJsonStore.maxCloudClockSkewMs`, owner chưa chỉnh nên giữ mặc định đề xuất). Cloud quá xa: giữ local và upload local. `onConflict` vẫn nhận timestamp thật. Không có local: cloud vẫn restore.
+- Test: 4 mới (xa tương lai giữ local + upload; không có local vẫn restore; trong dung sai vẫn thắng; onConflict thấy timestamp thật). Mutation (guard thành `false`) làm 1 test đỏ đúng.
+- Giới hạn: dung sai là hằng static, chưa cấu hình theo store; chưa xử lý cloud xa tương lai khi có `onConflict` trả `preferCloud` (handler quyết định).
+- Kiểm chứng và CHANGELOG như BUG-141.

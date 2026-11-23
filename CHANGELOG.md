@@ -1,3 +1,10 @@
+## Unreleased
+
+- **Behavior change (save safety, BUG-141):** `VersionedJsonStore.save()` (and a `syncWith` that replaces the local copy) now copies an unusable raw value (corrupt JSON, a NEWER schema, a failing migration) to `<key>.bak` (`backupKey`) before overwriting it, one backup kept. Before, a downgraded app or a migration bug silently destroyed the only copy. A readable save is never backed up. Added `VersionedJsonStore.backupKey`.
+- **Behavior change (cloud sync, BUG-142):** `VersionedJsonStore.syncWith` no longer lets a cloud `syncedAtMs` more than 24 hours ahead of the device clock win last-write-wins when a local save exists (it kept overwriting honest local saves). The local save is kept and uploaded; an `onConflict` handler still sees the real timestamp. A cloud copy with no local save still restores. Added `VersionedJsonStore.maxCloudClockSkewMs`.
+- **Behavior change (migration, ENH-115):** `SaveMigrationRegistry` now throws `SaveMigrationException` at construction when the step chain has a gap before `currentVersion`; before it only failed when an old save was loaded.
+- Documented the `EconomyWallet` per-balance cap (2,147,483,647). Example showcase: `TooltipBubble` demo wraps instead of overflowing at 2.0 text scale.
+
 ## 0.8.0
 
 - **BREAKING:** removed the rewarded-ad feature: `AdRewardSeam`, `RewardedAdResultCard`/`RewardedAdStatus`, `PluginAdapterConformanceSuite.verifyAdRewardSeam` and `FakeAdRewardSeam`. The kit focuses on game features; wire your own ad SDK in the consuming app. In-app purchases (`PurchaseSeam`, `PurchaseLedgerService`, the `remove_ads` SKU style) are unchanged.

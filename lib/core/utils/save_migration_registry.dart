@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 class SaveMigrationStep {
   const SaveMigrationStep({
@@ -43,6 +44,20 @@ class SaveMigrationRegistry {
         throw SaveMigrationException(
           'duplicate migration from ${step.fromVersion}',
         );
+      }
+    }
+    // ENH-115: a hop missing between the lowest step and currentVersion used to
+    // surface only when an old save was loaded (and that save then read as
+    // unusable); fail at construction instead.
+    if (steps.isNotEmpty) {
+      final byFrom = {for (final st in steps) st.fromVersion: st.toVersion};
+      var version = steps.map((st) => st.fromVersion).reduce(math.min);
+      while (version < currentVersion) {
+        final next = byFrom[version];
+        if (next == null) {
+          throw SaveMigrationException('missing migration from $version');
+        }
+        version = next;
       }
     }
   }
