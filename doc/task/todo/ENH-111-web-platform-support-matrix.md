@@ -13,7 +13,7 @@ source: "Khảo sát web 2026-11-23: kit biên dịch được cho web (sau BUG-
 - `flutter build web` của app thử dùng kit (import cả 121 thư viện export) pass.
 - `flutter test --platform chrome --exclude-tags slow test/core test/widget/common test/presentation`: 3925 pass, 51 đỏ ở lần đo đầu (sau khi đã sửa 3 literal). `test/tool/*` loại ra vì dùng `dart:io`, đúng với CLI.
 - 51 đỏ chia nhóm (số test): `audio_manager_test` 20, `reminder_service_test` 7, `wake_lock_service_test` 5, `smart_reminder_scheduling_test` 5, `app_version_gate_test` 3, `kit_bootstrap_test` 3, `share_helper_test` 2, `level_up_overlay_test` 1, và 5 test lẻ (`fnv1a`, `experiment_bucketing`, `safe_json`, `shadow_activation`, `candy_slider`).
-- BUG-140 đã sửa 2 trong 51: `fnv1a_test` và `experiment_bucketing_service_test` (phân phối bucket sai vì hash sai, xem BUG-140). Còn lại ước tính 49, **chưa chạy lại toàn bộ suite sau khi sửa** nên con số này là suy ra từ lần đo đầu trừ 2 test đã xác nhận pass; cần chạy lại để có số chính thức.
+- BUG-140 đã sửa 3 trong 51: `fnv1a_test`, `experiment_bucketing_service_test` và `safe_json_test` (`asIntOr` với `Infinity`) (phân phối bucket sai vì hash sai, xem BUG-140). Còn lại ước tính 48, **chưa chạy lại toàn bộ suite sau khi sửa** nên con số này là suy ra từ lần đo đầu trừ 3 test đã xác nhận pass; cần chạy lại để có số chính thức.
 - Lệnh tái hiện: `flutter test --platform chrome --exclude-tags slow test/core test/widget/common test/presentation`.
 
 ## Phân loại nguyên nhân
@@ -24,7 +24,7 @@ source: "Khảo sát web 2026-11-23: kit biên dịch được cho web (sau BUG-
 | `reminder_service_test` (7), `smart_reminder_scheduling_test` (5) | `initialize` không xuất hiện trước `requestNotificationsPermission`; `Bad state: No element` | `flutter_local_notifications` không có kênh native trên web; kit có thể cần đường đi riêng cho web. Chưa rõ là hạn chế nền tảng hay bug thứ tự gọi. |
 | `wake_lock_service_test` (5), `kit_bootstrap_test` (3), `app_version_gate_test` (3) | `TimeoutException 30s` | Test treo trên Chrome; nghi cùng một nguyên nhân (plugin/async không hoàn tất) chứ chưa xác nhận. |
 | `share_helper_test` (2) | `captureBoardPng` leak Picture / `shareJourneyCard` | Có thể là khác biệt renderer web; cần đọc kỹ trước khi kết luận. |
-| lẻ (3 còn lại) | `safe_json` (`double` Infinity), `shadow_activation` (500 vs 500.0), `candy_slider` (semantics) | Khác biệt số học/định dạng của JS (số nguyên và double là một kiểu); từng ca cần phân biệt "test giả định VM" và "bug kit". |
+| lẻ (2 còn lại) | `shadow_activation` (500 vs 500.0), `candy_slider` (semantics) | Khác biệt số học/định dạng của JS (số nguyên và double là một kiểu); từng ca cần phân biệt "test giả định VM" và "bug kit". |
 
 ## Phạm vi
 

@@ -13,8 +13,13 @@ library;
 /// of throwing (BUG-22): `.toInt()` throws `UnsupportedError` for those,
 /// which would otherwise violate this whole file's "never throw" contract.
 int asIntOr(Object? v, int fallback) {
-  if (v is int) return v;
-  if (v is double) return v.isFinite ? v.toInt() : fallback;
+  // On the web `double.infinity is int` is true (an int is a JS number), so a
+  // non-finite value would slip through the `is int` branch and be returned
+  // as the "int". Check finiteness for every number, not just doubles.
+  if (v is num) {
+    if (!v.isFinite) return fallback;
+    return v is int ? v : v.toInt();
+  }
   return fallback;
 }
 
