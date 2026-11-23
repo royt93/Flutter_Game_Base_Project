@@ -48,7 +48,7 @@ void main() {
     test('default hosted dependency targets the current release line', () {
       expect(
         kitDependencyBlock(),
-        '  roy_casual_kit: ^0.8.0\n  get: ^4.7.3\n  flame: ^1.35.1\n  shared_preferences: ^2.5.5\n',
+        '  roy_casual_kit: ^0.9.0\n  get: ^4.7.3\n  flame: ^1.35.1\n  shared_preferences: ^2.5.5\n',
       );
     });
 

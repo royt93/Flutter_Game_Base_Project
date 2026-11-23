@@ -5,7 +5,7 @@
 //
 // Usage:
 //   dart run tool/create_consumer_app.dart --name=my_game [--output=.]
-//     [--org=com.example] [--kitVersion=^0.8.0] [--kitPath=<path>] [--force]
+//     [--org=com.example] [--kitVersion=^0.9.0] [--kitPath=<path>] [--force]
 //   dart run tool/create_consumer_app.dart --check-version=<app_dir>
 //
 // Shells out to the REAL `flutter create` for the platform scaffolding
@@ -114,7 +114,7 @@ bool isValidOrg(String org) {
 /// the generated smoke test's `shared_preferences` import). Versions
 /// pinned to match this package's own `pubspec.yaml` so both resolve the
 /// same package graph.
-String kitDependencyBlock({String? kitPath, String kitVersion = '^0.8.0'}) {
+String kitDependencyBlock({String? kitPath, String kitVersion = '^0.9.0'}) {
   final kitLine = kitPath != null
       ? '  roy_casual_kit:\n    path: $kitPath\n'
       : '  roy_casual_kit: $kitVersion\n';
@@ -636,7 +636,7 @@ Future<GeneratedApp> generate({
   String outputDir = '.',
   String org = 'com.example',
   String? kitPath,
-  String kitVersion = '^0.8.0',
+  String kitVersion = '^0.9.0',
   bool force = false,
 }) async {
   if (!isValidAppName(name)) {
@@ -774,7 +774,7 @@ Future<void> main(List<String> args) async {
       outputDir: options['output'] ?? '.',
       org: options['org'] ?? 'com.example',
       kitPath: options['kitPath'],
-      kitVersion: options['kitVersion'] ?? '^0.8.0',
+      kitVersion: options['kitVersion'] ?? '^0.9.0',
       force: force,
     );
     stdout.writeln('Đã tạo app tại ${result.path}:');
