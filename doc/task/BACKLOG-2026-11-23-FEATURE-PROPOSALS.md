@@ -1,4 +1,4 @@
-# Backlog 2026-11-23: đề xuất tính năng owner đã chọn (24 task)
+# Backlog 2026-11-23: đề xuất tính năng owner đã chọn (24 task tính năng + 12 task kiểm thử)
 
 Nguồn: owner chọn từng đề xuất qua hỏi đáp ngày 2026-11-23. Mỗi task nằm ở `doc/task/todo/` và có sẵn 3 mục để làm theo: **Các bước** (checklist có thứ tự, mỗi bước một commit), **Tiêu chí nghiệm thu** và **Lệnh kiểm chứng nhanh** (đường dẫn test đã kiểm tồn tại; riêng lệnh của BUG-143 đã chạy thử, pass). File này chỉ là chỉ mục: thứ tự gợi ý, phụ thuộc, cỡ việc. Chưa task nào được bắt đầu.
 
@@ -55,6 +55,32 @@ Nguồn: owner chọn từng đề xuất qua hỏi đáp ngày 2026-11-23. Mỗ
 - **FEAT-217** phải giữ `GameSessionController` là nguồn sự thật phase phiên (ranh giới ghi trong task).
 - **FEAT-233 phần đổi cao độ chưa kiểm chứng** (API `audioplayers` chưa đọc), chỉ phần chọn biến thể làm được ngay.
 - Mọi task thêm export công khai cần `dart run tool/api_compatibility.dart snapshot`, CHANGELOG, và (task widget) golden qua workflow, không sinh trên macOS.
+
+## Đợt kiểm thử (ENH-117..128): "chứng minh mọi case"
+
+Owner yêu cầu bổ sung unit, widget, integration, golden, interruption, network conditioning, memory-leak/profiling, frame-rate/jank và IAP/ad test. Đã ĐO hiện trạng trước khi rã (không đoán):
+
+- Độ phủ dòng **97.0%** (21272/21941, 4137 test host): `lib/core` 97.9%, `widgets/common` 96.8%, `widgets` 89.7%, `presentation/game` 89.0%.
+- Mọi widget trong `widgets/common` đã có test và fixture `runViewportSweep`; **86/164 chưa có golden** (hiện 64 file golden, 1397 PNG).
+- 71 file widget giữ Ticker/Controller/Stream, 68 có `dispose`; chưa bật leak tracking ở đâu.
+- Không có đối tượng test cho **ad mediation** (tính năng quảng cáo đã gỡ ở 0.8.0): ENH-126 ghi rõ ngoài phạm vi.
+
+| ID | Việc | Nơi chạy | Cỡ | Ưu tiên |
+|---|---|---|---|---|
+| ENH-117 | Bật leak tracking cho `test/widget` | host | M | P3 |
+| ENH-118 | Golden đợt A: input/form (18 widget) | workflow Linux | M | P3 |
+| ENH-119 | Golden đợt B: overlay/dialog/toast (15) | workflow Linux | M | P3 |
+| ENH-120 | Golden đợt C: game HUD/tiến độ (13) | workflow Linux | M | P3 |
+| ENH-121 | Golden đợt D: thưởng/shop/sự kiện (14) | workflow Linux | M | P3 |
+| ENH-122 | Golden đợt E: level/bảng xếp hạng/danh sách (13) | workflow Linux | M | P4 |
+| ENH-123 | Golden đợt F: chỉ-hoạt-ảnh, nhạy flaky (13, thực tế 12 file) | workflow Linux | M | P4 |
+| ENH-124 | Interruption (vòng đời, kill giữa ghi) | host + emulator/lịch tuần | M | P3 |
+| ENH-125 | Network conditioning (fake có điều khiển) | host | M | P3 |
+| ENH-126 | IAP gián đoạn/trùng giao dịch | host | M | P3 |
+| ENH-127 | Jank + memory trên S24U (chạy tay, ghi docs/qa) | S24U | M | P3 |
+| ENH-128 | Nâng 9 file phủ thấp nhất lên >= 90% | host | S | P4 |
+
+Nơi chạy theo lựa chọn của owner: logic (interruption, network, IAP) ở host/emulator lịch tuần; jank và memory CHỈ trên S24U vì emulator dùng GPU giả lập nên số không đáng tin; không thêm cổng CI. Golden đợt A-F làm tuần tự, mỗi đợt một lần chạy workflow; đợt F nhạy flaky nên làm cuối và cho phép loại widget không ổn định.
 
 ## Việc đã kiểm khi lập backlog (không phải giả định)
 
