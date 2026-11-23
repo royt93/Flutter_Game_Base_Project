@@ -38,6 +38,7 @@ source: "ENH-112 (2026-11-23): quét semantics tự động trên 339 case sweep
 - Phát hiện khi làm: KHÔNG thể mở rộng vùng chạm mà giữ nguyên chiều cao. Thử đo trực tiếp: một con `GestureDetector` tràn ra ngoài layout box của cha (Stack, `clipBehavior: Clip.none`, `top/bottom: -5.5`) không nhận tap ngoài box (cả hai điểm thử đều 0 tap). Nên cách "đệm vô hình" ghi trong phạm vi ban đầu không khả thi; chip phải cao thật.
 - Sửa: bọc chip trong `ConstrainedBox(minHeight: 44)` + `Align(widthFactor: 1, heightFactor: 1)`, `behavior: opaque`. Đo thật: chip 62.8x44, 87.3x44, 111.8x44 (trước: 33 cao); panel 380 -> 391 (+11dp). Diff thật: 10 dòng thêm.
 - Test: 1 test mới (3 chip >= 44dp cao, nhãn "<Tên> filter" không đổi); mutation `minHeight: 30` làm test đỏ. Root 4127 pass, example 472 pass, analyze, audit a11y, API gate sạch.
-- Golden: ~28 ảnh `collectionalbumpanel_*` đổi (panel cao hơn); tạo lại qua workflow `regenerate-goldens.yml`, chỉ copy PNG `collectionalbumpanel_*` (xem commit golden).
-- Audit / điểm:
-- Commit/push:
+- Golden: ước tính ban đầu 28 ảnh nhưng đo thật chỉ **12 ảnh** đổi pixel (`collectionalbumpanel_complete_reward_*` và `_mixed_rarity_*`, mỗi bộ 6 biến thể; lệch 5.7% đến 8.6%, cùng kích thước 800x600). 16 ảnh còn lại (các trạng thái không có chip hiển thị trong khung) không đổi. Tạo lại qua workflow `regenerate-goldens.yml` (run `45148311547`, commit nguồn `e0ab5a32`), chỉ copy 12 PNG đó. Artifact còn khác 655 file ở mức byte nhưng 0.000% pixel (chỉ mã hoá PNG), không import. So sánh trực quan: chip nhìn y hệt, khoảng cách quanh chip rộng hơn nên panel dịch vài px, không có lỗi render.
+- Ghi chú ENH-112: golden `eventcalendarcard_week_schedule_*` (7 ảnh) đã được CI Linux xác nhận xanh (run `45146483936`, cả 3 job success).
+- Audit / điểm: ~9.1/10. Trừ điểm: cách "đệm vô hình" của phạm vi ban đầu không khả thi nên panel cao hơn 11dp; chưa kiểm bằng TalkBack/ngón tay thật.
+- Commit/push: `e0ab5a32` (sửa), golden ở commit kế tiếp.
