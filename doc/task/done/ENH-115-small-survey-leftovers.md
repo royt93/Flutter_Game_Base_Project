@@ -28,3 +28,13 @@ Gộp 4 mục nhỏ, không mục nào mất dữ liệu:
 - Mục 2: README (EconomyWallet) ghi trần 2,147,483,647 mỗi số dư.
 - Mục 3: `SaveMigrationRegistry` ném `SaveMigrationException` lúc tạo nếu chuỗi hop có khoảng trống trước `currentVersion`. Test cũ "missing step" cập nhật (lỗi chuyển từ lúc `migrate` sang lúc tạo) + 2 case mới. CHANGELOG ghi Behavior change vì consumer tạo registry thiếu hop giờ ném sớm.
 - Mục 4: chỉ ghi nhận, không sửa.
+
+## Bổ sung đo trên máy thật (2026-11-23, Samsung SM_S928B / S24 Ultra)
+
+Test tích hợp tạm (đã xoá) cuộn hết Widget Showcase (160 lần kéo) và đếm lỗi layout. Kết quả, đều 0 lỗi layout:
+
+- RTL (`Get.updateLocale(ar)`, `Directionality` = rtl, 360x780dp).
+- Landscape 780x360dp (ép bằng `setPreferredOrientations`, vì app khoá portrait).
+- Landscape + font scale 2.0 (xác nhận `textScale` = 2.0 trong `MediaQuery`).
+
+Mục 1 (overflow `TooltipBubble`) đã sửa nên sạch ở cả 3. Chưa đo: RTL + font 2.0 cùng lúc, các màn ngoài showcase, và "đẹp" bằng mắt (chỉ đếm tràn layout, không đo mirror icon sai hướng hay chạm 44dp). Season/cooldown với thời gian tương lai: đã đo (xem ENH-116).
