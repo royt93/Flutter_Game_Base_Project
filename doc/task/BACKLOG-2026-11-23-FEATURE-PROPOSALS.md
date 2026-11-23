@@ -1,4 +1,4 @@
-# Backlog 2026-11-23: đề xuất tính năng owner đã chọn
+# Backlog 2026-11-23: đề xuất tính năng owner đã chọn (24 task)
 
 Nguồn: owner chọn từng đề xuất qua hỏi đáp ngày 2026-11-23. Mỗi task nằm ở `doc/task/todo/` và có sẵn 3 mục để làm theo: **Các bước** (checklist có thứ tự, mỗi bước một commit), **Tiêu chí nghiệm thu** và **Lệnh kiểm chứng nhanh** (đường dẫn test đã kiểm tồn tại; riêng lệnh của BUG-143 đã chạy thử, pass). File này chỉ là chỉ mục: thứ tự gợi ý, phụ thuộc, cỡ việc. Chưa task nào được bắt đầu.
 
@@ -28,6 +28,10 @@ Nguồn: owner chọn từng đề xuất qua hỏi đáp ngày 2026-11-23. Mỗ
 | FEAT-233 | `playSfxVariant` | core | S | P4 |
 | FEAT-222 | Thêm ngôn ngữ cho `AppTranslations` | core | M | P4 |
 | FEAT-218 | Demo game thứ hai | example | M | P4 |
+| FEAT-234 | `WhatsNewSheet` (hiện một lần mỗi bản) | widget | M | P3 |
+| FEAT-237 | `DynamicDifficulty` | core | S | P3 |
+| FEAT-235 | `StepProgressIndicator` | widget | S | P4 |
+| FEAT-236 | `FeedbackSheet` (UI + callback, không gửi gì) | widget | M | P4 |
 
 ## Thứ tự gợi ý và lý do
 
@@ -38,6 +42,11 @@ Nguồn: owner chọn từng đề xuất qua hỏi đáp ngày 2026-11-23. Mỗ
 5. **Cuối**: FEAT-217, 221, 233, 222, 218 (giá trị thấp hơn hoặc có rủi ro đã ghi trong từng task).
 
 ## Phụ thuộc và xung đột cần nhớ
+
+- **FEAT-234 (đợt 3)**: `OnboardingCoordinatorService` chỉ hiểu `version` là số nguyên; app truyền `releaseNumber` (int), widget không tự so chuỗi phiên bản. Dùng chung coordinator với FEAT-226, nên làm 226 trước hoặc cùng đợt.
+- **FEAT-236**: kit không gửi gì; đính kèm chẩn đoán mặc định tắt vì `DiagnosticsExportBundle` có phần đầu vào không được redact. Cần xem `consent_state_service`.
+- **FEAT-237**: công cụ cân bằng thuần Dart, README phải ghi không dùng để ép chi tiêu.
+- **FEAT-235**: ranh giới với `paginated_dots_indicator`; nếu chỉ cần thêm tham số cho dots thì dừng và báo owner.
 
 - **FEAT-224 và FEAT-227 cùng sửa `example/lib/screens/settings_screen.dart`** (settings tile, và thay `_pickLanguage` bằng `CandyDropdown`). Làm liền nhau hoặc cùng một người để khỏi xung đột; 227 nên sau 224.
 - **FEAT-221 sau FEAT-215 và FEAT-217** (tránh thành engine trùng); **FEAT-218 sau 215/216/217**, và chỉ khi một trong số đó cần demo.
