@@ -251,6 +251,33 @@ class _CookbookScreenState extends State<CookbookScreen> {
                         final loaded = store.load();
                         return 'round-tripped: $loaded';
                       }),
+                      _tile('Save backup — downgrade, then restore', () async {
+                        const key = 'cookbook_backup_demo';
+                        VersionedJsonStore<Map<String, Object?>> open(int v) =>
+                            VersionedJsonStore<Map<String, Object?>>(
+                              storage: StorageService.to,
+                              key: key,
+                              schemaVersion: v,
+                              toJson: (m) => m,
+                              fromJson: (j) => j,
+                              migrate: (_, json) => json,
+                            );
+                        // A save written by a NEWER app (v3), then an older
+                        // app (v2) saves over it: the newer save is set aside,
+                        // not destroyed.
+                        await StorageService.to.setString(
+                          key,
+                          '{"schemaVersion":3,"level":12}',
+                        );
+                        final older = open(2);
+                        await older.save({'level': 1});
+                        final kept = older.hasBackup;
+                        // The player updates the app again (v3): restore it.
+                        final newer = open(3);
+                        final restored = await newer.restoreBackup();
+                        return 'backed up: $kept, restored: $restored, '
+                            'level=${newer.load()?['level']}';
+                      }),
                       _tile(
                         'CheckpointCoordinator — request + restore',
                         () async {

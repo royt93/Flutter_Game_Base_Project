@@ -181,6 +181,23 @@ void main() {
     await _flushToast(tester);
   });
 
+  testWidgets('Save backup tile keeps a newer save and restores it', (
+    tester,
+  ) async {
+    await _boot();
+    await tester.pumpWidget(_wrap(const CookbookScreen()));
+    await tester.pump(const Duration(milliseconds: 100));
+
+    await _tapAndShowToast(tester, 'Save backup — downgrade, then restore');
+
+    expect(
+      find.textContaining('backed up: true, restored: true, level=12'),
+      findsOneWidget,
+    );
+    expect(tester.takeException(), isNull);
+    await _flushToast(tester);
+  });
+
   group('IDEA-66: unified save story (verify HMAC -> migrate -> sync)', () {
     testWidgets(
       'chạy đủ 1 luồng liên tục: verify HMAC thật, migrate v1->v2 thật, '
