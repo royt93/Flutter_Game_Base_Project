@@ -1,0 +1,88 @@
+diff --git a/README.md b/README.md
+index 2839f88e..76873020 100644
+--- a/README.md
++++ b/README.md
+@@ -744,7 +744,7 @@ dart run tool/object_pool_benchmark.dart             # pooled-vs-unpooled alloca
+ dart run tool/remote_schema_compiler.dart --schema=event_schema.json --outDir=lib/generated
+ dart run tool/create_consumer_app.dart --name=my_game --org=com.example
+ ```
+-The consumer generator defaults to the hosted dependency `roy_casual_kit: ^0.8.0`.
++The consumer generator defaults to the hosted dependency `roy_casual_kit: ^0.9.0`.
+ Use `--kitVersion=<constraint>` to override it or `--kitPath=<path>` for a local checkout.
+ `accessibility_audit_check`, `dependency_sbom_check`, `asset_license_check`,
+ `performance_budget_check`, and `deprecation_check` are wired into CI's
+diff --git a/test/tool/create_consumer_app_e2e_test.dart b/test/tool/create_consumer_app_e2e_test.dart
+index 7630c273..a3c98f3a 100644
+--- a/test/tool/create_consumer_app_e2e_test.dart
++++ b/test/tool/create_consumer_app_e2e_test.dart
+@@ -72,7 +72,7 @@ void main() {
+   );
+ 
+   test(
+-    'generate() mặc định ghi dependency hosted ^0.8.0 vào pubspec',
++    'generate() mặc định ghi dependency hosted ^0.9.0 vào pubspec',
+     () async {
+       final result = await generate(
+         name: 'hosted_default',
+@@ -80,7 +80,7 @@ void main() {
+       );
+ 
+       final pubspec = File('${result.path}/pubspec.yaml').readAsStringSync();
+-      expect(pubspec, contains('roy_casual_kit: ^0.8.0'));
++      expect(pubspec, contains('roy_casual_kit: ^0.9.0'));
+       expect(pubspec, isNot(contains('roy_casual_kit:\n    path:')));
+       expect(readTemplateVersion(result.path), 4);
+     },
+diff --git a/test/tool/create_consumer_app_test.dart b/test/tool/create_consumer_app_test.dart
+index 36554f0e..19f9f9af 100644
+--- a/test/tool/create_consumer_app_test.dart
++++ b/test/tool/create_consumer_app_test.dart
+@@ -48,7 +48,7 @@ void main() {
+     test('default hosted dependency targets the current release line', () {
+       expect(
+         kitDependencyBlock(),
+-        '  roy_casual_kit: ^0.8.0\n  get: ^4.7.3\n  flame: ^1.35.1\n  shared_preferences: ^2.5.5\n',
++        '  roy_casual_kit: ^0.9.0\n  get: ^4.7.3\n  flame: ^1.35.1\n  shared_preferences: ^2.5.5\n',
+       );
+     });
+ 
+diff --git a/tool/create_consumer_app.dart b/tool/create_consumer_app.dart
+index 5339a6fd..07b7adb8 100644
+--- a/tool/create_consumer_app.dart
++++ b/tool/create_consumer_app.dart
+@@ -5,7 +5,7 @@
+ //
+ // Usage:
+ //   dart run tool/create_consumer_app.dart --name=my_game [--output=.]
+-//     [--org=com.example] [--kitVersion=^0.8.0] [--kitPath=<path>] [--force]
++//     [--org=com.example] [--kitVersion=^0.9.0] [--kitPath=<path>] [--force]
+ //   dart run tool/create_consumer_app.dart --check-version=<app_dir>
+ //
+ // Shells out to the REAL `flutter create` for the platform scaffolding
+@@ -114,7 +114,7 @@ bool isValidOrg(String org) {
+ /// the generated smoke test's `shared_preferences` import). Versions
+ /// pinned to match this package's own `pubspec.yaml` so both resolve the
+ /// same package graph.
+-String kitDependencyBlock({String? kitPath, String kitVersion = '^0.8.0'}) {
++String kitDependencyBlock({String? kitPath, String kitVersion = '^0.9.0'}) {
+   final kitLine = kitPath != null
+       ? '  roy_casual_kit:\n    path: $kitPath\n'
+       : '  roy_casual_kit: $kitVersion\n';
+@@ -636,7 +636,7 @@ Future<GeneratedApp> generate({
+   String outputDir = '.',
+   String org = 'com.example',
+   String? kitPath,
+-  String kitVersion = '^0.8.0',
++  String kitVersion = '^0.9.0',
+   bool force = false,
+ }) async {
+   if (!isValidAppName(name)) {
+@@ -774,7 +774,7 @@ Future<void> main(List<String> args) async {
+       outputDir: options['output'] ?? '.',
+       org: options['org'] ?? 'com.example',
+       kitPath: options['kitPath'],
+-      kitVersion: options['kitVersion'] ?? '^0.8.0',
++      kitVersion: options['kitVersion'] ?? '^0.9.0',
+       force: force,
+     );
+     stdout.writeln('Đã tạo app tại ${result.path}:');

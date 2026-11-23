@@ -1,4 +1,4 @@
-## Unreleased
+## 0.9.0
 
 - **Behavior change (save safety, BUG-141):** `VersionedJsonStore.save()` (and a `syncWith` that replaces the local copy) now copies an unusable raw value (corrupt JSON, a NEWER schema, a failing migration) to `<key>.bak` (`backupKey`) before overwriting it, one backup kept. Before, a downgraded app or a migration bug silently destroyed the only copy. A readable save is never backed up. Added `VersionedJsonStore.backupKey`, `hasBackup`, `loadBackup()` and `restoreBackup()` (reads the backup through the same schema policy; restore replaces the live save and clears the backup, so ask the player first when a save exists).
 - **Behavior change (cloud sync, BUG-142):** `VersionedJsonStore.syncWith` no longer lets a cloud `syncedAtMs` more than 24 hours ahead of the device clock win last-write-wins when a local save exists (it kept overwriting honest local saves). The local save is kept and uploaded; an `onConflict` handler still sees the real timestamp. A cloud copy with no local save still restores. Added `VersionedJsonStore.maxCloudClockSkewMs`.
