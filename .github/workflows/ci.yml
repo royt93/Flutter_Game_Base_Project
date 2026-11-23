@@ -9,6 +9,10 @@ on:
     branches: [main]
   pull_request:
   workflow_dispatch:
+  # Emulator job (consumer-smoke) only runs weekly / on demand: it is flaky on
+  # GitHub runners and was blocking every push for 20+ minutes.
+  schedule:
+    - cron: '17 3 * * 1'
 
 concurrency:
   group: ci-${{ github.ref }}
@@ -99,6 +103,7 @@ jobs:
   # emulator. Bắt lỗi chỉ lộ ở app tiêu thụ package (vd 0.4.0: font chưa
   # qualify theo package, cấu hình native Android thiếu).
   consumer-smoke:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     # Một lần chạy bình thường ~8 phút (emulator ~3 phút); lần treo emulator
     # từng chiếm 36+ phút (mặc định GitHub là 6 giờ). Job-level chặn mọi bước,
@@ -106,43 +111,26 @@ jobs:
     timeout-minutes: 40
     steps:
       - uses: actions/checkout@v7
-      - uses: dorny/paths-filter@v4
-        if: github.event_name != 'workflow_dispatch'
-        id: changes
-        with:
-          filters: |
-            relevant:
-              - 'lib/**'
-              - 'tool/create_consumer_app.dart'
-              - 'pubspec.yaml'
-              - 'asset/**'
-              - '.github/workflows/ci.yml'
-              - '.github/scripts/**'
       - uses: subosito/flutter-action@v2
-        if: steps.changes.outputs.relevant == 'true' || github.event_name == 'workflow_dispatch'
         with:
           flutter-version: 3.41.9
           channel: stable
           cache: true
       - uses: actions/setup-java@v6
-        if: steps.changes.outputs.relevant == 'true' || github.event_name == 'workflow_dispatch'
         with:
           distribution: temurin
           java-version: 17
       - name: Generate consumer app (path dependency on this checkout)
-        if: steps.changes.outputs.relevant == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           flutter pub get
           dart run tool/create_consumer_app.dart --name=ci_smoke --output="$RUNNER_TEMP" --kitPath="$GITHUB_WORKSPACE"
       - name: Analyze + test generated app
-        if: steps.changes.outputs.relevant == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ runner.temp }}/ci_smoke
         run: |
           flutter pub get
           flutter analyze
           flutter test
       - name: Pre-install NDK
-        if: steps.changes.outputs.relevant == 'true' || github.event_name == 'workflow_dispatch'
         timeout-minutes: 12
         run: |
           sdkmanager="$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager"
@@ -150,17 +138,14 @@ jobs:
           grep -Eq '^Pkg.Revision[[:space:]]*=[[:space:]]*27\.0\.12077973[[:space:]]*$' "$ANDROID_HOME/ndk/27.0.12077973/source.properties"
           test -x "$ANDROID_HOME/ndk/27.0.12077973/toolchains/llvm/prebuilt/linux-x86_64/bin/clang"
       - name: Build debug APK
-        if: steps.changes.outputs.relevant == 'true' || github.event_name == 'workflow_dispatch'
         working-directory: ${{ runner.temp }}/ci_smoke
         run: flutter build apk --debug
       - name: Enable KVM
-        if: steps.changes.outputs.relevant == 'true' || github.event_name == 'workflow_dispatch'
         run: |
           echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
           sudo udevadm control --reload-rules
           sudo udevadm trigger --name-match=kvm
       - name: Integration test on emulator
-        if: steps.changes.outputs.relevant == 'true' || github.event_name == 'workflow_dispatch'
         timeout-minutes: 20
         uses: reactivecircus/android-emulator-runner@v2
         with:
