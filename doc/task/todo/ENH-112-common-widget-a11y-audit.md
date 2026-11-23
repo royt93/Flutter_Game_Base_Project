@@ -65,7 +65,8 @@ Một số probe đầu tiên của tôi dùng `find.bySemanticsLabel` trên dia
 - Audit các widget tương tác còn lại trong danh sách 21 (nhớ heuristic báo thừa; ví dụ `CandyTextField` đã đo là ổn).
 - Quyết định có chặn semantics cho `LoadingOverlay` hay không.
 - Dialog/sheet dạng ROUTE (`NeonDialog.show`, `showModalBottomSheet`, `showDialog`): KHÔNG phải lỗi. Đã kiểm bằng mô phỏng thứ tự đọc của screen reader (`simulatedAccessibilityTraversal`), có đối chứng: route dialog ẩn trang bên dưới (BEHIND không còn trong thứ tự đọc), giống `showDialog` gốc của Flutter. Lý do: `ModalBarrier` của route tự bọc `BlockSemantics`. Chỉ overlay dựng thẳng trong cây (`Stack`) mới cần tự chặn.
-- Chưa kiểm các widget dựng overlay trong `Stack` khác (`ConfirmDialog`, `RewardPopup`, `MilestoneCelebrationDialog`, `LevelUpOverlay`) có tự gọi `NeonDialog.overlay/overlaySlot` hay không; `RewardPopup` và `MilestoneCelebrationDialog` chỉ dùng `NeonDialog.panel`, nên chặn hay không tuỳ nơi gọi bọc.
+- Đã đo thêm bằng thứ tự đọc của screen reader (cùng công cụ đã đối chứng): `LevelUpOverlay` khi đang chạy chỉ còn "Level 5!" (BEHIND ẩn; khi idle BEHIND hiện) vì nó tự bọc `ExcludeSemantics(excluding: active)` cho nội dung phía sau; `MilestoneCelebrationDialog.show` ẩn BEHIND (đi qua `NeonDialog.show`, dạng route). Cả hai KHÔNG có lỗi.
+- Chưa đo `RewardPopup` (chỉ là panel, tuỳ nơi gọi bọc) và `ConfirmDialog`; không có bằng chứng lỗi ở hai widget này.
 
 - Audit / điểm: ~9.0/10 cho phần overlay (có đo, sửa gọn, hai chiều được khoá bằng test, có chạy thiết bị thật); phần audit 21 widget chưa chấm.
 - Commit/push:
