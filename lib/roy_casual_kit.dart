@@ -103,6 +103,7 @@ export 'core/utils/format.dart';
 export 'core/utils/label_fit.dart';
 export 'core/utils/safe_json.dart';
 export 'core/utils/throttle.dart';
+export 'core/utils/undo_stack.dart';
 export 'core/utils/weighted_random_pick.dart';
 export 'core/utils/object_pool.dart';
 export 'core/utils/performance_budget.dart';
