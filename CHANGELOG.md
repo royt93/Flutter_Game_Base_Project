@@ -1,4 +1,4 @@
-## Unreleased
+## 0.9.1
 
 - **Behavior change (season events, ENH-116):** `SeasonEventService.currentWindow` now throws `ArgumentError` when `length + cooldown` exceeds 100 years (`SeasonEventService.maxCycleMs`); before, a huge value (e.g. a bad remote-config number) surfaced as a `RangeError` from `DateTime`. Added `SeasonEventService.maxCycleMs`. A future-dated anchor is unchanged: it still means "event not started yet" (BUG-66).
 - Example cookbook: new "Save backup" tile showing `hasBackup`/`restoreBackup()` after a downgrade.
