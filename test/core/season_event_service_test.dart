@@ -65,6 +65,35 @@ void main() {
   const cooldown = Duration(hours: 1);
 
   group('SeasonEventService: validation', () {
+    test('ENH-116: length + cooldown over 100 years -> ArgumentError, not RangeError', () {
+      final service = SeasonEventService();
+      expect(
+        () => service.currentWindow(
+          'huge',
+          length: const Duration(days: 100000000),
+          cooldown: Duration.zero,
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => service.currentWindow(
+          'sum',
+          length: const Duration(days: 20000),
+          cooldown: const Duration(days: 20000),
+        ),
+        throwsArgumentError,
+      );
+      // Right at the cap is still accepted.
+      expect(
+        () => service.currentWindow(
+          'edge',
+          length: const Duration(days: 365),
+          cooldown: const Duration(days: 365),
+        ),
+        returnsNormally,
+      );
+    });
+
     test('eventId rỗng/blank throw ArgumentError', () {
       final service = SeasonEventService();
 

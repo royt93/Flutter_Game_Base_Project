@@ -1,3 +1,8 @@
+## Unreleased
+
+- **Behavior change (season events, ENH-116):** `SeasonEventService.currentWindow` now throws `ArgumentError` when `length + cooldown` exceeds 100 years (`SeasonEventService.maxCycleMs`); before, a huge value (e.g. a bad remote-config number) surfaced as a `RangeError` from `DateTime`. Added `SeasonEventService.maxCycleMs`. A future-dated anchor is unchanged: it still means "event not started yet" (BUG-66).
+- Example cookbook: new "Save backup" tile showing `hasBackup`/`restoreBackup()` after a downgrade.
+
 ## 0.9.0
 
 - **Behavior change (save safety, BUG-141):** `VersionedJsonStore.save()` (and a `syncWith` that replaces the local copy) now copies an unusable raw value (corrupt JSON, a NEWER schema, a failing migration) to `<key>.bak` (`backupKey`) before overwriting it, one backup kept. Before, a downgraded app or a migration bug silently destroyed the only copy. A readable save is never backed up. Added `VersionedJsonStore.backupKey`, `hasBackup`, `loadBackup()` and `restoreBackup()` (reads the backup through the same schema policy; restore replaces the live save and clears the backup, so ask the player first when a save exists).

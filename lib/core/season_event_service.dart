@@ -166,6 +166,11 @@ class SeasonEventService extends GetxService with StorageReplaceWatch {
   @visibleForTesting
   Future<void> get debugPendingSaves => _saveChain;
 
+  /// Longest `length + cooldown` [currentWindow] accepts (ENH-116): 100 years.
+  /// A larger value (typically a bad remote-config number) would overflow
+  /// `DateTime` and surface as a `RangeError`.
+  static const int maxCycleMs = 100 * 365 * 24 * 60 * 60 * 1000;
+
   /// The active/most-recent window for [eventId] — [length] active,
   /// then [cooldown] idle, repeating indefinitely from whichever instant
   /// this was first called for [eventId] (persisted from then on, so
@@ -188,6 +193,14 @@ class SeasonEventService extends GetxService with StorageReplaceWatch {
     }
     if (cooldown < Duration.zero) {
       throw ArgumentError.value(cooldown, 'cooldown', 'must not be negative');
+    }
+
+    if (length.inMilliseconds + cooldown.inMilliseconds > maxCycleMs) {
+      throw ArgumentError.value(
+        length + cooldown,
+        'length + cooldown',
+        'must be at most 100 years',
+      );
     }
 
     final now = nowMsClamped();

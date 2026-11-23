@@ -21,3 +21,9 @@ source: "Survey thời gian 2026-11-23 (test tạm chạy thật, đã xoá)"
 ## Đề xuất
 
 (1) validate `length + cooldown` có trần (vd <= vài chục năm) bằng `ArgumentError`; (2) dùng chia sàn (`(elapsed / cycleMs).floor()`) cho elapsed âm. Cả hai đều Behavior change nhỏ, cần test + CHANGELOG.
+
+## Kết quả thực hiện (2026-11-23)
+
+- Phần 1 làm: `currentWindow` ném `ArgumentError` khi `length + cooldown` > 100 năm (`SeasonEventService.maxCycleMs`). 1 test mới (gồm sát trần vẫn chấp nhận); mutation (bỏ kiểm tra) làm 1 test đỏ.
+- Phần 2 KHÔNG làm, thông tin đo ban đầu sai ý: test BUG-66 đã quy định anchor tương lai = "sự kiện chưa bắt đầu" (window bắt đầu đúng anchor, `isActive=false`). Dùng chia sàn sẽ phá hợp đồng đó và hiện sự kiện sắp tới là đang diễn ra. Tôi đã thử, test BUG-66 đỏ, owner chọn giữ BUG-66. Còn lại: anchor tương lai XA (>1 chu kỳ) cho cửa sổ chưa mở trong vài chu kỳ, là hệ quả của cùng hợp đồng.
+- Root 4137 pass, analyze sạch, API gate unchanged, 4 quality-gate tool pass (performance_budget exit 255 một lần khi chạy song song, chạy lại riêng thì PASS).
