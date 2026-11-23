@@ -72,7 +72,7 @@ void main() {
   );
 
   test(
-    'generate() mặc định ghi dependency hosted ^0.7.0 vào pubspec',
+    'generate() mặc định ghi dependency hosted ^0.8.0 vào pubspec',
     () async {
       final result = await generate(
         name: 'hosted_default',
@@ -80,7 +80,7 @@ void main() {
       );
 
       final pubspec = File('${result.path}/pubspec.yaml').readAsStringSync();
-      expect(pubspec, contains('roy_casual_kit: ^0.7.0'));
+      expect(pubspec, contains('roy_casual_kit: ^0.8.0'));
       expect(pubspec, isNot(contains('roy_casual_kit:\n    path:')));
       expect(readTemplateVersion(result.path), 4);
     },

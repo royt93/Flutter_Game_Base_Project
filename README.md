@@ -743,7 +743,7 @@ dart run tool/object_pool_benchmark.dart             # pooled-vs-unpooled alloca
 dart run tool/remote_schema_compiler.dart --schema=event_schema.json --outDir=lib/generated
 dart run tool/create_consumer_app.dart --name=my_game --org=com.example
 ```
-The consumer generator defaults to the hosted dependency `roy_casual_kit: ^0.7.0`.
+The consumer generator defaults to the hosted dependency `roy_casual_kit: ^0.8.0`.
 Use `--kitVersion=<constraint>` to override it or `--kitPath=<path>` for a local checkout.
 `accessibility_audit_check`, `dependency_sbom_check`, `asset_license_check`,
 `performance_budget_check`, and `deprecation_check` are wired into CI's
