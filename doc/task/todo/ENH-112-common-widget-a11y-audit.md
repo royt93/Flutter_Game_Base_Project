@@ -50,6 +50,10 @@ source: "Khảo sát 2026-11-23 theo định hướng owner (widget common). Heu
 - Sửa (owner chọn: 3 modal thật, giữ Loading): bọc bằng `BlockSemantics` ở `AppVersionGateOverlay`, `SpotlightOverlay`, `NeonDialog.overlay`; `NeonDialog.overlaySlot` chỉ chặn khi có panel (`blocking: panel != null`) vì slot luôn mount với panel nullable. Pause menu được sửa theo vì dùng overlaySlot. Diff thật nhỏ (whitespace-insensitive: 6, 5 và 15 dòng thêm).
 - **Cố ý KHÔNG sửa `LoadingOverlay`**: comment ENH-37 trong source cho thấy tác giả đã chọn `liveRegion` thay vì chặn (đây chỉ là spinner tạm, không phải route modal; chặn semantics có thể làm người dùng không quay lại được nếu loading treo). Nó vẫn lộ app phía sau cho screen reader; đây là quyết định thiết kế có chủ đích, mở lại nếu muốn.
 
+### Hiệu chỉnh phương pháp đo (đọc trước khi tin các số ở trên)
+
+Một số probe đầu tiên của tôi dùng `find.bySemanticsLabel` trên dialog dạng route và báo "app phía sau vẫn tới được". Kết luận đó SAI cho route: cùng probe báo giống hệt trên `showDialog` gốc của Flutter, và công cụ tìm theo cây widget (có thể trả element dù node semantics bị gộp hoặc ẩn), nên không phản ánh đúng thứ screen reader đọc. Đã kiểm lại bằng `tester.semantics.simulatedAccessibilityTraversal()`, có 3 đối chứng: overlay thường (phải lộ), `ExcludeSemantics` (phải ẩn), `BlockSemantics` (phải ẩn), và kết quả đúng cả ba. Trên overlay dạng `Stack`, hai cách đo ĐỒNG Ý (kiểm trực tiếp ở 3 ca), nên các test đã commit (dùng `bySemanticsLabel`) vẫn đáng tin; riêng lỗi của gate/spotlight/NeonDialog.overlay/overlaySlot được xác nhận lại bằng cả thứ tự đọc: trước sửa lộ BEHIND, sau sửa chỉ còn nội dung overlay.
+
 ### Kiểm chứng
 
 - Tests mới: 5 (gate: force update, maintenance, soft update, ok, đóng soft update trả lại app), 4 (NeonDialog: overlay, slot có panel, slot không panel, slot khi panel đóng), 1 (spotlight). Root 4121 pass, example 472 pass, analyze và audit a11y sạch, API không đổi.
@@ -60,7 +64,8 @@ source: "Khảo sát 2026-11-23 theo định hướng owner (widget common). Heu
 
 - Audit các widget tương tác còn lại trong danh sách 21 (nhớ heuristic báo thừa; ví dụ `CandyTextField` đã đo là ổn).
 - Quyết định có chặn semantics cho `LoadingOverlay` hay không.
-- Chưa kiểm `ConfirmDialog`, `RewardPopup`, `MilestoneCelebrationDialog` và các dialog tự dựng khác có cùng kiểu overlay.
+- Dialog/sheet dạng ROUTE (`NeonDialog.show`, `showModalBottomSheet`, `showDialog`): KHÔNG phải lỗi. Đã kiểm bằng mô phỏng thứ tự đọc của screen reader (`simulatedAccessibilityTraversal`), có đối chứng: route dialog ẩn trang bên dưới (BEHIND không còn trong thứ tự đọc), giống `showDialog` gốc của Flutter. Lý do: `ModalBarrier` của route tự bọc `BlockSemantics`. Chỉ overlay dựng thẳng trong cây (`Stack`) mới cần tự chặn.
+- Chưa kiểm các widget dựng overlay trong `Stack` khác (`ConfirmDialog`, `RewardPopup`, `MilestoneCelebrationDialog`, `LevelUpOverlay`) có tự gọi `NeonDialog.overlay/overlaySlot` hay không; `RewardPopup` và `MilestoneCelebrationDialog` chỉ dùng `NeonDialog.panel`, nên chặn hay không tuỳ nơi gọi bọc.
 
 - Audit / điểm: ~9.0/10 cho phần overlay (có đo, sửa gọn, hai chiều được khoá bằng test, có chạy thiết bị thật); phần audit 21 widget chưa chấm.
 - Commit/push:
