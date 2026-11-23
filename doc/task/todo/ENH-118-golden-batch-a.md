@@ -1,6 +1,6 @@
 ---
 id: ENH-118
-title: "Golden test đợt A: Input/form (tĩnh, deterministic) (18 widget chưa có golden)"
+title: "Golden test đợt A: Input/form (tĩnh, deterministic) (19 widget chưa có golden)"
 type: enhancement
 layer: test/widget/goldens
 priority: P3
@@ -10,8 +10,8 @@ source: "Owner yêu cầu 2026-11-23: bổ sung các loại test để chứng m
 
 ## Bối cảnh đã đo (2026-11-23)
 
-- 164 widget trong `widgets/common`: tất cả đã có test và fixture `runViewportSweep`, nhưng **86 widget chưa có golden** (hiện 64 file golden, 1397 PNG, ~14M trong `test/widget/goldens/goldens`). Đo bằng tham chiếu tên lớp trong `test/widget/goldens/*.dart` (hai cách đếm cho 86 và 87; lấy 86 sau khi kiểm thêm theo tên PNG).
-- Owner chọn làm theo đợt ưu tiên (không làm hết một lượt). Đợt này là **A**, chia 6 đợt A-F (ENH-118..123; tổng 18+15+13+14+13+13 = 86).
+- 164 widget trong `widgets/common`: tất cả đã có test và fixture `runViewportSweep`, nhưng **87 widget chưa có golden** (hiện 64 file golden, 1397 PNG, ~14M trong `test/widget/goldens/goldens`). Đo bằng tham chiếu tên lớp trong `test/widget/goldens/*.dart` (đo lại theo tên lớp: 87 widget; một lần đếm sớm ra 86 vì bỏ sót `avatar_frame`).
+- Owner chọn làm theo đợt ưu tiên (không làm hết một lượt). Đợt này là **A**, chia 6 đợt A-F (ENH-118..123; tổng 19+15+13+14+13+13 = 87).
 - Golden CHỈ sinh bằng workflow `regenerate-goldens.yml` (Linux, Flutter 3.41.9), KHÔNG từ macOS (xem CLAUDE.md). Comparator tolerance 1% chỉ nuốt nhiễu font dưới điểm ảnh, không thay cho việc sinh trên Linux.
 
 ## Widget trong đợt (18)
@@ -34,6 +34,7 @@ source: "Owner yêu cầu 2026-11-23: bổ sung các loại test để chứng m
 - `countdown_chip`
 - `cooldown_countdown_chip`
 - `panel_card`
+- `avatar_frame`
 
 ## Lưu ý riêng của đợt
 Không có thêm; deterministic mặc định (không đồng hồ thật, không ngẫu nhiên không seed).
