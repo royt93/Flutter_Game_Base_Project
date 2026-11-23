@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
+import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/utils/format.dart';
 
 void main() {
@@ -121,6 +122,69 @@ void main() {
 
     test('hàng nghìn tỷ (T)', () {
       expect(fmtNumCompact(1000000000000), '1T');
+    });
+  });
+
+  group('fmtRelative (FEAT-232)', () {
+    final now = DateTime.utc(2026, 11, 23, 12);
+    String at(Duration ago) => fmtRelative(now.subtract(ago), now: now);
+
+    void useLocale(String code) {
+      Get.clearTranslations();
+      Get.addTranslations(AppTranslations().keys);
+      final old = Get.locale;
+      Get.updateLocale(Locale(code));
+      addTearDown(() => Get.updateLocale(old ?? const Locale('en')));
+    }
+
+    tearDown(Get.clearTranslations);
+
+    test('en: every bucket boundary', () {
+      useLocale('en');
+      expect(at(Duration.zero), 'Just now');
+      expect(at(const Duration(seconds: 59)), 'Just now');
+      expect(at(const Duration(seconds: 60)), '1 minute ago');
+      expect(at(const Duration(seconds: 119)), '1 minute ago');
+      expect(at(const Duration(minutes: 2)), '2 minutes ago');
+      expect(at(const Duration(minutes: 59, seconds: 59)), '59 minutes ago');
+      expect(at(const Duration(minutes: 60)), '1 hour ago');
+      expect(at(const Duration(hours: 2)), '2 hours ago');
+      expect(at(const Duration(hours: 23, minutes: 59)), '23 hours ago');
+      expect(at(const Duration(hours: 24)), 'Yesterday');
+      expect(at(const Duration(hours: 47, minutes: 59)), 'Yesterday');
+      expect(at(const Duration(hours: 48)), '2 days ago');
+      expect(at(const Duration(days: 30)), '30 days ago');
+    });
+
+    test('vi: same buckets in Vietnamese', () {
+      useLocale('vi');
+      expect(at(const Duration(seconds: 30)), 'Vừa xong');
+      expect(at(const Duration(minutes: 1)), '1 phút trước');
+      expect(at(const Duration(minutes: 5)), '5 phút trước');
+      expect(at(const Duration(hours: 1)), '1 giờ trước');
+      expect(at(const Duration(hours: 5)), '5 giờ trước');
+      expect(at(const Duration(hours: 30)), 'Hôm qua');
+      expect(at(const Duration(days: 3)), '3 ngày trước');
+    });
+
+    test('a future time (clock skew) reads as just now, never throws', () {
+      useLocale('en');
+      expect(
+        fmtRelative(now.add(const Duration(hours: 5)), now: now),
+        'Just now',
+      );
+    });
+
+    test('a very old time does not throw and counts whole days', () {
+      useLocale('en');
+      expect(at(const Duration(days: 36500)), '36500 days ago');
+    });
+
+    test('elapsed-time buckets ignore the time zone and DST', () {
+      useLocale('en');
+      final then = DateTime(2026, 3, 8, 12);
+      final later = then.add(const Duration(hours: 25));
+      expect(fmtRelative(then, now: later), 'Yesterday');
     });
   });
 }

@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Added `fmtRelative(DateTime then, {DateTime? now})` (`core/utils/format.dart`): relative time ("Just now", "5 minutes ago", "Yesterday", "3 days ago") in the current language via new `rel_*` keys in `AppTranslations` (`en`, `vi`). Buckets use elapsed time, not calendar days or the time zone; a future time reads as "just now"; never throws.
 - **Behavior change (energy, BUG-143):** `EnergyService.grantInfiniteLives` now throws `ArgumentError` when `duration` is zero, negative, or longer than 100 years (`EnergyService.maxInfiniteLivesDuration`). Before, zero/negative was silently ignored and a huge value (e.g. a bad remote-config or IAP number) stored an expiry millions of years away. Valid grants (including stacking) are unchanged.
 
 ## 0.9.1

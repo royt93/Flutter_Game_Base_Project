@@ -1,5 +1,5 @@
 {
-  "version": "0.8.0",
+  "version": "0.9.1",
   "entrypoint": "lib/roy_casual_kit.dart",
   "exports": [
     "core/achievement_service.dart",
@@ -403,6 +403,7 @@
     "core/utils/format.dart:fmtDurLong",
     "core/utils/format.dart:fmtNum",
     "core/utils/format.dart:fmtNumCompact",
+    "core/utils/format.dart:fmtRelative",
     "core/utils/label_fit.dart:fitFontSizeForLongestWord",
     "core/utils/object_pool.dart:ObjectPool",
     "core/utils/performance_budget.dart:BudgetDirection",

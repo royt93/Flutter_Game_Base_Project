@@ -94,3 +94,28 @@ String fmtNumCompact(num n) {
   }
   return fmtNum(n.toInt());
 }
+
+/// Relative time for inboxes, friend lists and logs: "Just now", "5 minutes
+/// ago", "Yesterday", "3 days ago", in the current language (`rel_*` keys in
+/// `AppTranslations`, `en`/`vi`).
+///
+/// Buckets follow ELAPSED time between [then] and [now] (default
+/// `DateTime.now()`), never calendar days or the device time zone, so DST and
+/// the UTC/local day question (ENH-114) cannot move a boundary: under 1 minute
+/// is "just now", under 1 hour counts minutes, under 24 hours counts hours,
+/// 24 to under 48 hours is "yesterday", then whole days. A [then] in the
+/// FUTURE (clock skew) reads as "just now". Never throws.
+String fmtRelative(DateTime then, {DateTime? now}) {
+  final d = (now ?? DateTime.now()).difference(then);
+  if (d.inMinutes < 1) return 'rel_just_now'.tr;
+  if (d.inHours < 1) {
+    final m = d.inMinutes;
+    return m == 1 ? 'rel_minute'.tr : 'rel_minutes'.trParams({'n': '$m'});
+  }
+  if (d.inDays < 1) {
+    final h = d.inHours;
+    return h == 1 ? 'rel_hour'.tr : 'rel_hours'.trParams({'n': '$h'});
+  }
+  if (d.inDays < 2) return 'rel_yesterday'.tr;
+  return 'rel_days'.trParams({'n': '${d.inDays}'});
+}
