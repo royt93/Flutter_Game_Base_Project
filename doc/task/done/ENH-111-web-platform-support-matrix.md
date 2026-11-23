@@ -48,7 +48,10 @@ source: "Khảo sát web 2026-11-23: kit biên dịch được cho web (sau BUG-
 
 ## Kết quả thực hiện
 
-- Phân loại / kết luận:
+- **Đóng won't-do (2026-11-23).** Owner quyết định chỉ hỗ trợ Android và iOS ("option c, chúng ta chỉ hỗ trợ android và ios"), nên không làm phân loại 48 test web còn đỏ và không sửa service nền tảng cho web.
+- Giữ lại làm tham khảo: toàn bộ khảo sát ở trên (số đo, phân nhóm nguyên nhân, lệnh tái hiện). Mở lại nếu phạm vi nền tảng đổi.
+- Hệ quả đã áp dụng: README ghi rõ nền tảng hỗ trợ là Android và iOS. Các sửa web của BUG-140 được giữ vì không đổi hành vi native (đã kiểm chứng), không gỡ ra.
+- Phân loại / kết luận: không thực hiện.
 - Audit / điểm:
 - Tests:
 - Commit/push:

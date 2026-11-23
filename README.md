@@ -772,6 +772,8 @@ Game mới nên bắt đầu bằng [hướng dẫn tích hợp từng bước](
 
 ## Install
 
+**Supported platforms: Android and iOS.** Desktop and web are not targets and are not tested in CI. (Measured once for reference: the package compiles for the web and 3928 of the host tests pass on Chrome, but notification, wake lock, audio and file-based services are not supported there, and 48 tests still fail; see `doc/task/done/ENH-111-web-platform-support-matrix.md`.)
+
 **Android prerequisites:** The `flutter_local_notifications` v20+ dependency requires `compileSdk 35` at minimum, Java 17 compatibility, and core library desugaring. You must configure this in your consumer app's `android/app/build.gradle.kts` (or `.gradle`), or the app will crash/fail to build:
 
 ```kotlin

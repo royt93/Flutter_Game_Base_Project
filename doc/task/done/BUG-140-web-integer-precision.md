@@ -8,6 +8,10 @@ effort: S
 source: "Khảo sát web 2026-11-23: flutter build web thất bại vì literal 0x7FFFFFFFFFFFFFFF; fnv1aHash cho kết quả khác native trên Chrome"
 ---
 
+## Bối cảnh phạm vi (2026-11-23)
+
+Web KHÔNG phải nền tảng hỗ trợ (owner: chỉ Android và iOS, xem ENH-111). Bug này được phát hiện khi thử biên dịch web, và các sửa được giữ vì (1) không đổi hành vi native (đã kiểm chứng: test VM cũ vẫn pass, vector FNV tính bằng số nguyên chính xác khớp), (2) làm hash `fnv1aHash` đúng theo định nghĩa FNV-1a chuẩn trên mọi môi trường JS, (3) giữ cho kit biên dịch được cho ai thử web, không cam kết hỗ trợ.
+
 ## Bằng chứng
 
 - `flutter build web` của app dùng kit thất bại: "The integer literal 0x7FFFFFFFFFFFFFFF can't be represented exactly in JavaScript" tại `purchase_ledger_service.dart:48`, `achievement_service.dart:390`, `daily_quest_service.dart:72`.

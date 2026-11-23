@@ -53,6 +53,13 @@ A complete Match-3 loop in the example Home: boosters bought with coins,
 level select with saved stars, victory and game-over cards with share, pause
 menu, and a first-run tutorial. This is demo code, not package API.
 
+## Platforms
+
+Supported: Android and iOS. Web and desktop are not targets. A web build of
+the package compiles after this release, but that is a side effect of two
+integer fixes (`fnv1aHash`, `asIntOr`, plus a shared counter limit), not a
+support claim; 48 host tests still fail on Chrome and are not planned.
+
 ## What is and is not verified
 
 - Host tests, analyzer, API compatibility, accessibility, license, SBOM and
