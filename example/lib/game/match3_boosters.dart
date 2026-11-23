@@ -84,3 +84,42 @@ Future<bool> consumeBooster({
   );
   return result is SdkSuccess<InventorySnapshot>;
 }
+
+/// 1 to 3 stars for a won level from the moves left: >= 40% of the level's
+/// moves is 3 stars, >= 15% is 2, otherwise 1. Thresholds were checked with
+/// `tool/match3_sim.dart` (random bots earn 3 stars on roughly 20-35% of wins,
+/// the greedy bot on most).
+int match3StarsFor({required int movesLeft, required int moveLimit}) {
+  if (moveLimit <= 0) {
+    throw ArgumentError.value(moveLimit, 'moveLimit', 'must be > 0');
+  }
+  final ratio = movesLeft.clamp(0, moveLimit) / moveLimit;
+  return ratio >= 0.4 ? 3 : (ratio >= 0.15 ? 2 : 1);
+}
+
+/// Per-level best stars from a saved `bestStars` map, ignoring anything that
+/// is not a level number in range or a star count in 1..3 (a save may come
+/// from an older build or a cloud copy).
+Map<int, int> match3ReadBestStars(Object? raw, int levelCount) {
+  final result = <int, int>{};
+  if (raw is! Map) return result;
+  for (final entry in raw.entries) {
+    final level = int.tryParse('${entry.key}');
+    final stars = entry.value;
+    if (level != null &&
+        level >= 1 &&
+        level <= levelCount &&
+        stars is int &&
+        stars >= 1 &&
+        stars <= 3) {
+      result[level] = stars;
+    }
+  }
+  return result;
+}
+
+/// Merges two best-stars maps keeping the higher count per level.
+Map<int, int> match3MergeBestStars(Map<int, int> a, Map<int, int> b) => {
+  for (final level in {...a.keys, ...b.keys})
+    level: (a[level] ?? 0) > (b[level] ?? 0) ? a[level]! : b[level]!,
+};

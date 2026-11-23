@@ -45,6 +45,15 @@ Một game mẫu đủ vòng chơi để đối tác thấy kit dựng được 
 - Device: Pixel 7 Pro (không phải S24U), Android 17, debug `E2E_TEST=true`: `Match-3 Lite opens and runs one valid swap on device` pass sau khi đổi layout; log `doc/task/evidence/FEAT-214-slice1-pixel7pro-match3-boosters.log`. Chỉ chứng minh màn mở và 1 swap hợp lệ, chưa đi qua booster trên thiết bị.
 - Chưa làm: lát 2, 3, 4; chưa có integration test booster trên thiết bị thật.
 
+### Lát 2: Chọn level + lưu sao (xong, 2026-11-23)
+
+- Quyết định owner: lưu sao tốt nhất mỗi level (save v3, migrate từ v2); sao theo lượt còn lại (>= 40% là 3 sao, >= 15% là 2, còn lại 1); chọn level là panel ngay trong Match3 Lite (không thêm route).
+- Số liệu ngưỡng sao (sim 200 ván/level/bot, seed cố định; ngưỡng được đo trước khi chốt): bot ngẫu nhiên thắng L1 được 28/78/60 ván 1/2/3 sao, L5 38/46/21; bot greedy L1 3/35/162, L5 23/76/93. Hợp lý: người chơi giỏi 3 sao nhiều nhất, người chơi kém vẫn có 2 sao phổ biến.
+- Thay đổi: `LevelSelectGrid` dưới các nút hành động (khóa khi đang chạy ván); save schema v3 có `bestStars` (migrate v2 thêm map rỗng, đọc phòng thủ bằng `match3ReadBestStars`); thắng chỉ nâng sao, không bao giờ hạ; cloud sync gộp sao theo max từng level; `_startLevel` từ chối level bị khóa hoặc ngoài khoảng, không trừ năng lượng. Logic sao/đọc/gộp nằm trong `example/lib/game/match3_boosters.dart`.
+- Tests: 10 test mới (luật sao và biên, đọc/gộp phòng thủ, grid hiện khóa/hoàn thành/sao, chọn level trừ năng lượng đúng một lần, level khóa không chạy, bỏ qua chạm khi đang chơi, thắng lưu sao, thắng tệ không hạ sao, migrate v2->v3, sync cloud gộp max). Mutation check 7 lỗi cố ý: ngưỡng, ghi đè sao, bỏ guard khóa, merge min, không lưu sao, đọc nhận sao 9 đều làm test đỏ; mutant ghi đè sao ban đầu sống sót và đã bổ sung test. Example 451 pass, root core 2026 pass, analyze và API gate sạch. Sửa 1 test cũ (`cascade animation blocks another swap`) vì layout dài hơn nên cần `ensureVisible` ô trước khi chạm.
+- Device: Pixel 7 Pro (không phải S24U), Android 17, debug `E2E_TEST=true`: `Match-3 Lite opens and runs one valid swap on device` pass, log `doc/task/evidence/FEAT-214-slice2-pixel7pro-match3-level-select.log`. Chỉ chứng minh màn mở và 1 swap hợp lệ, chưa tương tác với panel chọn level trên thiết bị.
+- Chưa làm: lát 3 và 4; sao mới chỉ hiện ở lưới, chưa có màn thắng/thua dùng sao (lát 3).
+
 ### Còn lại
 - Audit / điểm tổng:
 - Commit/push:

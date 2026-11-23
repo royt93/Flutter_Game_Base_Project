@@ -307,6 +307,7 @@ void main() {
     await tester.tap(start);
     await tester.pump(const Duration(milliseconds: 200));
     final initialMoves = game.moves;
+    await tester.ensureVisible(find.byKey(const ValueKey('match3_tile_8')));
     await tester.tap(find.byKey(const ValueKey('match3_tile_8')));
     await tester.tap(find.byKey(const ValueKey('match3_tile_9')));
     await tester.pump();
@@ -806,6 +807,338 @@ void main() {
       expect(inventory().snapshot.value.quantityOf('booster_row'), 1);
       expect(Get.find<EconomyWallet>().balanceOf('coins'), 70);
       expect(find.text('Bought 1 Row for 30 coins.'), findsOneWidget);
+    });
+  });
+
+  group('level select and stars', () {
+    List<int> flatBoard() => List.generate(
+      Match3Config.classic.cellCount,
+      (index) =>
+          (index + index ~/ Match3Config.classic.width) %
+          Match3Config.classic.tileKinds,
+    );
+
+    void bigView(WidgetTester tester) {
+      tester.view.physicalSize = const Size(400, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+    }
+
+    Future<void> seedSave(Map<String, Object?> data) async {
+      await StorageService.to.setString(
+        'match3_lite_save_v2',
+        jsonEncode(data),
+      );
+    }
+
+    Map<String, Object?> saved() {
+      final raw = StorageService.to.getString('match3_lite_save_v2')!;
+      return (jsonDecode(raw) as Map).cast<String, Object?>();
+    }
+
+    testWidgets('stars rule: moves left thresholds and bad limits', (_) async {
+      expect(match3StarsFor(movesLeft: 8, moveLimit: 20), 3);
+      expect(match3StarsFor(movesLeft: 7, moveLimit: 20), 2);
+      expect(match3StarsFor(movesLeft: 3, moveLimit: 20), 2);
+      expect(match3StarsFor(movesLeft: 2, moveLimit: 20), 1);
+      expect(match3StarsFor(movesLeft: 0, moveLimit: 20), 1);
+      expect(match3StarsFor(movesLeft: 99, moveLimit: 20), 3);
+      expect(
+        () => match3StarsFor(movesLeft: 1, moveLimit: 0),
+        throwsArgumentError,
+      );
+    });
+
+    testWidgets('saved stars are read defensively and merged by max', (
+      _,
+    ) async {
+      final read = match3ReadBestStars({
+        '1': 3,
+        '2': 9,
+        '3': 'x',
+        '9': 2,
+        'a': 1,
+        '5': 1,
+      }, 5);
+      expect(read, {1: 3, 5: 1});
+      expect(match3ReadBestStars('nope', 5), isEmpty);
+      expect(match3MergeBestStars({1: 1, 2: 3}, {1: 2, 3: 1}), {
+        1: 2,
+        2: 3,
+        3: 1,
+      });
+    });
+
+    testWidgets('grid shows locked, completed and stars from the save', (
+      tester,
+    ) async {
+      bigView(tester);
+      await seedSave({
+        'schemaVersion': 3,
+        'level': 1,
+        'highestUnlockedLevel': 3,
+        'bestStars': {'1': 3, '2': 1},
+        'bestScore': 0,
+        'board': flatBoard(),
+        'score': 0,
+        'moves': 20,
+        'status': 'ready',
+        'runActive': false,
+        'rewarded': false,
+        'runId': 1,
+      });
+      await tester.pumpWidget(_wrap());
+      await tester.pump();
+      final grid = tester.widget<LevelSelectGrid>(find.byType(LevelSelectGrid));
+      expect(grid.states, [
+        LevelState.completed,
+        LevelState.completed,
+        LevelState.unlocked,
+        LevelState.locked,
+        LevelState.locked,
+      ]);
+      expect(grid.starsEarnedByLevel, {1: 3, 2: 1});
+    });
+
+    testWidgets('picking an unlocked level starts it and spends energy once', (
+      tester,
+    ) async {
+      bigView(tester);
+      await seedSave({
+        'schemaVersion': 3,
+        'level': 1,
+        'highestUnlockedLevel': 3,
+        'bestScore': 0,
+        'board': flatBoard(),
+        'score': 0,
+        'moves': 20,
+        'status': 'ready',
+        'runActive': false,
+        'rewarded': false,
+        'runId': 1,
+      });
+      await tester.pumpWidget(_wrap());
+      await tester.pump();
+      final energy = Get.find<EnergyService>().currentEnergy;
+      final grid = tester.widget<LevelSelectGrid>(find.byType(LevelSelectGrid));
+      grid.onLevelTap!(3);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('Level 3/5'), findsOneWidget);
+      expect(Get.find<EnergyService>().currentEnergy, energy - 1);
+      expect(saved()['level'], 3);
+    });
+
+    testWidgets('a locked level cannot be started and costs nothing', (
+      tester,
+    ) async {
+      bigView(tester);
+      await tester.pumpWidget(_wrap());
+      await tester.pump();
+      final energy = Get.find<EnergyService>().currentEnergy;
+      final grid = tester.widget<LevelSelectGrid>(find.byType(LevelSelectGrid));
+      grid.onLevelTap!(4);
+      await tester.pump(const Duration(milliseconds: 200));
+      expect(find.text('Level 1/5'), findsOneWidget);
+      expect(Get.find<EnergyService>().currentEnergy, energy);
+    });
+
+    testWidgets('level taps are ignored while a run is in progress', (
+      tester,
+    ) async {
+      bigView(tester);
+      await tester.pumpWidget(_wrap());
+      await tester.pump();
+      final start = find
+          .ancestor(
+            of: find.text('Start Run (-1 Energy)').first,
+            matching: find.byType(CommonButton),
+          )
+          .first;
+      await tester.ensureVisible(start);
+      await tester.tap(start);
+      await tester.pump(const Duration(milliseconds: 200));
+      final grid = tester.widget<LevelSelectGrid>(find.byType(LevelSelectGrid));
+      expect(grid.onLevelTap, isNull);
+    });
+
+    testWidgets('winning stores stars once and keeps the best', (tester) async {
+      bigView(tester);
+      final board = flatBoard();
+      board[6] = 0;
+      board[7] = 0;
+      board[8] = 1;
+      board[9] = 0;
+      final game = Match3Engine(
+        initialBoard: board,
+        score: 1170,
+        random: math.Random(22),
+      );
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en'),
+          fallbackLocale: AppTranslations.fallback,
+          home: Match3LiteScreen(engine: game),
+        ),
+      );
+      await tester.pump();
+      final start = find
+          .ancestor(
+            of: find.text('Start Run (-1 Energy)').first,
+            matching: find.byType(CommonButton),
+          )
+          .first;
+      await tester.ensureVisible(start);
+      await tester.tap(start);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.ensureVisible(find.byKey(const ValueKey('match3_tile_8')));
+      await tester.tap(find.byKey(const ValueKey('match3_tile_8')));
+      await tester.tap(find.byKey(const ValueKey('match3_tile_9')));
+      for (var frame = 0; frame < 12; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(game.status, Match3Status.won);
+      expect(game.moves, 19);
+      // 19 of 20 moves left is >= 40%: three stars.
+      expect(saved()['bestStars'], {'1': 3});
+      final grid = tester.widget<LevelSelectGrid>(find.byType(LevelSelectGrid));
+      expect(grid.starsEarnedByLevel, {1: 3});
+    });
+
+    testWidgets('a worse later win never lowers the stored best stars', (
+      tester,
+    ) async {
+      bigView(tester);
+      await seedSave({
+        'schemaVersion': 3,
+        'level': 1,
+        'highestUnlockedLevel': 1,
+        'bestStars': {'1': 3},
+        'bestScore': 0,
+        'board': flatBoard(),
+        'score': 0,
+        'moves': 20,
+        'status': 'ready',
+        'runActive': false,
+        'rewarded': false,
+        'runId': 1,
+      });
+      final board = flatBoard();
+      board[6] = 0;
+      board[7] = 0;
+      board[8] = 1;
+      board[9] = 0;
+      // 2 moves left of 20 is under 15%: this win alone is worth 1 star.
+      final game = Match3Engine(
+        initialBoard: board,
+        score: 1170,
+        moves: 2,
+        status: Match3Status.playing,
+        random: math.Random(22),
+      );
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en'),
+          fallbackLocale: AppTranslations.fallback,
+          home: Match3LiteScreen(engine: game),
+        ),
+      );
+      await tester.pump();
+      final start = find
+          .ancestor(
+            of: find.text('Start Run (-1 Energy)').first,
+            matching: find.byType(CommonButton),
+          )
+          .first;
+      await tester.ensureVisible(start);
+      await tester.tap(start);
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.ensureVisible(find.byKey(const ValueKey('match3_tile_8')));
+      await tester.tap(find.byKey(const ValueKey('match3_tile_8')));
+      await tester.tap(find.byKey(const ValueKey('match3_tile_9')));
+      for (var frame = 0; frame < 12; frame++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(game.status, Match3Status.won);
+      expect(game.moves, 1);
+      expect(saved()['bestStars'], {'1': 3});
+    });
+
+    testWidgets('a v2 save without stars migrates to v3 and loads', (
+      tester,
+    ) async {
+      bigView(tester);
+      await seedSave({
+        'schemaVersion': 2,
+        'level': 2,
+        'highestUnlockedLevel': 2,
+        'bestScore': 500,
+        'board': flatBoard(),
+        'score': 0,
+        'moves': 20,
+        'status': 'ready',
+        'runActive': false,
+        'rewarded': false,
+        'runId': 1,
+      });
+      await tester.pumpWidget(_wrap());
+      await tester.pump();
+      expect(find.text('Level 2/5'), findsOneWidget);
+      expect(find.text('Best 500'), findsOneWidget);
+      final grid = tester.widget<LevelSelectGrid>(find.byType(LevelSelectGrid));
+      expect(grid.starsEarnedByLevel, isEmpty);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('cloud sync keeps the higher stars per level', (tester) async {
+      bigView(tester);
+      final localBoard = flatBoard();
+      await seedSave({
+        'schemaVersion': 3,
+        'level': 1,
+        'highestUnlockedLevel': 3,
+        'bestStars': {'1': 1, '2': 3},
+        'bestScore': 100,
+        'board': localBoard,
+        'score': 0,
+        'moves': 20,
+        'status': 'ready',
+        'runActive': false,
+        'rewarded': false,
+        'runId': 1,
+      });
+      final cloud = _TestCloud()
+        ..data = {
+          'schemaVersion': 3,
+          'syncedAtMs': 0,
+          'level': 1,
+          'highestUnlockedLevel': 2,
+          'bestStars': {'1': 3, '3': 2},
+          'bestScore': 900,
+          'board': localBoard,
+          'score': 0,
+          'moves': 20,
+          'status': 'ready',
+          'runActive': false,
+          'rewarded': false,
+          'runId': 2,
+        };
+      await tester.pumpWidget(_wrap(cloud: cloud));
+      await tester.pump();
+      final syncButton = find
+          .ancestor(
+            of: find.text('Sync Save').first,
+            matching: find.byType(CommonButton),
+          )
+          .first;
+      await tester.ensureVisible(syncButton);
+      await tester.tap(syncButton);
+      await tester.pump(const Duration(milliseconds: 300));
+      await tester.pump();
+      final grid = tester.widget<LevelSelectGrid>(find.byType(LevelSelectGrid));
+      expect(grid.starsEarnedByLevel, {1: 3, 2: 3, 3: 2});
     });
   });
 }

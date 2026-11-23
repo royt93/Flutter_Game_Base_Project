@@ -62,6 +62,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
   int _level = 1;
   int _highestUnlockedLevel = 1;
   int _bestScore = 0;
+  Map<int, int> _bestStars = {};
   bool _rewarded = false;
   bool _running = false;
   bool _animating = false;
@@ -111,12 +112,13 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     _save = VersionedJsonStore<Map<String, Object?>>(
       storage: currentStorage,
       key: storageKey,
-      schemaVersion: 2,
+      schemaVersion: 3,
       toJson: (value) => value,
       fromJson: (json) => json,
       migrate: (version, json) => {
         ...json,
-        'schemaVersion': 2,
+        'schemaVersion': 3,
+        'bestStars': json['bestStars'] is Map ? json['bestStars'] : const {},
         'level': json['level'] is int ? json['level'] : 1,
         'highestUnlockedLevel': json['highestUnlockedLevel'] is int
             ? json['highestUnlockedLevel']
@@ -138,6 +140,10 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
             savedUnlocked <= Match3Config.classic.levels.length
         ? savedUnlocked
         : 1;
+    _bestStars = match3ReadBestStars(
+      saved?['bestStars'],
+      Match3Config.classic.levels.length,
+    );
     final rawBest = saved?['bestScore'];
     _bestScore = rawBest is int && rawBest >= 0 ? rawBest : 0;
     final savedBoard = saved?['board'];
@@ -224,7 +230,8 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
 
   Map<String, Object?> _saveData() => {
     'bestScore': _bestScore,
-    'schemaVersion': 2,
+    'schemaVersion': 3,
+    'bestStars': {for (final e in _bestStars.entries) '${e.key}': e.value},
     'level': _level,
     'highestUnlockedLevel': _highestUnlockedLevel,
     'board': _game.board,
@@ -520,6 +527,11 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     await _recordPlaytestRun();
     _scoreboard.submitScore('Player', _game.score);
     if (_game.status == Match3Status.won) {
+      final stars = match3StarsFor(
+        movesLeft: _game.moves,
+        moveLimit: _game.moveLimit,
+      );
+      if (stars > (_bestStars[_level] ?? 0)) _bestStars[_level] = stars;
       final questWasClaimed = _quests.isClaimed(_questId);
       _quests.incrementProgress(_questId, 1);
       _achievements.incrementProgress(_achievementId, 1);
@@ -573,6 +585,11 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
 
   Future<void> _startLevel(int level) async {
     if (_running || _animating) return;
+    if (level < 1 ||
+        level > _highestUnlockedLevel ||
+        level > Match3Config.classic.levels.length) {
+      return;
+    }
     if (!_energy.consumeEnergy()) {
       setState(() => _status = 'match3_no_energy'.tr);
       return;
@@ -610,6 +627,19 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
             ...conflict.local.value,
             'bestScore': math.max(localBest, cloudBest),
             'highestUnlockedLevel': math.max(localUnlocked, cloudUnlocked),
+            'bestStars': {
+              for (final e in match3MergeBestStars(
+                match3ReadBestStars(
+                  conflict.local.value['bestStars'],
+                  Match3Config.classic.levels.length,
+                ),
+                match3ReadBestStars(
+                  conflict.cloud.value['bestStars'],
+                  Match3Config.classic.levels.length,
+                ),
+              ).entries)
+                '${e.key}': e.value,
+            },
           });
         },
       );
@@ -623,6 +653,10 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
         _bestScore = value?['bestScore'] is int
             ? value!['bestScore'] as int
             : _bestScore;
+        _bestStars = match3ReadBestStars(
+          value?['bestStars'],
+          Match3Config.classic.levels.length,
+        );
         _status = 'match3_sync_done'.tr;
       });
     } catch (_) {
@@ -675,6 +709,8 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
                             _buildBoosterBar(),
                             const SizedBox(height: 12),
                             _buildActions(),
+                            const SizedBox(height: 12),
+                            _buildLevelSelect(),
                             if (_status != null) ...[
                               const SizedBox(height: 8),
                               Semantics(
@@ -789,6 +825,38 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
       ),
     );
   }
+
+  List<LevelState> _levelStates() {
+    final count = Match3Config.classic.levels.length;
+    return [
+      for (var level = 1; level <= count; level++)
+        if (level > _highestUnlockedLevel)
+          LevelState.locked
+        else if (_bestStars.containsKey(level) || level < _highestUnlockedLevel)
+          LevelState.completed
+        else
+          LevelState.unlocked,
+    ];
+  }
+
+  Widget _buildLevelSelect() => Column(
+    key: const ValueKey('match3_level_select'),
+    children: [
+      Text(
+        'match3_level_select'.tr,
+        style: TextStyle(color: NeonTheme.ink, fontWeight: FontWeight.w800),
+      ),
+      const SizedBox(height: 8),
+      LevelSelectGrid(
+        states: _levelStates(),
+        starsEarnedByLevel: _bestStars,
+        crossAxisCount: Match3Config.classic.levels.length,
+        nodeSize: 52,
+        spacing: 6,
+        onLevelTap: _running || _animating ? null : _startLevel,
+      ),
+    ],
+  );
 
   Widget _buildActions() => Wrap(
     alignment: WrapAlignment.center,
