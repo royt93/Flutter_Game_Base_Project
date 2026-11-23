@@ -90,6 +90,7 @@ export 'core/utils/asset_license_manifest.dart';
 export 'core/utils/clamped_clock.dart';
 export 'core/utils/dependency_sbom.dart';
 export 'core/utils/deprecation_registry.dart';
+export 'core/utils/dynamic_difficulty.dart';
 export 'core/utils/economy_math.dart';
 export 'core/utils/fnv1a.dart';
 export 'core/utils/seeded_random.dart';

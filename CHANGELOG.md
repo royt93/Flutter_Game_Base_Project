@@ -1,5 +1,6 @@
 ## Unreleased
 
+- Added `DynamicDifficulty` (`core/utils/dynamic_difficulty.dart`): a deterministic difficulty balancer driven by recent wins and losses (win rate over a window vs a target with a dead band), clamped to `[min, max]`, with a persistable state (`toJson`/`restore`, tolerant of corrupt saves). A game-feel tool; no link to purchases or the wallet.
 - Added `PityTable<T>` (`core/utils/pity_table.dart`): a weighted loot table with a hard pity guarantee (after `pityAfter` consecutive misses the next pull is forced to a pity item), a persistable miss counter (`toJson`/`restore`, tolerant of corrupt saves) and seeded reproducibility. A probability tool only; no purchase flow or UI.
 - Added `UndoStack<T>` (`core/utils/undo_stack.dart`): a bounded undo/redo history of immutable snapshots (`push`, `undo`, `redo`, `canUndo`, `canRedo`, `current`, `clear`); a push after an undo drops the redo branch and the oldest snapshot is dropped past `capacity`. Pure Dart; the stack never clones, so `T` must be immutable.
 - Added `fmtRelative(DateTime then, {DateTime? now})` (`core/utils/format.dart`): relative time ("Just now", "5 minutes ago", "Yesterday", "3 days ago") in the current language via new `rel_*` keys in `AppTranslations` (`en`, `vi`). Buckets use elapsed time, not calendar days or the time zone; a future time reads as "just now"; never throws.
