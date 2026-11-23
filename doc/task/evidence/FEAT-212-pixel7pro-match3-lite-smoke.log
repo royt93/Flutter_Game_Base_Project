@@ -1,0 +1,15 @@
+00:00 +0: loading /Users/LoiTP/StudioProjects/roy/Flutter_Game_Base_Project/example/integration_test/app_boot_test.dart
+Running Gradle task 'assembleDebug'...                          
+Warning: SDK processing. This version only understands SDK XML versions up to 3 but an SDK XML file of version 4 was encountered. This can happen if you use versions of Android Studio and the command-line tools that were released at different times.
+Running Gradle task 'assembleDebug'...                             26.8s
+✓ Built build/app/outputs/flutter-apk/app-debug.apk
+Installing build/app/outputs/flutter-apk/app-debug.apk...           5.7s
+00:00 +0: Match-3 Lite opens and runs one valid swap on device
+roy93~ app: ensureInitialized
+roy93~ app: loadAppVersion start
+roy93~ app: loadAppVersion done
+roy93~ app: bootstrap start
+roy93~ app: bootstrap done
+roy93~ app: runApp done
+00:17 +1: (tearDownAll)
+00:17 +1: All tests passed!

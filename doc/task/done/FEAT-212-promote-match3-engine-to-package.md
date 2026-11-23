@@ -41,6 +41,7 @@ source: "Owner chọn hướng game 2026-11-22; Match3Engine (412 dòng, chỉ i
 - Bằng chứng không đổi hành vi: `tool/match3_sim.dart` (4 bot x 5 level x 200 ván, seed cố định) cho output giống hệt 20 dòng giữa HEAD và bản mới; 12 test engine cũ pass nguyên.
 - Tests: 9 test mới (config hợp lệ/không hợp lệ, 8x8 6 tile, độ dài initialBoard, booster không tốn lượt, vùng xoá đúng, biên/góc, từ chối index sai và ván đã kết thúc, booster thắng/thua, replay xác định với `SeededRandom`). Mutation check: sửa bán kính bom và cho booster tốn lượt đều làm test đỏ. Root 4097 pass, example 435 pass, analyze 2 package sạch, API gate/accessibility/deprecation/license/perf/SBOM xanh.
 - API: chỉ thêm (Added 20 symbol, Removed rỗng), ghi vào mục 0.8.0 chưa tag, không bump thêm. Snapshot cập nhật.
-- Chưa làm: device smoke Match3 Lite trên thiết bị thật (screen đổi rất ít, widget test pass); chưa có UI nối `BoosterSlotBar` với `useBooster` (ngoài phạm vi, thuộc demo FEAT-214).
-- Audit / điểm: ~9.2/10. Trừ điểm: chưa smoke thiết bị thật; booster chưa có luật tạo từ match 4/5; `Match3Level.levels` vẫn là static trong API công khai.
+- Device smoke (2026-11-23): Pixel 7 Pro, Android 17, vật lý (không phải S24U vì chỉ máy này đang cắm), debug `E2E_TEST=true`, nguồn `d33bef36`: test `Match-3 Lite opens and runs one valid swap on device` pass 1/1, log `doc/task/evidence/FEAT-212-pixel7pro-match3-lite-smoke.log`, dòng mới trong `docs/qa/device_matrix.md`. Chỉ chứng minh mở màn + 1 swap hợp lệ, không phủ booster/save/hiệu năng.
+- Chưa làm: chưa có UI nối `BoosterSlotBar` với `useBooster` (ngoài phạm vi, thuộc demo FEAT-214).
+- Audit / điểm: ~9.2/10. Trừ điểm: smoke chỉ 1 swap trên Pixel 7 Pro (không phải S24U); booster chưa có luật tạo từ match 4/5; `Match3Level.levels` vẫn là static trong API công khai.
 - Commit/push:
