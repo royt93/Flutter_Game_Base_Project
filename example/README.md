@@ -37,6 +37,12 @@ for t in analytics_ack_recovery offline_outbox_recovery experiment_build_mode; d
 done
 ```
 
+`match3_game_flow_test.dart` is the Match-3 end-to-end flow (first-run tutorial, a bomb booster, pause and resume, restart from the pause menu); run it the same way on a physical device:
+
+```bash
+flutter test integration_test/match3_game_flow_test.dart -d <device-id> --dart-define=E2E_TEST=true
+```
+
 `*_perf_test.dart`, `d4_perf_memory_test.dart` and `app_boot_test.dart` (~6k lines) stay manual: they measure frame/memory on real hardware or are too long for a per-PR emulator job.
 
 Focused D4 proof:
