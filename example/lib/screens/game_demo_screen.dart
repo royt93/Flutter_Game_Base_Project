@@ -68,17 +68,10 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
         ..markReady()
         ..start();
 
-  // BUG-91: `_session.pause/resume` used to be pure UI/session state — the
-  // Flame engine underneath (`_game`, a real `FlameGame`) kept ticking
-  // `BouncingOrb.update` under the pause overlay, so the "paused" UI lied
-  // about whether gameplay simulation had actually stopped. Listening to
-  // PHASE CHANGES (not to a specific pause/resume ACTION call site) catches
-  // every source uniformly — the FAB below, AND `GameSessionController`'s
-  // own `RoyLifecycleCoordinator` hook (registered in its `onInit()`) that
-  // pauses/resumes with `GamePauseReason.system` directly, bypassing any
-  // helper this screen could define. Same `ever()`/`Worker` pattern already
-  // used in `lib/presentation/widgets/shader_ticker_layer.dart`.
-  late final Worker _sessionPhaseWorker;
+  // BUG-91: keeps the Flame engine frozen while the session is paused, from
+  // any source (the FAB, the lifecycle hook, a manual call). The bridge is
+  // now the package's `GameSessionEngineBridge` instead of a local worker.
+  late final GameSessionEngineBridge _engineBridge;
 
   late final EconomyWallet _wallet;
   late final EnergyService _energy;
@@ -105,15 +98,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     _ownsEventBus = widget.eventBus == null;
     _eventBus = widget.eventBus ?? GameEventBus();
     _game = RoyGame(eventBus: _eventBus);
-    _sessionPhaseWorker = ever<GameSessionSnapshot>(_session.snapshot, (
-      snapshot,
-    ) {
-      if (snapshot.phase == GameSessionPhase.paused && !_game.paused) {
-        _game.pauseEngine();
-      } else if (snapshot.phase == GameSessionPhase.playing && _game.paused) {
-        _game.resumeEngine();
-      }
-    });
+    _engineBridge = GameSessionEngineBridge(session: _session, game: _game);
     _wallet =
         EconomyWallet.maybe ??
         Get.put(EconomyWallet(storage: StorageService.to), permanent: true);
@@ -201,7 +186,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     // PauseOverlay's package-level default can only reset the abstract
     // session back to `loading`; this concrete demo also owns the Flame
     // engine, so complete its known local boot flow immediately. The
-    // `_sessionPhaseWorker` above observes the final `playing` transition
+    // `_engineBridge` above observes the final `playing` transition
     // and resumes the engine — without this callback Restart hid the overlay
     // at `loading` but left `_game.paused == true` forever.
     _session.restart();
@@ -275,7 +260,7 @@ class _GameDemoScreenState extends State<GameDemoScreen> {
     // Dispose the worker BEFORE Get.delete — it listens to `_session.
     // snapshot` (a Rx owned by `_session`), so it must stop before that Rx
     // is torn down.
-    _sessionPhaseWorker.dispose();
+    _engineBridge.dispose();
     _haptics.cancel();
     unawaited(_unlockSub?.cancel());
     // BUG-93: was previously discarded at subscribe time — the underlying

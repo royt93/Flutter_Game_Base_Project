@@ -113,6 +113,7 @@ export 'core/utils/theme_contrast_validator.dart';
 // Flame starter game and top-level presentation widgets.
 export 'presentation/game/roy_game.dart';
 export 'presentation/game/pooled_component.dart';
+export 'presentation/game/game_session_engine_bridge.dart';
 export 'presentation/widgets/aurora_bg_layer.dart';
 export 'presentation/widgets/debug_qa_overlay.dart';
 export 'presentation/widgets/flame_tracked_overlay.dart';
