@@ -47,6 +47,31 @@ imports no Flutter code, and is deterministic with a seeded `Random`
 Keeps a Flame `Game` paused while a `GameSessionController` is `paused` and
 resumes it on `playing`, for every source including app background.
 
+## Behavior changes you may notice
+
+Accessibility (screen readers and touch targets). Layout changes are small:
+
+- `AppVersionGateOverlay`, `SpotlightOverlay`, `NeonDialog.overlay` and
+  `NeonDialog.overlaySlot` (so `PauseOverlay`) now hide the app behind them from
+  TalkBack and VoiceOver. Before, a screen reader could still reach and activate
+  the blocked app. `overlaySlot` only blocks while it shows a panel.
+  `LoadingOverlay` is unchanged on purpose.
+- `ExpandablePanel`'s header is one button named by its text. Before, a screen
+  reader found an unnamed button followed by a separate tappable text node.
+- `EventCalendarCard`'s open button is 48x48 (was 40x40), so each event row is
+  about 3px taller.
+- `CollectionAlbumPanel`'s filter chips are 44dp tall (were 33dp), so the panel
+  is 11dp taller.
+
+Daily systems use the UTC day (documented, not changed): `DailyLoginService`,
+`DailyQuestService`, `SeededChallengeService` and `streakExpiringReminderDelay`
+roll over at 00:00 UTC, which is 07:00 local in UTC+7 and 16:00 in UTC-8. A game
+that wants a local-midnight reset has to implement it itself. A new test locks
+the boundary.
+
+Numeric fixes: `fnv1aHash` and `asIntOr` now return the same result everywhere
+(no change on Android or iOS); persisted counters share one overflow limit.
+
 ## Example app
 
 A complete Match-3 loop in the example Home: boosters bought with coins,
@@ -63,18 +88,23 @@ support claim; 48 host tests still fail on Chrome and are not planned.
 ## What is and is not verified
 
 - Host tests, analyzer, API compatibility, accessibility, license, SBOM and
-  performance-budget checks pass; see CI for the release commit.
-- Device evidence is from a Google Pixel 7 Pro (Android 17), not the S24U:
-  Match-3 flow (tutorial, booster, pause, restart) and the Flame pause bridge.
-  Not covered on a device: the result-card share sheet, and a real app
-  background (only simulated lifecycle events).
+  performance-budget checks pass, and CI (analyze-test, quality-gate,
+  consumer-smoke) is green on the release commit. Goldens are generated on
+  Linux; the 19 baselines changed by the accessibility fixes were regenerated
+  through the repository's workflow.
+- Device evidence is from a Google Pixel 7 Pro and a Samsung Galaxy S24 Ultra
+  (both Android 17): the Match-3 flow (tutorial, booster, pause, restart), the
+  Flame pause bridge, and the Match-3 and pause flows again after the overlay
+  accessibility change (S24 Ultra). Not covered on a device: the result-card
+  share sheet, a real app background (only simulated lifecycle events), and
+  TalkBack or VoiceOver themselves. The accessibility claims come from the
+  semantics tree in tests, not from a screen reader.
 - No backend, store or ad network behavior is claimed. See
   `docs/qa/capability_evidence_matrix.md` and `docs/qa/device_matrix.md`.
 
 ## Before publishing (owner steps, not done here)
 
-1. CI green on the release commit; run `dart run tool/release_readiness_check.dart`.
-2. Change the consumer generator default from `^0.7.0` to `^0.8.0` in
-   `tool/create_consumer_app.dart` (4 places), `README.md` and its tests, in
-   the same step as publishing (the new version must exist on pub.dev first).
-3. Tag `v0.8.0`, publish, create the GitHub release with this text.
+See `doc/task/RELEASE-0.8.0-PUBLISH-PROCEDURE.md`. In short: tag the commit CI
+went green on, publish from a git archive of the tag, and only after 0.8.0 is on
+pub.dev apply `doc/task/evidence/RELEASE-0.8.0-generator-default.patch`
+(`^0.7.0` to `^0.8.0` in the consumer generator).
