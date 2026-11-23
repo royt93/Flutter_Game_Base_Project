@@ -63,6 +63,9 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
   int _highestUnlockedLevel = 1;
   int _bestScore = 0;
   Map<int, int> _bestStars = {};
+  bool _showResultCard = false;
+  int _resultStars = 0;
+  final _resultCardKey = GlobalKey();
   bool _rewarded = false;
   bool _running = false;
   bool _animating = false;
@@ -531,6 +534,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
         movesLeft: _game.moves,
         moveLimit: _game.moveLimit,
       );
+      _resultStars = stars;
       if (stars > (_bestStars[_level] ?? 0)) _bestStars[_level] = stars;
       final questWasClaimed = _quests.isClaimed(_questId);
       _quests.incrementProgress(_questId, 1);
@@ -569,6 +573,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     } else {
       _status = 'match3_moves_over'.tr;
     }
+    _showResultCard = true;
     if (mounted) setState(() {});
   }
 
@@ -666,86 +671,93 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: NeonBg(
-      child: SafeArea(
-        child: Column(
-          children: [
-            NeonAppBar(title: 'match3_title'.tr, onBack: Get.back),
-            Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  final side = math.min(
-                    constraints.maxWidth - 24,
-                    constraints.maxHeight * 0.64,
-                  );
-                  return SingleChildScrollView(
-                    padding: const EdgeInsets.all(12),
-                    child: Center(
-                      child: ConstrainedBox(
-                        constraints: BoxConstraints(maxWidth: 420),
-                        child: Column(
-                          children: [
-                            _buildHud(),
-                            const SizedBox(height: 12),
-                            SizedBox.square(
-                              dimension: side,
-                              child: AbsorbPointer(
-                                absorbing: _animating,
-                                child: GridView.builder(
-                                  physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: Match3Config.classic.cellCount,
-                                  gridDelegate:
-                                      SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount:
-                                            Match3Config.classic.width,
-                                        crossAxisSpacing: 3,
-                                        mainAxisSpacing: 3,
-                                      ),
-                                  itemBuilder: (context, index) => _tile(index),
+    body: Stack(
+      children: [
+        NeonBg(
+          child: SafeArea(
+            child: Column(
+              children: [
+                NeonAppBar(title: 'match3_title'.tr, onBack: Get.back),
+                Expanded(
+                  child: LayoutBuilder(
+                    builder: (context, constraints) {
+                      final side = math.min(
+                        constraints.maxWidth - 24,
+                        constraints.maxHeight * 0.64,
+                      );
+                      return SingleChildScrollView(
+                        padding: const EdgeInsets.all(12),
+                        child: Center(
+                          child: ConstrainedBox(
+                            constraints: BoxConstraints(maxWidth: 420),
+                            child: Column(
+                              children: [
+                                _buildHud(),
+                                const SizedBox(height: 12),
+                                SizedBox.square(
+                                  dimension: side,
+                                  child: AbsorbPointer(
+                                    absorbing: _animating,
+                                    child: GridView.builder(
+                                      physics:
+                                          const NeverScrollableScrollPhysics(),
+                                      itemCount: Match3Config.classic.cellCount,
+                                      gridDelegate:
+                                          SliverGridDelegateWithFixedCrossAxisCount(
+                                            crossAxisCount:
+                                                Match3Config.classic.width,
+                                            crossAxisSpacing: 3,
+                                            mainAxisSpacing: 3,
+                                          ),
+                                      itemBuilder: (context, index) =>
+                                          _tile(index),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(height: 12),
+                                _buildBoosterBar(),
+                                const SizedBox(height: 12),
+                                _buildActions(),
+                                const SizedBox(height: 12),
+                                _buildLevelSelect(),
+                                if (_status != null) ...[
+                                  const SizedBox(height: 8),
+                                  Semantics(
+                                    liveRegion: true,
+                                    child: Text(_status!.tr),
+                                  ),
+                                ],
+                                const SizedBox(height: 8),
+                                Text(
+                                  'match3_achievement_progress'.trParams({
+                                    'value':
+                                        '${_achievements.progressOf(_achievementId)}',
+                                  }),
+                                ),
+                                Text(
+                                  'match3_quest_progress'.trParams({
+                                    'value': '${_quests.progressOf(_questId)}',
+                                  }),
+                                ),
+                                Text(
+                                  'match3_leaderboard_count'.trParams({
+                                    'count': '${_scoreboard.topN(20).length}',
+                                  }),
+                                ),
+                              ],
                             ),
-                            const SizedBox(height: 12),
-                            _buildBoosterBar(),
-                            const SizedBox(height: 12),
-                            _buildActions(),
-                            const SizedBox(height: 12),
-                            _buildLevelSelect(),
-                            if (_status != null) ...[
-                              const SizedBox(height: 8),
-                              Semantics(
-                                liveRegion: true,
-                                child: Text(_status!.tr),
-                              ),
-                            ],
-                            const SizedBox(height: 8),
-                            Text(
-                              'match3_achievement_progress'.trParams({
-                                'value':
-                                    '${_achievements.progressOf(_achievementId)}',
-                              }),
-                            ),
-                            Text(
-                              'match3_quest_progress'.trParams({
-                                'value': '${_quests.progressOf(_questId)}',
-                              }),
-                            ),
-                            Text(
-                              'match3_leaderboard_count'.trParams({
-                                'count': '${_scoreboard.topN(20).length}',
-                              }),
-                            ),
-                          ],
+                          ),
                         ),
-                      ),
-                    ),
-                  );
-                },
-              ),
+                      );
+                    },
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        if (_showResultCard && _game.isTerminal) _buildResultOverlay(),
+      ],
     ),
   );
 
@@ -818,6 +830,102 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
                 Icons.diamond,
                 color: Colors.white,
                 size: matched ? 15 : (selected ? 28 : 22),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Future<void> _shareResult() => shareScoreCard(
+    boundaryKey: _resultCardKey,
+    levelText: 'match3_result_share_text'.trParams({
+      'level': '$_level',
+      'stars': '$_resultStars',
+      'score': '${_game.score}',
+    }),
+    sharePositionContext: context,
+  );
+
+  Widget _buildResultOverlay() {
+    final won = _game.status == Match3Status.won;
+    final canNext =
+        won &&
+        _level < _highestUnlockedLevel &&
+        _level < Match3Config.classic.levels.length;
+    final stats = [
+      'match3_result_score'.trParams({'score': '${_game.score}'}),
+      'match3_result_moves_left'.trParams({'moves': '${_game.moves}'}),
+      'match3_result_best'.trParams({'score': '$_bestScore'}),
+    ];
+    void close() => setState(() => _showResultCard = false);
+    return Positioned.fill(
+      key: const ValueKey('match3_result_overlay'),
+      child: NeonDialog.overlay(
+        onBarrier: close,
+        panel: Material(
+          type: MaterialType.transparency,
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 340),
+            child: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  RepaintBoundary(
+                    key: _resultCardKey,
+                    child: won
+                        ? VictoryCardTemplate(
+                            title: 'match3_result_win'.trParams({
+                              'level': '$_level',
+                            }),
+                            statLines: stats,
+                            starsEarned: _resultStars,
+                          )
+                        : GameOverCardTemplate(
+                            title: 'match3_result_lose'.tr,
+                            message: 'match3_result_lose_hint'.tr,
+                            icon: Icons.hourglass_empty_rounded,
+                            statLines: stats,
+                            primaryActionLabel: 'match3_restart'.tr,
+                            onPrimaryAction: _restart,
+                            secondaryActionLabel: 'match3_result_close'.tr,
+                            onSecondaryAction: close,
+                          ),
+                  ),
+                  if (won) ...[
+                    const SizedBox(height: 12),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: [
+                        if (canNext)
+                          CommonButton(
+                            key: const ValueKey('match3_result_next'),
+                            label: 'match3_next_level'.tr,
+                            color: NeonTheme.gold,
+                            onTap: () {
+                              close();
+                              _startNextLevel();
+                            },
+                          ),
+                        CommonButton(
+                          key: const ValueKey('match3_result_share'),
+                          label: 'match3_result_share'.tr,
+                          color: NeonTheme.cyan,
+                          onTap: _shareResult,
+                        ),
+                        CommonButton(
+                          key: const ValueKey('match3_result_close'),
+                          label: 'match3_result_close'.tr,
+                          variant: CommonButtonVariant.secondary,
+                          onTap: close,
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
               ),
             ),
           ),

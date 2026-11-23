@@ -54,6 +54,14 @@ Một game mẫu đủ vòng chơi để đối tác thấy kit dựng được 
 - Device: Pixel 7 Pro (không phải S24U), Android 17, debug `E2E_TEST=true`: `Match-3 Lite opens and runs one valid swap on device` pass, log `doc/task/evidence/FEAT-214-slice2-pixel7pro-match3-level-select.log`. Chỉ chứng minh màn mở và 1 swap hợp lệ, chưa tương tác với panel chọn level trên thiết bị.
 - Chưa làm: lát 3 và 4; sao mới chỉ hiện ở lưới, chưa có màn thắng/thua dùng sao (lát 3).
 
+### Lát 3: Thẻ thắng/thua + sao + chia sẻ (xong, 2026-11-23)
+
+- Quyết định owner: hiện thẻ overlay khi kết thúc ván và giữ nguyên các nút cũ bên dưới; thẻ thắng có nút Chia sẻ.
+- Thay đổi: thắng hiện `VictoryCardTemplate` (sao của chính ván này, điểm, lượt còn, điểm cao nhất) kèm nút Level tiếp, Chia sẻ (`shareScoreCard` qua `RepaintBoundary`), Đóng; thua hiện `GameOverCardTemplate` với Chơi lại và Đóng. Thẻ chỉ hiện một lần mỗi ván, đóng bằng nút hoặc chạm nền, và tự biến mất khi vào level mới (điều kiện hiển thị còn kèm `_game.isTerminal`). 9 key i18n (en + vi).
+- Tests: 12 test mới và sửa 2 test cũ (`Next Level` và `Copy Playtest Report` phải đóng thẻ trước vì thẻ chặn tương tác phía sau). Mutation check 6 lỗi cố ý: không hiện thẻ, sao sai, đóng không có tác dụng, thua dùng thẻ thắng đều làm test đỏ. Hai mutant (thẻ sống qua level mới, thẻ sống sau Chơi lại) sống sót vì mỗi cái đã được che bởi điều kiện `_game.isTerminal` nên cờ reset là code thừa; đã xoá hai chỗ reset thừa thay vì giữ test giả. Example 461 pass, root core 2026 pass, analyze và API gate sạch.
+- Device: Pixel 7 Pro (không phải S24U), Android 17, debug `E2E_TEST=true`: `Match-3 Lite opens and runs one valid swap on device` pass, log `doc/task/evidence/FEAT-214-slice3-pixel7pro-match3-result-card.log`. Chỉ chứng minh màn mở và 1 swap hợp lệ, KHÔNG phủ thẻ kết quả, sao hay nút Chia sẻ trên thiết bị.
+- Chưa chứng minh: nút Chia sẻ mới chỉ được test là không làm vỡ thẻ khi không có nền tảng; share sheet thật và ảnh thẻ chưa chạy trên thiết bị. Lát 4 chưa làm.
+
 ### Còn lại
 - Audit / điểm tổng:
 - Commit/push:
