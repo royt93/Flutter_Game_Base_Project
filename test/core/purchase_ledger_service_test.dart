@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/counter_limit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -75,7 +76,7 @@ void main() {
   group('PurchaseLedgerService: consumable balance', () {
     test('grantConsumable tràn int64: ném RangeError, số dư cũ giữ nguyên', () {
       final service = PurchaseLedgerService();
-      const maxInt = 0x7FFFFFFFFFFFFFFF;
+      final maxInt = maxCounterValue;
 
       service.grantConsumable('gems', maxInt - 5);
       expect(() => service.grantConsumable('gems', 6), throwsRangeError);

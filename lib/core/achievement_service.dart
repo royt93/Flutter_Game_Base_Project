@@ -8,6 +8,7 @@ import 'storage_service.dart';
 import 'utils/sdk_result.dart';
 import 'utils/storage_replace_watch.dart';
 import 'versioned_json_store.dart';
+import 'utils/counter_limit.dart';
 
 /// Local achievement/badge progress tracker (no Game Center/Play Games
 /// integration — that's a later, separate task).
@@ -261,7 +262,7 @@ class AchievementService extends GetxService with StorageReplaceWatch {
       throw ArgumentError.value(amount, 'amount', 'must be greater than 0');
     }
     final current = _progressMap[achievementId] ?? 0;
-    if (amount > _maxInt - current) {
+    if (amount > maxCounterValue - current) {
       throw RangeError('progress overflow for $achievementId');
     }
     final wasCompleted = isCompleted(achievementId);
@@ -386,8 +387,6 @@ class AchievementService extends GetxService with StorageReplaceWatch {
     if (threshold == null || threshold <= 0) return 0.0;
     return (progressOf(achievementId) / threshold).clamp(0.0, 1.0);
   }
-
-  static final int _maxInt = 0x7FFFFFFFFFFFFFFF;
 
   void _validateId(String achievementId) {
     if (achievementId == 'schemaVersion' || achievementId == 'syncedAtMs') {

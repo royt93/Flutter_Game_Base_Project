@@ -12,7 +12,13 @@ int fnv1aHash(String input) {
   var hash = 2166136261;
   for (final byte in utf8.encode(input)) {
     hash = (hash ^ byte) & mask32;
-    hash = (hash * prime) & mask32;
+    // `(hash * prime) & mask32` as one product reaches ~2^56, past the 2^53
+    // a JavaScript number holds exactly, so on the web it rounds and the
+    // hash silently differs from native. Splitting `hash` into 16-bit halves
+    // keeps every product below 2^53 and gives the identical 32-bit result.
+    final low = hash & 0xFFFF;
+    final high = hash >> 16;
+    hash = (low * prime + (((high * prime) & 0xFFFF) << 16)) & mask32;
   }
   return hash;
 }

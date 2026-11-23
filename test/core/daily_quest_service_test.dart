@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/daily_quest_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/counter_limit.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// `_realDay` anchors to the real day at test run time — every "simulated
@@ -135,7 +136,7 @@ void main() {
     test('progress overflow gần int.max thì throw RangeError', () {
       final service = DailyQuestService();
       service.register('overflow', 1);
-      service.incrementProgress('overflow', 0x7FFFFFFFFFFFFFFF - 1);
+      service.incrementProgress('overflow', maxCounterValue - 1);
 
       expect(
         () => service.incrementProgress('overflow', 2),

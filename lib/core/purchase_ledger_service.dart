@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'storage_service.dart';
 import 'utils/storage_replace_watch.dart';
 import 'versioned_json_store.dart';
+import 'utils/counter_limit.dart';
 
 class _LedgerState {
   _LedgerState({required this.consumables, required this.permanents});
@@ -45,7 +46,6 @@ class PurchaseLedgerService extends GetxService with StorageReplaceWatch {
   // release used keeps an existing consumer app's save reading exactly the
   // same table it always did.
   final String _storageKey;
-  static final int _maxInt = 0x7FFFFFFFFFFFFFFF;
 
   _LedgerState? _cached;
 
@@ -179,7 +179,7 @@ class PurchaseLedgerService extends GetxService with StorageReplaceWatch {
     _validateSku(sku);
     _validateAmount(amount);
     final current = _state.consumables[sku] ?? 0;
-    if (amount > _maxInt - current) {
+    if (amount > maxCounterValue - current) {
       throw RangeError('balance overflow for $sku');
     }
     _state.consumables[sku] = current + amount;

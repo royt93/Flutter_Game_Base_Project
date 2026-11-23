@@ -7,6 +7,7 @@ import 'storage_service.dart';
 import 'utils/storage_replace_watch.dart';
 import 'utils/clamped_clock.dart';
 import 'versioned_json_store.dart';
+import 'utils/counter_limit.dart';
 
 /// How often a quest's progress/claim state resets.
 enum QuestPeriod {
@@ -69,7 +70,6 @@ class DailyQuestService extends GetxService with StorageReplaceWatch {
   // release used keeps an existing consumer app's save reading exactly the
   // same table it always did.
   final String _storageKey;
-  static final int _maxInt = 0x7FFFFFFFFFFFFFFF;
 
   final Map<String, _QuestDef> _defs = {};
   Map<String, _QuestRecord>? _cached;
@@ -292,7 +292,7 @@ class DailyQuestService extends GetxService with StorageReplaceWatch {
     final existing = records[questId];
     final stale = existing == null || existing.periodKey != periodKey;
     final base = stale ? 0 : existing.progress;
-    if (amount > _maxInt - base) {
+    if (amount > maxCounterValue - base) {
       throw RangeError('progress overflow for $questId');
     }
     records[questId] = _QuestRecord(

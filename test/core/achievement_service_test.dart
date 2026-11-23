@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/achievement_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
+import 'package:roy_casual_kit/core/utils/counter_limit.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -73,7 +74,7 @@ void main() {
       service.incrementProgress('wins', 1);
 
       expect(
-        () => service.incrementProgress('wins', 9223372036854775807),
+        () => service.incrementProgress('wins', maxCounterValue),
         throwsRangeError,
       );
       expect(service.isCompleted('wins'), isFalse);
