@@ -718,6 +718,8 @@ these directly when a service is more than what a call site needs.
 - `asIntOr(json['x'], 0)` / `asStringOr(...)` / `asDoubleOr(...)` (`safe_json.dart`) — tolerant JSON field coercion.
 - `throttled(onTap, window: const Duration(milliseconds: 500))` (`throttle.dart`) — drops rapid repeat calls (double-tap/spam guard).
 - `weightedRandomPick(myLootTable)` (`weighted_random_pick.dart`) — one weighted pick (loot tables, reward rarities).
+- `PityTable<T>` (`pity_table.dart`) — a weighted table with a hard pity guarantee: after `pityAfter` consecutive misses the next pull is forced to be a pity item; the miss counter saves with `toJson()`/`restore()` and a `SeededRandom` reproduces a run. A probability tool only: it has no purchase flow or UI, and loot-box odds-disclosure and age rules vary by region, so check them for your markets (this is not legal advice).
+- `UndoStack<T>` (`undo_stack.dart`) — a bounded undo/redo history of immutable snapshots.
 - `fnv1aHash(input)` (`fnv1a.dart`) — deterministic string hash, the seed source for experiment bucketing.
 - `SeededRandom` / `CompiledWeightedTable<T>` / `SeededRandomService` (`seeded_random.dart`) — snapshot/resume-capable RNG for deterministic replay.
 - `AsyncActionGuard` (`async_action_guard.dart`) — ignore a call while a previous one from the same guard is still in flight (fast-double-tap guard for async actions).

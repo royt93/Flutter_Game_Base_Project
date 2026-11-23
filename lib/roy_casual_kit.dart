@@ -106,6 +106,7 @@ export 'core/utils/throttle.dart';
 export 'core/utils/undo_stack.dart';
 export 'core/utils/weighted_random_pick.dart';
 export 'core/utils/object_pool.dart';
+export 'core/utils/pity_table.dart';
 export 'core/utils/performance_budget.dart';
 export 'core/utils/pseudo_locale.dart';
 export 'core/utils/remote_schema_compiler.dart';
