@@ -41,7 +41,7 @@ source: "Khảo sát 2026-11-23 theo định hướng owner (widget common). Heu
 
 ## Kết quả thực hiện (một phần, 2026-11-23)
 
-Đã kiểm và sửa nhóm overlay chặn tương tác. Phần audit 21 widget theo danh sách heuristic CHƯA làm (task giữ ở `todo/`).
+Hoàn thành (2026-11-23): sửa nhóm overlay chặn tương tác; đo 21 widget bằng quét semantics tự động (17 sạch, 2 lỗi thật đã sửa, 1 báo thừa, 1 lỗi thật tách thành ENH-113). Phần chưa làm liệt kê ở mục "Chưa làm".
 
 ### Lỗi thật tìm được: overlay chặn không chặn screen reader
 
@@ -68,7 +68,7 @@ Một số probe đầu tiên của tôi dùng `find.bySemanticsLabel` trên dia
 | Widget | Phát hiện của máy quét | Kết luận | Xử lý |
 | --- | --- | --- | --- |
 | `ExpandablePanel` | header là nút không nhãn (khi không truyền `semanticLabel`) | **Lỗi thật.** Screen reader nghe một nút rỗng rồi một nút khác chứa chữ; `Semantics` ngoài và `GestureDetector` trong `PressableScale` đều khai báo hành động tap. | Sửa: bỏ `onTap` thừa trên `Semantics` ngoài (1 dòng). Header nay là một nút tên "Gameplay settings"; có `semanticLabel` thì nhãn gộp thành một nút duy nhất. 4 test mới (tên, một nút duy nhất, tap qua screen reader, trạng thái expanded và button), mutation-check 3 lỗi đều đỏ. |
-| `EventCalendarCard` | nút mở sự kiện 40x40 | **Lỗi thật** (dưới 44dp; nhãn thì ổn qua tooltip). | Sửa: bỏ `visualDensity: compact`, nút thành 48x48, card cao hơn 3px (135 -> 138). 1 test mới, mutation-check đỏ khi khôi phục compact. **Golden `eventcalendarcard_week_*` (7 ảnh) sẽ đổi**; xem mục golden bên dưới. |
+| `EventCalendarCard` | nút mở sự kiện 40x40 | **Lỗi thật** (dưới 44dp; nhãn thì ổn qua tooltip). | Sửa: bỏ `visualDensity: compact`, nút thành 48x48, card cao hơn 3px (135 -> 138). 1 test mới, mutation-check đỏ khi khôi phục compact. Golden `eventcalendarcard_week_schedule_*` (7 ảnh) đã tạo lại qua workflow; xem mục Golden bên dưới. |
 | `CommunityLeaderboardCard` | nút refresh 48x48 "không nhãn" | **Báo thừa.** Máy quét chỉ nhìn `label`; Flutter ghi `IconButton.tooltip` được dùng cho accessibility, và `refreshLabel` bắt buộc không rỗng. | Không sửa. |
 | `CollectionAlbumPanel` | chip lọc nhỏ hơn 44 | **Lỗi thật**: ba chip cao 33px (rộng 63, 87, 112), `GestureDetector` không có vùng chạm tối thiểu. | CHƯA sửa: đổi kích thước sẽ đổi 28 golden (`collectionalbumpanel_*`) cần workflow Linux. |
 
@@ -77,14 +77,16 @@ Một số probe đầu tiên của tôi dùng `find.bySemanticsLabel` trên dia
 - Với `ExpandablePanel`, bọc header bằng `MergeSemantics` (ngoài và trong `Semantics`) làm XẤU hơn: mất luôn nhãn `semanticLabel` tường minh. Đã hoàn nguyên. Nguyên nhân gốc thật sự là hai nơi cùng khai báo hành động tap, không phải thiếu merge. Bỏ `container: true` cũng không đổi gì.
 - Với `EventCalendarCard`, đặt `constraints: BoxConstraints(minWidth: 44, minHeight: 44)` không có tác dụng (nút vẫn 40) vì `visualDensity: compact` trừ đi; phải bỏ density.
 
-### Golden (chưa làm, theo quy ước repo)
+### Golden (đã làm, 2026-11-23)
 
-Golden chỉ được sinh bằng workflow `regenerate-goldens.yml` trên Linux, không từ máy macOS. Thay đổi hiện tại đổi `eventcalendarcard_week_*` (7 ảnh, bố cục card cao hơn). Test golden của widget này đã đỏ sẵn trên macOS ở cả HEAD lẫn bản sửa (2 đỏ ở cả hai), nên không thể so sánh cục bộ; baseline Linux chỉ phản ánh được sau khi chạy workflow. Owner đang hoãn CI nên PNG chưa được tạo lại: **main sẽ đỏ ở golden `EventCalendarCard` cho đến khi chạy workflow và copy đúng 7 PNG `eventcalendarcard_week_*`** (không copy cả artifact).
+Golden chỉ được sinh bằng workflow `regenerate-goldens.yml` trên Linux. Đã chạy (run `45145690466`, commit nguồn `ededf8cd`) và copy đúng 7 PNG `eventcalendarcard_week_schedule_*` (commit `e007809b`); so sánh trực quan ảnh cũ/mới: card cao hơn vài px, nút lớn hơn, không có lỗi render. Lệch pixel của 7 ảnh: 7.89% cho 5 biến thể 1x, 0.24% và 0.34% cho hai biến thể text scale (đúng thay đổi bố cục dự kiến).
+
+Artifact còn khác 655 file ngoài ý muốn, nhưng ở cả 655 file đó 0.000% pixel khác và chênh kênh màu tối đa bằng 0 (chỉ khác mã hoá PNG), và không có file nào đổi kích thước. KHÔNG import chúng (đúng quy ước "chỉ copy PNG cần đổi, không copy cả artifact"); nếu import sẽ tạo 655 thay đổi nhị phân vô nghĩa. Test golden `EventCalendarCard` trên macOS đỏ sẵn ở HEAD (quy ước repo), nên không kiểm được cục bộ: xác nhận cuối cùng là CI trên Linux.
 
 ### Chưa làm
-- Sửa chip lọc `CollectionAlbumPanel` (cần regenerate 28 golden).
-- Quyết định có chặn semantics cho `LoadingOverlay` hay không (xem trên).
+- Sửa chip lọc `CollectionAlbumPanel`: tách thành ENH-113.
+- Quyết định có chặn semantics cho `LoadingOverlay` hay không: để nguyên (quyết định ENH-37), mở lại nếu muốn.
 - Chưa bật TalkBack/VoiceOver thật; mọi kết luận là từ cây semantics trong test.
 
-- Audit / điểm: ~8.8/10. Trừ điểm: golden `EventCalendarCard` chưa được tạo lại nên main sẽ đỏ ở một test golden cho đến khi chạy workflow; `CollectionAlbumPanel` chưa sửa; không có TalkBack thật.
-- Commit/push:
+- Audit / điểm: ~9.0/10. Trừ điểm: `CollectionAlbumPanel` chưa sửa (tách thành ENH-113); không có TalkBack thật; golden `EventCalendarCard` mới chỉ được xác nhận qua workflow tạo lại, chưa qua một lần CI đầy đủ.
+- Commit/push: `1c7651f2` (overlay), `ededf8cd` (ExpandablePanel + EventCalendarCard), `e007809b` (golden); đã push.
