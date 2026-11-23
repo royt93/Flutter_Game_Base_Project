@@ -35,7 +35,9 @@ source: "ENH-112 (2026-11-23): quét semantics tự động trên 339 case sweep
 
 ## Kết quả thực hiện
 
+- Phát hiện khi làm: KHÔNG thể mở rộng vùng chạm mà giữ nguyên chiều cao. Thử đo trực tiếp: một con `GestureDetector` tràn ra ngoài layout box của cha (Stack, `clipBehavior: Clip.none`, `top/bottom: -5.5`) không nhận tap ngoài box (cả hai điểm thử đều 0 tap). Nên cách "đệm vô hình" ghi trong phạm vi ban đầu không khả thi; chip phải cao thật.
+- Sửa: bọc chip trong `ConstrainedBox(minHeight: 44)` + `Align(widthFactor: 1, heightFactor: 1)`, `behavior: opaque`. Đo thật: chip 62.8x44, 87.3x44, 111.8x44 (trước: 33 cao); panel 380 -> 391 (+11dp). Diff thật: 10 dòng thêm.
+- Test: 1 test mới (3 chip >= 44dp cao, nhãn "<Tên> filter" không đổi); mutation `minHeight: 30` làm test đỏ. Root 4127 pass, example 472 pass, analyze, audit a11y, API gate sạch.
+- Golden: ~28 ảnh `collectionalbumpanel_*` đổi (panel cao hơn); tạo lại qua workflow `regenerate-goldens.yml`, chỉ copy PNG `collectionalbumpanel_*` (xem commit golden).
 - Audit / điểm:
-- Tests:
-- Golden:
 - Commit/push:

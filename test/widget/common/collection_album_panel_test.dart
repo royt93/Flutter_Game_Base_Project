@@ -146,6 +146,27 @@ void main() {
       expect(tappedId, 'moon_crown');
     });
 
+    testWidgets('filter chips are at least 44dp tall and keep their labels', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_subject());
+      for (final f in ['all', 'owned', 'missing']) {
+        final chip = find.byKey(ValueKey('collectionFilter_$f'));
+        expect(
+          tester.getSize(chip).height,
+          greaterThanOrEqualTo(44),
+          reason: '$f chip height',
+        );
+        // The chip is announced as "<Name> filter" (its own text follows).
+        expect(
+          tester.getSemantics(chip).label,
+          startsWith('${f[0].toUpperCase()}${f.substring(1)} filter'),
+        );
+      }
+      handle.dispose();
+    });
+
     testWidgets('filters owned and missing items', (tester) async {
       await tester.pumpWidget(_subject());
       await tester.tap(find.byKey(const ValueKey('collectionFilter_owned')));

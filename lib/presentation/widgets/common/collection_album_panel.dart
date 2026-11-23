@@ -267,25 +267,35 @@ class _CollectionAlbumPanelState extends State<CollectionAlbumPanel> {
       child: GestureDetector(
         key: ValueKey('collectionFilter_${filter.name}'),
         onTap: () => setState(() => _filter = filter),
-        child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
-          decoration: BoxDecoration(
-            color: selected
-                ? NeonTheme.fillForWhiteText(NeonTheme.purple)
-                : NeonTheme.cardAlt,
-            borderRadius: BorderRadius.circular(18),
-            border: Border.all(
-              color: selected
-                  ? NeonTheme.fillForWhiteText(NeonTheme.purple)
-                  : NeonTheme.inkSoft.withValues(alpha: 0.25),
-            ),
-          ),
-          child: Text(
-            label,
-            style: TextStyle(
-              color: selected ? Colors.white : NeonTheme.inkSoft,
-              fontSize: 12,
-              fontWeight: FontWeight.w800,
+        behavior: HitTestBehavior.opaque,
+        // The chip draws 33dp tall; the touch target is padded to 44dp so it
+        // is comfortable to hit without changing how the chip looks.
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minHeight: 44),
+          child: Align(
+            widthFactor: 1,
+            heightFactor: 1,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+              decoration: BoxDecoration(
+                color: selected
+                    ? NeonTheme.fillForWhiteText(NeonTheme.purple)
+                    : NeonTheme.cardAlt,
+                borderRadius: BorderRadius.circular(18),
+                border: Border.all(
+                  color: selected
+                      ? NeonTheme.fillForWhiteText(NeonTheme.purple)
+                      : NeonTheme.inkSoft.withValues(alpha: 0.25),
+                ),
+              ),
+              child: Text(
+                label,
+                style: TextStyle(
+                  color: selected ? Colors.white : NeonTheme.inkSoft,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ),
         ),
