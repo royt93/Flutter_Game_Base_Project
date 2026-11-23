@@ -13,7 +13,8 @@ source: "Khảo sát web 2026-11-23: kit biên dịch được cho web (sau BUG-
 - `flutter build web` của app thử dùng kit (import cả 121 thư viện export) pass.
 - `flutter test --platform chrome --exclude-tags slow test/core test/widget/common test/presentation`: 3925 pass, 51 đỏ ở lần đo đầu (sau khi đã sửa 3 literal). `test/tool/*` loại ra vì dùng `dart:io`, đúng với CLI.
 - 51 đỏ chia nhóm (số test): `audio_manager_test` 20, `reminder_service_test` 7, `wake_lock_service_test` 5, `smart_reminder_scheduling_test` 5, `app_version_gate_test` 3, `kit_bootstrap_test` 3, `share_helper_test` 2, `level_up_overlay_test` 1, và 5 test lẻ (`fnv1a`, `experiment_bucketing`, `safe_json`, `shadow_activation`, `candy_slider`).
-- BUG-140 đã sửa 3 trong 51: `fnv1a_test`, `experiment_bucketing_service_test` và `safe_json_test` (`asIntOr` với `Infinity`) (phân phối bucket sai vì hash sai, xem BUG-140). Còn lại ước tính 48, **chưa chạy lại toàn bộ suite sau khi sửa** nên con số này là suy ra từ lần đo đầu trừ 3 test đã xác nhận pass; cần chạy lại để có số chính thức.
+- Lần đo thứ hai (sau khi BUG-140 sửa literal và `fnv1aHash`, nhưng TRƯỚC khi sửa `asIntOr`): **3928 pass, 49 đỏ**. So với lần đầu, `fnv1a_test` và `experiment_bucketing_service_test` đã hết đỏ (do sửa hash). `safe_json_test` vẫn đỏ trong lần đo này vì chạy trước bản sửa `asIntOr`; đã xác nhận riêng `safe_json_test` pass 12/12 trên Chrome sau khi sửa, nên số đỏ với code hiện tại là **48** (49 trừ 1, suy ra từ hai lần chạy riêng lẻ, chưa chạy lại toàn bộ suite sau cùng).
+- 49 đỏ của lần đo hai, theo file: `audio_manager_test` 20, `reminder_service_test` 7, `smart_reminder_scheduling_test` 5, `wake_lock_service_test` 5, `app_version_gate_test` 3, `kit_bootstrap_test` 3, `share_helper_test` 2, và 4 test lẻ (`candy_slider`, `level_up_overlay`, `safe_json` đã sửa, `shadow_activation`).
 - Lệnh tái hiện: `flutter test --platform chrome --exclude-tags slow test/core test/widget/common test/presentation`.
 
 ## Phân loại nguyên nhân
@@ -24,7 +25,7 @@ source: "Khảo sát web 2026-11-23: kit biên dịch được cho web (sau BUG-
 | `reminder_service_test` (7), `smart_reminder_scheduling_test` (5) | `initialize` không xuất hiện trước `requestNotificationsPermission`; `Bad state: No element` | `flutter_local_notifications` không có kênh native trên web; kit có thể cần đường đi riêng cho web. Chưa rõ là hạn chế nền tảng hay bug thứ tự gọi. |
 | `wake_lock_service_test` (5), `kit_bootstrap_test` (3), `app_version_gate_test` (3) | `TimeoutException 30s` | Test treo trên Chrome; nghi cùng một nguyên nhân (plugin/async không hoàn tất) chứ chưa xác nhận. |
 | `share_helper_test` (2) | `captureBoardPng` leak Picture / `shareJourneyCard` | Có thể là khác biệt renderer web; cần đọc kỹ trước khi kết luận. |
-| lẻ (2 còn lại) | `shadow_activation` (500 vs 500.0), `candy_slider` (semantics) | Khác biệt số học/định dạng của JS (số nguyên và double là một kiểu); từng ca cần phân biệt "test giả định VM" và "bug kit". |
+| lẻ (2 còn lại, ngoài `safe_json` đã sửa và `level_up_overlay` ở hàng trên) | `shadow_activation` (500 vs 500.0), `candy_slider` (semantics) | Khác biệt số học/định dạng của JS (số nguyên và double là một kiểu); từng ca cần phân biệt "test giả định VM" và "bug kit". |
 
 ## Phạm vi
 
@@ -39,7 +40,7 @@ source: "Khảo sát web 2026-11-23: kit biên dịch được cho web (sau BUG-
 
 ## Acceptance criteria
 
-- [ ] Chạy lại toàn bộ suite Chrome để có số đỏ chính thức, rồi bảng phân loại có kết luận từng nhóm kèm bằng chứng (lệnh, log).
+- [ ] Chạy lại toàn bộ suite Chrome một lần cuối (số 48 hiện là suy ra), rồi bảng phân loại có kết luận từng nhóm kèm bằng chứng (lệnh, log).
 - [ ] Không còn test đỏ không giải thích trên Chrome: mỗi test đỏ hoặc được sửa, hoặc có tag/skip kèm lý do cụ thể.
 - [ ] Mọi thay đổi code kit có test chạy cả VM lẫn Chrome và không đổi hành vi native (so sánh bằng test VM cũ).
 - [ ] Tài liệu nói rõ phần nào chạy trên web, không claim quá mức bằng chứng.
