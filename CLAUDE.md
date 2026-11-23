@@ -77,7 +77,13 @@ export in `lib/roy_casual_kit.dart` will fail CI until you run the
 `lib/`, `tool/`, or `pubspec.yaml` changed, via `paths-filter`) runs the 5
 `tool/*_check.dart` commands listed above — easy to miss since it's
 conditional, so a PR touching those paths can fail CI on one of these even
-though they aren't in the always-run `analyze-test` job above.
+though they aren't in the always-run `analyze-test` job above. A third job,
+`consumer-smoke` (generates a real consumer app and boots it on an Android
+emulator), runs only weekly (`schedule`) or via `workflow_dispatch`, not on
+push/PR: it is flaky on GitHub runners (a 20-minute emulator hang once
+blocked a release). A push's run therefore shows it as skipped; run it by hand
+with `gh workflow run ci.yml --ref main` before a release if the generator or
+consumer boot path changed.
 
 Root tests mirror `lib/`: `test/core` (+ `test/core/utils`), `test/widget`
 (+ `test/widget/common`, `test/widget/goldens`), `test/presentation/game`
