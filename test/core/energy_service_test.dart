@@ -156,6 +156,42 @@ void main() {
       );
     });
 
+    group('BUG-143: grantInfiniteLives validates duration', () {
+      test('zero or negative duration -> ArgumentError, nothing stored', () {
+        final service = EnergyService(maxEnergy: 3);
+        expect(
+          () => service.grantInfiniteLives(Duration.zero),
+          throwsArgumentError,
+        );
+        expect(
+          () => service.grantInfiniteLives(const Duration(days: -5)),
+          throwsArgumentError,
+        );
+        expect(store.getInt(StorageKeys.energyInfiniteUntilMs), 0);
+        expect(service.hasInfiniteLives, isFalse);
+      });
+
+      test('over 100 years -> ArgumentError, exactly 100 years is accepted',
+          () async {
+        final service = EnergyService(maxEnergy: 3);
+        expect(
+          () => service.grantInfiniteLives(const Duration(days: 100000000)),
+          throwsArgumentError,
+        );
+        expect(
+          () => service.grantInfiniteLives(
+            EnergyService.maxInfiniteLivesDuration + const Duration(seconds: 1),
+          ),
+          throwsArgumentError,
+        );
+        expect(store.getInt(StorageKeys.energyInfiniteUntilMs), 0);
+        await service.grantInfiniteLives(
+          EnergyService.maxInfiniteLivesDuration,
+        );
+        expect(service.hasInfiniteLives, isTrue);
+      });
+    });
+
     group('BUG-52: grantInfiniteLives cộng dồn, không ghi đè', () {
       test(
         'grant lần 2 (duration ngắn hơn thời gian còn lại của lần 1) '

@@ -93,6 +93,9 @@ class EnergyService extends GetxService with StorageReplaceWatch {
     return true;
   }
 
+  /// Longest window [grantInfiniteLives] accepts (BUG-143): 100 years.
+  static const Duration maxInfiniteLivesDuration = Duration(days: 365 * 100);
+
   /// Grants temporary unlimited energy for [duration] — `consumeEnergy`
   /// succeeds without deducting until it elapses.
   ///
@@ -100,7 +103,23 @@ class EnergyService extends GetxService with StorageReplaceWatch {
   /// — a second grant (e.g. a 2nd IAP/reward redeemed while the first is
   /// still running) extends the later of the two expiries, it never cuts a
   /// longer window short.
+  ///
+  /// BUG-143: [duration] must be positive and at most [maxInfiniteLivesDuration]
+  /// (`ArgumentError` otherwise): a zero/negative value is a caller bug (wrong
+  /// unit, negated product) that used to be silently ignored, and a huge one
+  /// (a bad remote-config or IAP number) stored an expiry millions of years
+  /// away that nothing could undo.
   Future<void> grantInfiniteLives(Duration duration) {
+    if (duration <= Duration.zero) {
+      throw ArgumentError.value(duration, 'duration', 'must be > 0');
+    }
+    if (duration > maxInfiniteLivesDuration) {
+      throw ArgumentError.value(
+        duration,
+        'duration',
+        'must be at most $maxInfiniteLivesDuration',
+      );
+    }
     final current = StorageService.to.getInt(
       StorageKeys.energyInfiniteUntilMs,
       def: 0,

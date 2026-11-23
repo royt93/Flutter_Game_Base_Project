@@ -1,3 +1,7 @@
+## Unreleased
+
+- **Behavior change (energy, BUG-143):** `EnergyService.grantInfiniteLives` now throws `ArgumentError` when `duration` is zero, negative, or longer than 100 years (`EnergyService.maxInfiniteLivesDuration`). Before, zero/negative was silently ignored and a huge value (e.g. a bad remote-config or IAP number) stored an expiry millions of years away. Valid grants (including stacking) are unchanged.
+
 ## 0.9.1
 
 - **Behavior change (season events, ENH-116):** `SeasonEventService.currentWindow` now throws `ArgumentError` when `length + cooldown` exceeds 100 years (`SeasonEventService.maxCycleMs`); before, a huge value (e.g. a bad remote-config number) surfaced as a `RangeError` from `DateTime`. Added `SeasonEventService.maxCycleMs`. A future-dated anchor is unchanged: it still means "event not started yet" (BUG-66).
