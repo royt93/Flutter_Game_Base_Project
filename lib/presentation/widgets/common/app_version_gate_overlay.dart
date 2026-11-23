@@ -116,59 +116,64 @@ class _AppVersionGateOverlayState extends State<AppVersionGateOverlay> {
         ? (widget.config.maintenanceMessage ?? labels.maintenanceMessage)
         : labels.updateMessage;
 
-    return ColoredBox(
-      color: Colors.black54,
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxHeight: MediaQuery.sizeOf(context).height - NeonTheme.s24,
-          ),
-          child: PanelCard(
-            child: SingleChildScrollView(
-              child: Padding(
-                padding: const EdgeInsets.all(NeonTheme.s16),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 20,
-                      ),
-                    ),
-                    const SizedBox(height: NeonTheme.s8),
-                    Text(message),
-                    if (_launchFailed) ...[
-                      const SizedBox(height: NeonTheme.s8),
+    // BlockSemantics hides every semantics node painted BEFORE this one (the
+    // app behind the overlay), so TalkBack/VoiceOver can only reach the gate.
+    // Without it a screen reader still walks into the blocked app.
+    return BlockSemantics(
+      child: ColoredBox(
+        color: Colors.black54,
+        child: Center(
+          child: ConstrainedBox(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.sizeOf(context).height - NeonTheme.s24,
+            ),
+            child: PanelCard(
+              child: SingleChildScrollView(
+                child: Padding(
+                  padding: const EdgeInsets.all(NeonTheme.s16),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
                       Text(
-                        labels.storeOpenFailed,
-                        style: TextStyle(color: NeonTheme.red),
+                        title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 20,
+                        ),
+                      ),
+                      const SizedBox(height: NeonTheme.s8),
+                      Text(message),
+                      if (_launchFailed) ...[
+                        const SizedBox(height: NeonTheme.s8),
+                        Text(
+                          labels.storeOpenFailed,
+                          style: TextStyle(color: NeonTheme.red),
+                        ),
+                      ],
+                      const SizedBox(height: NeonTheme.s16),
+                      Wrap(
+                        spacing: NeonTheme.s8,
+                        children: [
+                          if (!isMaintenance)
+                            CommonButton(
+                              label: _launchFailed
+                                  ? labels.retry
+                                  : (_launching
+                                        ? labels.opening
+                                        : labels.updateNow),
+                              onTap: _launching ? null : _launch,
+                            ),
+                          if (!_blocking)
+                            CommonButton(
+                              label: labels.later,
+                              variant: CommonButtonVariant.secondary,
+                              onTap: _dismissSoft,
+                            ),
+                        ],
                       ),
                     ],
-                    const SizedBox(height: NeonTheme.s16),
-                    Wrap(
-                      spacing: NeonTheme.s8,
-                      children: [
-                        if (!isMaintenance)
-                          CommonButton(
-                            label: _launchFailed
-                                ? labels.retry
-                                : (_launching
-                                      ? labels.opening
-                                      : labels.updateNow),
-                            onTap: _launching ? null : _launch,
-                          ),
-                        if (!_blocking)
-                          CommonButton(
-                            label: labels.later,
-                            variant: CommonButtonVariant.secondary,
-                            onTap: _dismissSoft,
-                          ),
-                      ],
-                    ),
-                  ],
+                  ),
                 ),
               ),
             ),

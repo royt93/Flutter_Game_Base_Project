@@ -539,4 +539,21 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets('SpotlightOverlay hides the app behind it from screen readers', (
+    tester,
+  ) async {
+    final handle = tester.ensureSemantics();
+    final targetKey = GlobalKey();
+    await tester.pumpWidget(harness(targetKey));
+    // The callout only exists after the target is measured (one frame later)
+    // and then fades in; transparent content is not in the semantics tree.
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    // The callout is reachable, the covered button is not.
+    expect(find.bySemanticsLabel(RegExp('Nhấn vào đây')), findsWidgets);
+    expect(find.bySemanticsLabel('Target'), findsNothing);
+    handle.dispose();
+  });
 }

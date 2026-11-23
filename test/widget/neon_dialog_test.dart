@@ -223,4 +223,93 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  group('screen reader reach (BlockSemantics)', () {
+    Widget behindStack(Widget overlay) => MaterialApp(
+      home: Material(
+        child: Stack(
+          children: [
+            const Center(child: Text('BEHIND CONTENT')),
+            overlay,
+          ],
+        ),
+      ),
+    );
+
+    // Finders on semantics must be built inside the test after
+    // `ensureSemantics()`, so these are functions, not fields.
+    Finder behind() => find.bySemanticsLabel('BEHIND CONTENT');
+
+    testWidgets('overlay hides the app behind it from screen readers', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        behindStack(
+          Positioned.fill(
+            child: NeonDialog.overlay(panel: const Text('DIALOG')),
+          ),
+        ),
+      );
+      // The panel fades in; fully transparent content is not in the tree yet.
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.bySemanticsLabel('DIALOG'), findsOneWidget);
+      expect(behind(), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('overlaySlot with a panel hides the app behind it', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        behindStack(
+          Positioned.fill(
+            child: NeonDialog.overlaySlot(
+              panel: const Text('DIALOG'),
+              panelKey: 'k',
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.bySemanticsLabel('DIALOG'), findsOneWidget);
+      expect(behind(), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('overlaySlot with no panel leaves the app reachable', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(
+        behindStack(
+          Positioned.fill(
+            child: NeonDialog.overlaySlot(panel: null, panelKey: 'k'),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(behind(), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('overlaySlot gives the app back when the panel closes', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      Widget build(Widget? panel) => behindStack(
+        Positioned.fill(
+          child: NeonDialog.overlaySlot(panel: panel, panelKey: 'k'),
+        ),
+      );
+      await tester.pumpWidget(build(const Text('DIALOG')));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(behind(), findsNothing);
+      await tester.pumpWidget(build(null));
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(behind(), findsOneWidget);
+      handle.dispose();
+    });
+  });
 }

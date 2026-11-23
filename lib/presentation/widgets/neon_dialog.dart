@@ -184,32 +184,36 @@ class NeonDialog {
   /// A9: panel scale+fade vào thay vì snap hiện tức thì (TweenAnimationBuilder
   /// tự chạy 1 lần lúc mount vì tween bắt đầu từ giá trị mặc định 0).
   static Widget overlay({required Widget panel, VoidCallback? onBarrier}) {
-    return Stack(
-      children: [
-        GestureDetector(
-          onTap: onBarrier,
-          child: Container(color: Colors.black.withValues(alpha: 0.6)),
-        ),
-        Center(
-          // panel()/overlay() are static methods with no ambient
-          // BuildContext of their own — a Builder gets one at the point the
-          // widget tree actually mounts, so reducedMotion can be checked.
-          child: Builder(
-            builder: (context) => TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: 1),
-              duration: NeonTheme.reducedMotion(context)
-                  ? Duration.zero
-                  : const Duration(milliseconds: 220),
-              curve: Curves.easeOutBack,
-              builder: (_, t, child) => Opacity(
-                opacity: t.clamp(0, 1),
-                child: Transform.scale(scale: 0.85 + 0.15 * t, child: child),
+    // The barrier swallows taps, so a screen reader must not reach the app
+    // behind the panel either.
+    return BlockSemantics(
+      child: Stack(
+        children: [
+          GestureDetector(
+            onTap: onBarrier,
+            child: Container(color: Colors.black.withValues(alpha: 0.6)),
+          ),
+          Center(
+            // panel()/overlay() are static methods with no ambient
+            // BuildContext of their own — a Builder gets one at the point the
+            // widget tree actually mounts, so reducedMotion can be checked.
+            child: Builder(
+              builder: (context) => TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: 1),
+                duration: NeonTheme.reducedMotion(context)
+                    ? Duration.zero
+                    : const Duration(milliseconds: 220),
+                curve: Curves.easeOutBack,
+                builder: (_, t, child) => Opacity(
+                  opacity: t.clamp(0, 1),
+                  child: Transform.scale(scale: 0.85 + 0.15 * t, child: child),
+                ),
+                child: panel,
               ),
-              child: panel,
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 
@@ -230,51 +234,59 @@ class NeonDialog {
     required Object? panelKey,
     VoidCallback? onBarrier,
   }) {
-    return Stack(
-      children: [
-        // overlaySlot() is a static method with no ambient BuildContext of
-        // its own — a Builder gets one at the point each half of the tree
-        // actually mounts, so reducedMotion can be checked.
-        Builder(
-          builder: (context) {
-            final duration = NeonTheme.reducedMotion(context)
-                ? Duration.zero
-                : _kDialogDuration;
-            return AnimatedOpacity(
-              duration: duration,
-              opacity: panel == null ? 0 : 1,
-              child: IgnorePointer(
-                ignoring: panel == null,
-                child: GestureDetector(
-                  onTap: onBarrier,
-                  child: Container(color: Colors.black.withValues(alpha: 0.6)),
-                ),
-              ),
-            );
-          },
-        ),
-        Center(
-          child: Builder(
+    // The slot is always mounted with a nullable panel, so semantics may only
+    // be blocked while a panel is showing; with `panel == null` the app behind
+    // must stay reachable.
+    return BlockSemantics(
+      blocking: panel != null,
+      child: Stack(
+        children: [
+          // overlaySlot() is a static method with no ambient BuildContext of
+          // its own — a Builder gets one at the point each half of the tree
+          // actually mounts, so reducedMotion can be checked.
+          Builder(
             builder: (context) {
               final duration = NeonTheme.reducedMotion(context)
                   ? Duration.zero
                   : _kDialogDuration;
-              return AnimatedSwitcher(
+              return AnimatedOpacity(
                 duration: duration,
-                switchInCurve: _kDialogCurve,
-                switchOutCurve: Curves.easeIn,
-                transitionBuilder: (child, animation) => FadeTransition(
-                  opacity: animation,
-                  child: ScaleTransition(scale: animation, child: child),
+                opacity: panel == null ? 0 : 1,
+                child: IgnorePointer(
+                  ignoring: panel == null,
+                  child: GestureDetector(
+                    onTap: onBarrier,
+                    child: Container(
+                      color: Colors.black.withValues(alpha: 0.6),
+                    ),
+                  ),
                 ),
-                child: panel == null
-                    ? const SizedBox.shrink(key: ValueKey('empty'))
-                    : KeyedSubtree(key: ValueKey(panelKey), child: panel),
               );
             },
           ),
-        ),
-      ],
+          Center(
+            child: Builder(
+              builder: (context) {
+                final duration = NeonTheme.reducedMotion(context)
+                    ? Duration.zero
+                    : _kDialogDuration;
+                return AnimatedSwitcher(
+                  duration: duration,
+                  switchInCurve: _kDialogCurve,
+                  switchOutCurve: Curves.easeIn,
+                  transitionBuilder: (child, animation) => FadeTransition(
+                    opacity: animation,
+                    child: ScaleTransition(scale: animation, child: child),
+                  ),
+                  child: panel == null
+                      ? const SizedBox.shrink(key: ValueKey('empty'))
+                      : KeyedSubtree(key: ValueKey(panelKey), child: panel),
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

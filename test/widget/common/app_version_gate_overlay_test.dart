@@ -203,4 +203,73 @@ void main() {
     );
     expect(popScope.canPop, isTrue);
   });
+
+  group('screen reader reach (BlockSemantics)', () {
+    // `bySemanticsLabel` only matches nodes that are actually in the semantics
+    // tree, so "findsNothing" means a screen reader cannot reach that label.
+    Future<void> pumpGate(WidgetTester tester, GateDecision decision) =>
+        tester.pumpWidget(
+          wrap(
+            AppVersionGateOverlay(
+              decision: decision,
+              config: const AppVersionGateConfig(storeUrl: 'https://x.test'),
+              launchStore: (_) async => true,
+              child: const Center(child: Text('BEHIND CONTENT')),
+            ),
+          ),
+        );
+
+    // A function, not a field: finders on semantics must be built after
+    // `ensureSemantics()` has run inside the test, never at file load.
+    Finder behind() => find.bySemanticsLabel('BEHIND CONTENT');
+
+    testWidgets('force update hides the app behind it from screen readers', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pumpGate(tester, GateDecision.forceUpdate);
+      expect(find.bySemanticsLabel('Update now'), findsOneWidget);
+      expect(behind(), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('maintenance hides the app behind it from screen readers', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pumpGate(tester, GateDecision.maintenance);
+      expect(find.bySemanticsLabel('Đang bảo trì'), findsOneWidget);
+      expect(behind(), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('soft update also blocks reach while the dialog is up', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pumpGate(tester, GateDecision.softUpdate);
+      expect(find.bySemanticsLabel('Để sau'), findsOneWidget);
+      expect(behind(), findsNothing);
+      handle.dispose();
+    });
+
+    testWidgets('decision ok leaves the app fully reachable', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpGate(tester, GateDecision.ok);
+      expect(behind(), findsOneWidget);
+      handle.dispose();
+    });
+
+    testWidgets('dismissing a soft update gives the app back to the reader', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await pumpGate(tester, GateDecision.softUpdate);
+      expect(behind(), findsNothing);
+      await tester.tap(find.text('Để sau'));
+      await tester.pump();
+      expect(behind(), findsOneWidget);
+      handle.dispose();
+    });
+  });
 }

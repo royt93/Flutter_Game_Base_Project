@@ -106,52 +106,56 @@ class _SpotlightOverlayState extends State<SpotlightOverlay> {
     final entranceDuration = NeonTheme.reducedMotion(context)
         ? Duration.zero
         : const Duration(milliseconds: 250);
-    return Stack(
-      children: [
-        Positioned.fill(
-          // Blocks all interaction with whatever is underneath until
-          // dismissed — same "barrier consumes the tap" behavior as
-          // `NeonDialog.overlay`'s barrier.
-          child: GestureDetector(
-            onTap: widget.onDismiss,
-            // Plain fade (no bounce — a bounce on a full-screen dim would
-            // look off) so the very first appearance isn't a hard snap,
-            // matching every other overlay in the kit
-            // (NeonDialog/ToastBanner/RewardPopup all animate in).
-            child: TweenAnimationBuilder<double>(
-              tween: Tween(begin: 0, end: 1),
-              duration: entranceDuration,
-              curve: Curves.easeOut,
-              builder: (context, t, child) =>
-                  Opacity(opacity: t.clamp(0.0, 1.0), child: child),
-              child: CustomPaint(
-                key: const Key('spotlightOverlayPainter'),
-                painter: SpotlightHolePainter(
-                  hole: rect,
-                  radius: widget.holeRadius,
-                  dimColor:
-                      widget.dimColor ?? Colors.black.withValues(alpha: 0.72),
+    // The scrim swallows every tap, so a screen reader must not reach the app
+    // behind it either; the callout below carries the explanation.
+    return BlockSemantics(
+      child: Stack(
+        children: [
+          Positioned.fill(
+            // Blocks all interaction with whatever is underneath until
+            // dismissed — same "barrier consumes the tap" behavior as
+            // `NeonDialog.overlay`'s barrier.
+            child: GestureDetector(
+              onTap: widget.onDismiss,
+              // Plain fade (no bounce — a bounce on a full-screen dim would
+              // look off) so the very first appearance isn't a hard snap,
+              // matching every other overlay in the kit
+              // (NeonDialog/ToastBanner/RewardPopup all animate in).
+              child: TweenAnimationBuilder<double>(
+                tween: Tween(begin: 0, end: 1),
+                duration: entranceDuration,
+                curve: Curves.easeOut,
+                builder: (context, t, child) =>
+                    Opacity(opacity: t.clamp(0.0, 1.0), child: child),
+                child: CustomPaint(
+                  key: const Key('spotlightOverlayPainter'),
+                  painter: SpotlightHolePainter(
+                    hole: rect,
+                    radius: widget.holeRadius,
+                    dimColor:
+                        widget.dimColor ?? Colors.black.withValues(alpha: 0.72),
+                  ),
+                  child: const SizedBox.expand(),
                 ),
-                child: const SizedBox.expand(),
               ),
             ),
           ),
-        ),
-        if (rect != null)
-          _Callout(
-            rect: rect,
-            screenSize: screenSize,
-            title: widget.title,
-            message: widget.message,
-            buttonLabel: widget.buttonLabel ?? 'tutorial_got_it'.tr,
-            color: widget.color ?? NeonTheme.purple,
-            onDismiss: widget.onDismiss,
-            entranceDuration: entranceDuration,
-            stepIndicator: widget.stepIndicator,
-            onSkip: widget.onSkip,
-            skipLabel: widget.skipLabel ?? 'tutorial_skip'.tr,
-          ),
-      ],
+          if (rect != null)
+            _Callout(
+              rect: rect,
+              screenSize: screenSize,
+              title: widget.title,
+              message: widget.message,
+              buttonLabel: widget.buttonLabel ?? 'tutorial_got_it'.tr,
+              color: widget.color ?? NeonTheme.purple,
+              onDismiss: widget.onDismiss,
+              entranceDuration: entranceDuration,
+              stepIndicator: widget.stepIndicator,
+              onSkip: widget.onSkip,
+              skipLabel: widget.skipLabel ?? 'tutorial_skip'.tr,
+            ),
+        ],
+      ),
     );
   }
 }
