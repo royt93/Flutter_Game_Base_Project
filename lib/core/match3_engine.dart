@@ -60,17 +60,83 @@ class Match3CascadeStep {
   final bool shuffled;
 }
 
+/// Player-triggered effects for [Match3Engine.useBooster].
+enum Match3Booster {
+  /// Clears the whole row of the target cell.
+  rowClear,
+
+  /// Clears the whole column of the target cell.
+  columnClear,
+
+  /// Clears the 3x3 block centered on the target cell (clamped at edges).
+  bomb,
+}
+
+/// Board shape and level table for a [Match3Engine]. The board is square
+/// ([width] x [width]). [classic] is the 6x6, 5-tile, 5-level setup.
+class Match3Config {
+  Match3Config({
+    this.width = 6,
+    this.tileKinds = 5,
+    this.pointsPerTile = 10,
+    List<Match3Level> levels = Match3Level.levels,
+  }) : levels = List.unmodifiable(levels) {
+    if (width < 3) throw ArgumentError.value(width, 'width', 'must be >= 3');
+    if (tileKinds < 3) {
+      throw ArgumentError.value(tileKinds, 'tileKinds', 'must be >= 3');
+    }
+    if (pointsPerTile < 1) {
+      throw ArgumentError.value(pointsPerTile, 'pointsPerTile', 'must be >= 1');
+    }
+    if (levels.isEmpty) {
+      throw ArgumentError.value(levels, 'levels', 'must not be empty');
+    }
+    for (var i = 0; i < levels.length; i++) {
+      final level = levels[i];
+      if (level.number != i + 1 || level.scoreGoal < 1 || level.moves < 1) {
+        throw ArgumentError.value(
+          levels,
+          'levels',
+          'level ${i + 1} needs number ${i + 1}, scoreGoal >= 1, moves >= 1',
+        );
+      }
+    }
+  }
+
+  static final classic = Match3Config();
+
+  final int width;
+  final int tileKinds;
+  final int pointsPerTile;
+  final List<Match3Level> levels;
+
+  int get cellCount => width * width;
+
+  Match3Level levelFor(int number) {
+    if (number < 1 || number > levels.length) {
+      throw ArgumentError.value(
+        number,
+        'number',
+        'must be between 1 and ${levels.length}',
+      );
+    }
+    return levels[number - 1];
+  }
+}
+
 class Match3Engine {
   Match3Engine({
+    Match3Config? config,
     math.Random? random,
     List<int>? initialBoard,
     this.score = 0,
     int? moves,
     this.status = Match3Status.ready,
     this.level = 1,
-  }) : _random = random ?? math.Random(),
-       moves = moves ?? Match3Level.forNumber(level).moves {
-    final levelConfig = Match3Level.forNumber(level);
+  }) : config = config ?? Match3Config.classic,
+       _random = random ?? math.Random(),
+       moves = moves ?? (config ?? Match3Config.classic).levelFor(level).moves {
+    final levelConfig = this.config.levelFor(level);
     if (score < 0) throw ArgumentError.value(score, 'score', 'must be >= 0');
     if (this.moves < 0 || this.moves > levelConfig.moves) {
       throw ArgumentError.value(
@@ -110,20 +176,20 @@ class Match3Engine {
     }
   }
 
-  static const width = 6;
-  static const cellCount = width * width;
-  static const maxMoves = 20;
-  static const tileKinds = 5;
-  static const pointsPerTile = 10;
+  final Match3Config config;
+  int get width => config.width;
+  int get cellCount => config.cellCount;
+  int get tileKinds => config.tileKinds;
+  int get pointsPerTile => config.pointsPerTile;
 
   int level;
-  int get scoreGoal => Match3Level.forNumber(level).scoreGoal;
-  int get moveLimit => Match3Level.forNumber(level).moves;
+  int get scoreGoal => config.levelFor(level).scoreGoal;
+  int get moveLimit => config.levelFor(level).moves;
 
   final math.Random _random;
   late final List<int> _board;
   int score = 0;
-  int moves = maxMoves;
+  int moves;
   Match3Status status = Match3Status.ready;
   Match3Swap? lastSwap;
   List<Match3CascadeStep> lastCascade = const [];
@@ -157,51 +223,11 @@ class Match3Engine {
       _board[j] = tile;
     }
     if (_matches().isEmpty && _hasLegalSwap()) return;
-    _fillBoardWithoutMatches();
-    if (!_hasLegalSwap()) {
-      _makeKnownLegalMove();
+    for (var attempt = 0; attempt < 1000; attempt++) {
+      _fillBoardWithoutMatches();
+      if (_hasLegalSwap()) return;
     }
-  }
-
-  void _makeKnownLegalMove() {
-    _board.setAll(0, const [
-      0,
-      1,
-      0,
-      2,
-      3,
-      4,
-      2,
-      0,
-      3,
-      4,
-      1,
-      2,
-      4,
-      2,
-      0,
-      1,
-      3,
-      4,
-      1,
-      3,
-      4,
-      0,
-      2,
-      1,
-      3,
-      4,
-      1,
-      2,
-      0,
-      3,
-      4,
-      2,
-      3,
-      1,
-      4,
-      0,
-    ]);
+    throw StateError('no playable $width x $width board with $tileKinds tiles');
   }
 
   bool _hasLegalSwap() {
@@ -307,18 +333,47 @@ class Match3Engine {
     return lastCascade;
   }
 
+  /// Applies [booster] at [index] without spending a move, then resolves
+  /// refill and cascades like [swap]. Returns null when the run is over or
+  /// [index] is off the board. Inventory is the caller's job (see
+  /// `InventoryService`); the engine only applies the effect.
+  List<Match3CascadeStep>? useBooster(Match3Booster booster, int index) {
+    if (isTerminal || index < 0 || index >= cellCount) return null;
+    final x = index % width;
+    final y = index ~/ width;
+    final cleared = <int>{
+      for (var i = 0; i < cellCount; i++)
+        if (switch (booster) {
+          Match3Booster.rowClear => i ~/ width == y,
+          Match3Booster.columnClear => i % width == x,
+          Match3Booster.bomb =>
+            (i % width - x).abs() <= 1 && (i ~/ width - y).abs() <= 1,
+        })
+          i,
+    };
+    status = Match3Status.playing;
+    lastSwap = null;
+    lastCascade = [];
+    lastCascadeCount = 0;
+    _resolveCascades(forced: cleared);
+    status = score >= scoreGoal
+        ? Match3Status.won
+        : (moves == 0 ? Match3Status.lost : Match3Status.playing);
+    return lastCascade;
+  }
+
   void _swapTiles(int a, int b) {
     final tile = _board[a];
     _board[a] = _board[b];
     _board[b] = tile;
   }
 
-  void _resolveCascades() {
+  void _resolveCascades({Set<int> forced = const {}}) {
     var cascade = 0;
     final steps = <Match3CascadeStep>[];
     var visibleBoard = List<int>.of(_board);
     while (true) {
-      final matches = _matches();
+      final matches = cascade == 0 && forced.isNotEmpty ? forced : _matches();
       if (matches.isEmpty) {
         final shuffled = !_hasLegalSwap();
         if (shuffled) _ensurePlayableBoard();
@@ -398,7 +453,7 @@ class Match3Engine {
 
   void reset({int? level}) {
     if (level != null) {
-      Match3Level.forNumber(level);
+      config.levelFor(level);
       this.level = level;
     }
     _board.fillRange(0, cellCount, -1);

@@ -36,7 +36,11 @@ source: "Owner chọn hướng game 2026-11-22; Match3Engine (412 dòng, chỉ i
 
 ## Kết quả thực hiện
 
-- Owner decision:
-- Audit / điểm:
-- Tests/device smoke:
+- Owner decision (2026-11-23): cấu hình bàn/tile/level qua constructor, mặc định giữ 6x6/5/5 level; thêm booster do người chơi chủ động dùng, không tốn lượt (line clear, bom).
+- Thay đổi: engine chuyển `example/lib/game/match3_engine.dart` -> `lib/core/match3_engine.dart` (export từ `roy_casual_kit.dart`); thêm `Match3Config` (validate bằng `ArgumentError`, theo ENH-85) và `Match3Booster`/`useBooster` (rowClear, columnClear, bomb 3x3). Bỏ board dự phòng 6x6 cứng, thay bằng thử sinh lại (ném `StateError` nếu config không sinh nổi board chơi được). `example` (screen, 2 test, `tool/match3_sim.dart`) chuyển sang `Match3Config.classic`; `MatchLite` chỉ bỏ `const` ở grid delegate.
+- Bằng chứng không đổi hành vi: `tool/match3_sim.dart` (4 bot x 5 level x 200 ván, seed cố định) cho output giống hệt 20 dòng giữa HEAD và bản mới; 12 test engine cũ pass nguyên.
+- Tests: 9 test mới (config hợp lệ/không hợp lệ, 8x8 6 tile, độ dài initialBoard, booster không tốn lượt, vùng xoá đúng, biên/góc, từ chối index sai và ván đã kết thúc, booster thắng/thua, replay xác định với `SeededRandom`). Mutation check: sửa bán kính bom và cho booster tốn lượt đều làm test đỏ. Root 4097 pass, example 435 pass, analyze 2 package sạch, API gate/accessibility/deprecation/license/perf/SBOM xanh.
+- API: chỉ thêm (Added 20 symbol, Removed rỗng), ghi vào mục 0.8.0 chưa tag, không bump thêm. Snapshot cập nhật.
+- Chưa làm: device smoke Match3 Lite trên thiết bị thật (screen đổi rất ít, widget test pass); chưa có UI nối `BoosterSlotBar` với `useBooster` (ngoài phạm vi, thuộc demo FEAT-214).
+- Audit / điểm: ~9.2/10. Trừ điểm: chưa smoke thiết bị thật; booster chưa có luật tạo từ match 4/5; `Match3Level.levels` vẫn là static trong API công khai.
 - Commit/push:

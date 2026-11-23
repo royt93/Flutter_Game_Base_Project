@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:roy_casual_kit_example/game/match3_engine.dart';
+import 'package:roy_casual_kit/core/match3_engine.dart';
 
 enum _Bot { random, greedy, casual, walk }
 
@@ -9,7 +9,7 @@ enum _Bot { random, greedy, casual, walk }
 void main() {
   const gamesPerLevel = 200;
   for (final bot in _Bot.values) {
-    for (final level in Match3Level.levels) {
+    for (final level in Match3Config.classic.levels) {
       var wins = 0;
       var totalScore = 0;
       var totalMovesRemaining = 0;
@@ -46,12 +46,12 @@ void main() {
 
 List<(int, int)> _legalMoves(List<int> board) {
   final result = <(int, int)>[];
-  for (var i = 0; i < Match3Engine.cellCount; i++) {
-    if (i % Match3Engine.width < Match3Engine.width - 1) {
+  for (var i = 0; i < Match3Config.classic.cellCount; i++) {
+    if (i % Match3Config.classic.width < Match3Config.classic.width - 1) {
       _addIfLegal(board, i, i + 1, result);
     }
-    if (i ~/ Match3Engine.width < Match3Engine.width - 1) {
-      _addIfLegal(board, i, i + Match3Engine.width, result);
+    if (i ~/ Match3Config.classic.width < Match3Config.classic.width - 1) {
+      _addIfLegal(board, i, i + Match3Config.classic.width, result);
     }
   }
   return result;
@@ -67,7 +67,7 @@ void _addIfLegal(List<int> board, int from, int to, List<(int, int)> result) {
 
 // Scans from a random cell and takes the first legal swap: no size preference.
 (int, int) _walkMove(List<(int, int)> moves, math.Random random) {
-  final start = random.nextInt(Match3Engine.cellCount);
+  final start = random.nextInt(Match3Config.classic.cellCount);
   return moves.firstWhere(
     (move) => move.$1 >= start,
     orElse: () => moves.first,
@@ -90,7 +90,7 @@ void _addIfLegal(List<int> board, int from, int to, List<(int, int)> result) {
     final matches = _findMatches(swapped);
     final bottomBias = matches.fold<int>(
       0,
-      (sum, index) => sum + index ~/ Match3Engine.width,
+      (sum, index) => sum + index ~/ Match3Config.classic.width,
     );
     final value = matches.length * 10 + bottomBias;
     if (value > bestValue) {
@@ -137,11 +137,11 @@ void _addIfLegal(List<int> board, int from, int to, List<(int, int)> result) {
 
 Set<int> _findMatches(List<int> board) {
   final matches = <int>{};
-  for (var y = 0; y < Match3Engine.width; y++) {
-    for (var x = 0; x < Match3Engine.width; x++) {
-      final index = y * Match3Engine.width + x;
+  for (var y = 0; y < Match3Config.classic.width; y++) {
+    for (var x = 0; x < Match3Config.classic.width; x++) {
+      final index = y * Match3Config.classic.width + x;
       final tile = board[index];
-      if (x < Match3Engine.width - 2 &&
+      if (x < Match3Config.classic.width - 2 &&
           board[index + 1] == tile &&
           board[index + 2] == tile) {
         matches
@@ -149,13 +149,13 @@ Set<int> _findMatches(List<int> board) {
           ..add(index + 1)
           ..add(index + 2);
       }
-      if (y < Match3Engine.width - 2 &&
-          board[index + Match3Engine.width] == tile &&
-          board[index + 2 * Match3Engine.width] == tile) {
+      if (y < Match3Config.classic.width - 2 &&
+          board[index + Match3Config.classic.width] == tile &&
+          board[index + 2 * Match3Config.classic.width] == tile) {
         matches
           ..add(index)
-          ..add(index + Match3Engine.width)
-          ..add(index + 2 * Match3Engine.width);
+          ..add(index + Match3Config.classic.width)
+          ..add(index + 2 * Match3Config.classic.width);
       }
     }
   }

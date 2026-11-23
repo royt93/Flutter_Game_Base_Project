@@ -8,8 +8,6 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/roy_casual_kit.dart';
 
-import '../game/match3_engine.dart';
-
 const _questId = 'match3_win_daily';
 const _questRewardGems = 20;
 const _achievementId = 'match3_first_win';
@@ -121,7 +119,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     _highestUnlockedLevel =
         savedUnlocked is int &&
             savedUnlocked >= _level &&
-            savedUnlocked <= Match3Level.levels.length
+            savedUnlocked <= Match3Config.classic.levels.length
         ? savedUnlocked
         : 1;
     final rawBest = saved?['bestScore'];
@@ -129,17 +127,19 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     final savedBoard = saved?['board'];
     var board =
         savedBoard is List &&
-            savedBoard.length == Match3Engine.cellCount &&
+            savedBoard.length == Match3Config.classic.cellCount &&
             savedBoard.every(
               (tile) =>
-                  tile is int && tile >= 0 && tile < Match3Engine.tileKinds,
+                  tile is int &&
+                  tile >= 0 &&
+                  tile < Match3Config.classic.tileKinds,
             )
         ? savedBoard.cast<int>()
         : null;
     final savedStatus = Match3Status.values.where(
       (status) => status.name == saved?['status'],
     );
-    final levelConfig = Match3Level.forNumber(_level);
+    final levelConfig = Match3Config.classic.levelFor(_level);
     final rawMoves = saved?['moves'];
     final hasSavedBoard = savedBoard is List;
     final moves =
@@ -256,7 +256,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     if (_game.isTerminal && _game.status == Match3Status.won) {
       _highestUnlockedLevel = math.max(
         _highestUnlockedLevel,
-        math.min(_level + 1, Match3Level.levels.length),
+        math.min(_level + 1, Match3Config.classic.levels.length),
       );
     }
     setState(() {});
@@ -338,7 +338,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
       'totalScore': (previous['totalScore'] as int) + _game.score,
       'totalMovesUsed':
           (previous['totalMovesUsed'] as int) +
-          (Match3Level.forNumber(_level).moves - _game.moves),
+          (Match3Config.classic.levelFor(_level).moves - _game.moves),
     };
     await storage.setString(_telemetryKey, jsonEncode(report));
   }
@@ -419,7 +419,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
   Future<void> _startNextLevel() async {
     if (_game.status != Match3Status.won ||
         _level >= _highestUnlockedLevel ||
-        _level >= Match3Level.levels.length) {
+        _level >= Match3Config.classic.levels.length) {
       return;
     }
     await _startLevel(_level + 1);
@@ -512,10 +512,11 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
                                 absorbing: _animating,
                                 child: GridView.builder(
                                   physics: const NeverScrollableScrollPhysics(),
-                                  itemCount: Match3Engine.cellCount,
+                                  itemCount: Match3Config.classic.cellCount,
                                   gridDelegate:
-                                      const SliverGridDelegateWithFixedCrossAxisCount(
-                                        crossAxisCount: Match3Engine.width,
+                                      SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount:
+                                            Match3Config.classic.width,
                                         crossAxisSpacing: 3,
                                         mainAxisSpacing: 3,
                                       ),
@@ -653,7 +654,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
         ),
       if (_game.status == Match3Status.won &&
           _level < _highestUnlockedLevel &&
-          _level < Match3Level.levels.length)
+          _level < Match3Config.classic.levels.length)
         CommonButton(
           label: 'match3_next_level'.tr,
           onTap: _startNextLevel,

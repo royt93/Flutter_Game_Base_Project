@@ -3,6 +3,9 @@
 - **BREAKING:** removed the rewarded-ad feature: `AdRewardSeam`, `RewardedAdResultCard`/`RewardedAdStatus`, `PluginAdapterConformanceSuite.verifyAdRewardSeam` and `FakeAdRewardSeam`. The kit focuses on game features; wire your own ad SDK in the consuming app. In-app purchases (`PurchaseSeam`, `PurchaseLedgerService`, the `remove_ads` SKU style) are unchanged.
 - Removed the rewarded-ad demo card and VIP ad-skip flow from the example Monetization screen, and the ad state from the widget showcase.
 - Removed the 28 `wave27_ad_*` golden baselines together with their test states.
+- Added `Match3Engine`, `Match3Config`, `Match3Level`, `Match3Swap`, `Match3CascadeStep`, `Match3Status` and `Match3Booster` (moved from the example app, pure Dart, no Flutter import). `Match3Config` sets board width, tile kinds, points per tile and the level table; `Match3Config.classic` is the previous 6x6 / 5 tiles / 5 levels setup and the default, so behavior is unchanged (the example's 4 bots x 5 levels x 200 games simulation output is byte-identical before and after).
+- Added `Match3Engine.useBooster(Match3Booster, index)`: player-triggered row clear, column clear or 3x3 bomb that spends no move, then refills and cascades like `swap`. Inventory stays with the caller (`InventoryService`).
+- **Behavior change:** the former `Match3Engine.width`, `cellCount`, `tileKinds` and `pointsPerTile` statics are now instance getters backed by the config, and the hardcoded 6x6 fallback board is replaced by retrying generation (throws `StateError` if a config cannot produce a playable board). `Match3Engine` is new to the package, so no released API changes.
 
 ## 0.7.1
 

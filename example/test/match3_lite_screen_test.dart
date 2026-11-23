@@ -6,7 +6,6 @@ import 'dart:math' as math;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/roy_casual_kit.dart';
-import 'package:roy_casual_kit_example/game/match3_engine.dart';
 import 'package:roy_casual_kit_example/screens/match3_lite_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -84,9 +83,10 @@ void main() {
     'sync keeps higher cloud best score without dropping active run data',
     (tester) async {
       final board = List.generate(
-        Match3Engine.cellCount,
+        Match3Config.classic.cellCount,
         (index) =>
-            (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+            (index + index ~/ Match3Config.classic.width) %
+            Match3Config.classic.tileKinds,
       );
       final cloud = _TestCloud()
         ..data = {
@@ -131,8 +131,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final board = List.generate(
-      Match3Engine.cellCount,
-      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+      Match3Config.classic.cellCount,
+      (index) =>
+          (index + index ~/ Match3Config.classic.width) %
+          Match3Config.classic.tileKinds,
     );
     board[6] = 0;
     board[7] = 0;
@@ -186,8 +188,10 @@ void main() {
   ) async {
     Get.find<DailyQuestService>().register('match3_win_daily', 1);
     final board = List.generate(
-      Match3Engine.cellCount,
-      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+      Match3Config.classic.cellCount,
+      (index) =>
+          (index + index ~/ Match3Config.classic.width) %
+          Match3Config.classic.tileKinds,
     );
     board[6] = 0;
     board[7] = 0;
@@ -232,8 +236,10 @@ void main() {
     tester,
   ) async {
     final board = List.generate(
-      Match3Engine.cellCount,
-      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+      Match3Config.classic.cellCount,
+      (index) =>
+          (index + index ~/ Match3Config.classic.width) %
+          Match3Config.classic.tileKinds,
     );
     await StorageService.to.setString(
       'match3_lite_save_v1',
@@ -270,8 +276,10 @@ void main() {
     tester,
   ) async {
     final board = List.generate(
-      Match3Engine.cellCount,
-      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+      Match3Config.classic.cellCount,
+      (index) =>
+          (index + index ~/ Match3Config.classic.width) %
+          Match3Config.classic.tileKinds,
     );
     board[6] = 0;
     board[7] = 0;
@@ -319,8 +327,10 @@ void main() {
     tester,
   ) async {
     final board = List.generate(
-      Match3Engine.cellCount,
-      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+      Match3Config.classic.cellCount,
+      (index) =>
+          (index + index ~/ Match3Config.classic.width) %
+          Match3Config.classic.tileKinds,
     );
     await StorageService.to.setString(
       'match3_lite_save_v2',
@@ -382,8 +392,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final board = List.generate(
-      Match3Engine.cellCount,
-      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+      Match3Config.classic.cellCount,
+      (index) =>
+          (index + index ~/ Match3Config.classic.width) %
+          Match3Config.classic.tileKinds,
     );
     board[6] = 0;
     board[7] = 0;
@@ -447,8 +459,10 @@ void main() {
     addTearDown(tester.view.resetPhysicalSize);
     addTearDown(tester.view.resetDevicePixelRatio);
     final board = List.generate(
-      Match3Engine.cellCount,
-      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+      Match3Config.classic.cellCount,
+      (index) =>
+          (index + index ~/ Match3Config.classic.width) %
+          Match3Config.classic.tileKinds,
     );
     board[6] = 0;
     board[7] = 0;
@@ -535,8 +549,10 @@ void main() {
       }),
     );
     final board = List.generate(
-      Match3Engine.cellCount,
-      (index) => (index + index ~/ Match3Engine.width) % Match3Engine.tileKinds,
+      Match3Config.classic.cellCount,
+      (index) =>
+          (index + index ~/ Match3Config.classic.width) %
+          Match3Config.classic.tileKinds,
     );
     board[6] = 0;
     board[7] = 0;

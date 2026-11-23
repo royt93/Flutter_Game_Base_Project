@@ -10,7 +10,6 @@ import 'package:integration_test/integration_test.dart';
 import 'package:roy_casual_kit/roy_casual_kit.dart';
 import 'package:roy_casual_kit_example/main.dart' as app;
 import 'package:roy_casual_kit_example/game/arena_actors.dart';
-import 'package:roy_casual_kit_example/game/match3_engine.dart';
 import 'package:roy_casual_kit_example/game/sprite_arena_game.dart';
 import 'package:roy_casual_kit_example/screens/cookbook_screen.dart';
 import 'package:roy_casual_kit_example/screens/game_demo_screen.dart';
@@ -876,10 +875,10 @@ void main() {
     expect(Get.find<EnergyService>().currentEnergy, energyBefore - 1);
 
     var matched = false;
-    for (var row = 0; row < Match3Engine.width && !matched; row++) {
+    for (var row = 0; row < Match3Config.classic.width && !matched; row++) {
       for (
         var column = 0;
-        column < Match3Engine.width - 1 && !matched;
+        column < Match3Config.classic.width - 1 && !matched;
         column++
       ) {
         final first = find.byKey(ValueKey('match3_tile_${row * 6 + column}'));
