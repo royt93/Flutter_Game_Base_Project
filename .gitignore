@@ -64,3 +64,6 @@ app.*.map.json
 
 # Build output
 /example/build/
+
+# Claude Code local planning files
+/.claude/plans/
