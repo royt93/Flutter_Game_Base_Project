@@ -38,8 +38,8 @@ The authoritative list is `CHANGELOG.md` (section 0.9.0).
 ## What is and is not verified
 
 - Host tests (root and example), analyzer, API compatibility and the five
-  quality-gate checks pass locally; CI result for the release commit is listed
-  in the publish procedure before tagging.
+  quality-gate checks pass locally, and CI (all jobs) is green on the release
+  commit `5be64e06`.
 - The behaviors above were reproduced by throwaway tests before the fixes, and
   the new tests fail when the fix is removed (mutation checked).
 - Not covered: a device run of the new save paths (host tests only), and no UI
