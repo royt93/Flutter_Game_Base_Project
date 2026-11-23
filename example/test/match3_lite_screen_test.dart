@@ -49,6 +49,14 @@ void main() {
     Get.put(DailyQuestService(), permanent: true);
     Get.put(AchievementService(), permanent: true);
     Get.put(LocalScoreboardService(capacity: 20), permanent: true);
+    // The first-run tutorial spotlight covers the screen; every test except
+    // the tutorial group plays as a returning player.
+    Get.put(
+      OnboardingCoordinatorService()
+        ..registerFlow('match3_tutorial_v1')
+        ..markFlowSeen('match3_tutorial_v1'),
+      permanent: true,
+    );
   });
 
   testWidgets(
@@ -1356,6 +1364,278 @@ void main() {
       await tester.pump(const Duration(milliseconds: 300));
       expect(tester.takeException(), isNull);
       expect(overlay, findsOneWidget);
+    });
+  });
+
+  group('pause and tutorial', () {
+    List<int> flatBoard() => List.generate(
+      Match3Config.classic.cellCount,
+      (index) =>
+          (index + index ~/ Match3Config.classic.width) %
+          Match3Config.classic.tileKinds,
+    );
+
+    void bigView(WidgetTester tester) {
+      tester.view.physicalSize = const Size(400, 1200);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+    }
+
+    Future<Match3Engine> openAndStart(
+      WidgetTester tester, {
+      RoyLifecycleCoordinator? lifecycle,
+    }) async {
+      bigView(tester);
+      if (lifecycle != null) Get.put(lifecycle, permanent: true);
+      final board = flatBoard();
+      board[6] = 0;
+      board[7] = 0;
+      board[8] = 1;
+      board[9] = 0;
+      final game = Match3Engine(initialBoard: board, random: math.Random(22));
+      await tester.pumpWidget(
+        GetMaterialApp(
+          translations: AppTranslations(),
+          locale: const Locale('en'),
+          fallbackLocale: AppTranslations.fallback,
+          home: Match3LiteScreen(engine: game),
+        ),
+      );
+      await tester.pump();
+      final start = find
+          .ancestor(
+            of: find.text('Start Run (-1 Energy)').first,
+            matching: find.byType(CommonButton),
+          )
+          .first;
+      await tester.ensureVisible(start);
+      await tester.tap(start);
+      // A few frames: the tutorial waits for a laid-out frame before it
+      // measures its targets, and the test clock only advances on pump.
+      for (var i = 0; i < 4; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      return game;
+    }
+
+    GameSessionController session() => Get.find<GameSessionController>();
+
+    /// Makes this player brand new: the seen flag lives in storage, so both
+    /// the persisted table and the registered service must be reset.
+    Future<void> forgetTutorial() async {
+      await StorageService.to.remove(StorageKeys.onboardingSeenV1);
+      Get.delete<OnboardingCoordinatorService>(force: true);
+      Get.put(OnboardingCoordinatorService(), permanent: true);
+    }
+
+    Future<void> tapPause(WidgetTester tester) async {
+      final pause = find.byKey(const ValueKey('match3_pause'));
+      await tester.ensureVisible(pause);
+      await tester.tap(pause);
+      // The pause panel scales/fades in; its buttons only take taps once
+      // that transition has finished.
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    /// Taps the CommonButton whose label is [label] inside the pause menu.
+    Future<void> tapMenu(WidgetTester tester, String label) async {
+      final button = find
+          .descendant(
+            of: find.byType(PauseOverlay),
+            matching: find.ancestor(
+              of: find.text(label),
+              matching: find.byType(CommonButton),
+            ),
+          )
+          .first;
+      await tester.tap(button);
+      // Let the panel's close transition finish too.
+      for (var i = 0; i < 8; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    }
+
+    Future<void> swap(WidgetTester tester) async {
+      await tester.ensureVisible(find.byKey(const ValueKey('match3_tile_8')));
+      await tester.tap(find.byKey(const ValueKey('match3_tile_8')));
+      await tester.tap(find.byKey(const ValueKey('match3_tile_9')));
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+
+    testWidgets('session follows the run: ready, playing, then won', (
+      tester,
+    ) async {
+      await openAndStart(tester);
+      expect(session().snapshot.value.phase, GameSessionPhase.playing);
+      await swap(tester);
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      // One swap on a fresh level 1 does not reach the goal: still playing.
+      expect(session().snapshot.value.phase, GameSessionPhase.playing);
+    });
+
+    testWidgets('first start shows the tutorial; steps then finish once', (
+      tester,
+    ) async {
+      await forgetTutorial();
+      await openAndStart(tester);
+      final onboarding = Get.find<OnboardingCoordinatorService>();
+      expect(find.byType(SpotlightOverlay), findsOneWidget);
+      expect(find.text('Swap two tiles'), findsWidgets);
+      expect(onboarding.isFlowSeen('match3_tutorial_v1'), isTrue);
+
+      await tester.tap(find.text('Next').first);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Boosters'), findsWidgets);
+      await tester.tap(find.text('Next').first);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.text('Levels and stars'), findsWidgets);
+      await tester.tap(find.text('Got it').first);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(SpotlightOverlay), findsNothing);
+    });
+
+    testWidgets('skip ends the tutorial and it never returns', (tester) async {
+      await forgetTutorial();
+      await openAndStart(tester);
+      expect(find.byType(SpotlightOverlay), findsOneWidget);
+      await tester.tap(find.text('Skip').first);
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(find.byType(SpotlightOverlay), findsNothing);
+      // A second run in the same install must not bring it back.
+      final onboarding = Get.find<OnboardingCoordinatorService>();
+      expect(onboarding.isFlowSeen('match3_tutorial_v1'), isTrue);
+    });
+
+    testWidgets('a seen tutorial does not show', (tester) async {
+      await openAndStart(tester);
+      expect(find.byType(SpotlightOverlay), findsNothing);
+    });
+
+    testWidgets('pause button opens the menu and locks the board', (
+      tester,
+    ) async {
+      final game = await openAndStart(tester);
+      expect(find.text('Resume'), findsNothing);
+      await tapPause(tester);
+      expect(session().snapshot.value.phase, GameSessionPhase.paused);
+      expect(find.text('Resume'), findsWidgets);
+
+      final movesBefore = game.moves;
+      await swap(tester);
+      expect(game.moves, movesBefore, reason: 'swap must be ignored');
+      expect(game.score, 0);
+    });
+
+    testWidgets(
+      'paused: boosters and buying are blocked, level grid stays disabled',
+      (tester) async {
+        await openAndStart(tester);
+        await tapPause(tester);
+        final inventory = Get.find<InventoryService>();
+        final before = inventory.snapshot.value.quantityOf('booster_bomb');
+        final bar = tester.widget<BoosterSlotBar>(find.byType(BoosterSlotBar));
+        for (final slot in bar.slots) {
+          expect(slot.isLocked, isTrue, reason: '${slot.id} must be locked');
+        }
+        bar.onSlotTap?.call('booster_bomb');
+        await tester.pump();
+        expect(inventory.snapshot.value.quantityOf('booster_bomb'), before);
+        final grid = tester.widget<LevelSelectGrid>(
+          find.byType(LevelSelectGrid),
+        );
+        expect(grid.onLevelTap, isNull);
+      },
+    );
+
+    testWidgets('a tile handler that fires while paused does nothing', (
+      tester,
+    ) async {
+      final game = await openAndStart(tester);
+      await tapPause(tester);
+      // Bypass the pause overlay (which already swallows taps): call the
+      // tiles' own handlers, as a lifecycle pause mid-gesture could.
+      final tile8 = tester.widget<SquashStretch>(
+        find.byKey(const ValueKey('match3_tile_8')),
+      );
+      final tile9 = tester.widget<SquashStretch>(
+        find.byKey(const ValueKey('match3_tile_9')),
+      );
+      final movesBefore = game.moves;
+      tile8.onTap!();
+      await tester.pump();
+      tile9.onTap!();
+      await tester.pump(const Duration(milliseconds: 300));
+      expect(game.moves, movesBefore);
+      expect(game.score, 0);
+    });
+
+    testWidgets('resume returns to playing and unlocks the board', (
+      tester,
+    ) async {
+      final game = await openAndStart(tester);
+      await tapPause(tester);
+      await tapMenu(tester, 'Resume');
+      expect(session().snapshot.value.phase, GameSessionPhase.playing);
+      expect(find.text('Resume'), findsNothing);
+      final movesBefore = game.moves;
+      await swap(tester);
+      expect(game.moves, movesBefore - 1);
+      // Let the cascade animation and its timers finish.
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+    });
+
+    testWidgets('restart from the menu spends energy and starts fresh', (
+      tester,
+    ) async {
+      final game = await openAndStart(tester);
+      await swap(tester);
+      for (var i = 0; i < 12; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      await tapPause(tester);
+      final energy = Get.find<EnergyService>().currentEnergy;
+      await tapMenu(tester, 'Restart');
+      expect(Get.find<EnergyService>().currentEnergy, energy - 1);
+      expect(game.moves, game.moveLimit);
+      expect(session().snapshot.value.phase, GameSessionPhase.playing);
+      expect(find.text('Resume'), findsNothing);
+    });
+
+    testWidgets('app to background pauses, foreground resumes', (tester) async {
+      final lifecycle = RoyLifecycleCoordinator();
+      await openAndStart(tester, lifecycle: lifecycle);
+      expect(session().snapshot.value.phase, GameSessionPhase.playing);
+
+      lifecycle.didChangeAppLifecycleState(AppLifecycleState.paused);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(session().snapshot.value.phase, GameSessionPhase.paused);
+      expect(find.text('Resume'), findsWidgets);
+
+      lifecycle.didChangeAppLifecycleState(AppLifecycleState.resumed);
+      for (var i = 0; i < 10; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(session().snapshot.value.phase, GameSessionPhase.playing);
+      expect(find.text('Resume'), findsNothing);
+    });
+
+    testWidgets('leaving the screen removes the session and its hook', (
+      tester,
+    ) async {
+      await openAndStart(tester);
+      expect(Get.isRegistered<GameSessionController>(), isTrue);
+      await tester.pumpWidget(const SizedBox());
+      await tester.pump();
+      expect(Get.isRegistered<GameSessionController>(), isFalse);
     });
   });
 }

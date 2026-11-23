@@ -874,6 +874,17 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
     expect(Get.find<EnergyService>().currentEnergy, energyBefore - 1);
 
+    // A first-time player gets the three-step tutorial over the board; skip
+    // it (a returning player never sees it, so it is optional here).
+    for (var frame = 0; frame < 5; frame++) {
+      await tester.pump(const Duration(milliseconds: 100));
+    }
+    final skip = find.text('tutorial_skip'.tr);
+    if (skip.evaluate().isNotEmpty) {
+      await tester.tap(skip.first);
+      await tester.pump(const Duration(milliseconds: 300));
+    }
+
     var matched = false;
     for (var row = 0; row < Match3Config.classic.width && !matched; row++) {
       for (

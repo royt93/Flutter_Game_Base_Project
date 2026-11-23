@@ -10,6 +10,7 @@ import 'package:roy_casual_kit/roy_casual_kit.dart';
 
 import '../game/match3_boosters.dart';
 
+const _tutorialFlowId = 'match3_tutorial_v1';
 const _questId = 'match3_win_daily';
 const _questRewardGems = 20;
 const _achievementId = 'match3_first_win';
@@ -64,6 +65,12 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
   int _bestScore = 0;
   Map<int, int> _bestStars = {};
   bool _showResultCard = false;
+  late final GameSessionController _session;
+  late final OnboardingCoordinatorService _onboarding;
+  final _tutorial = TutorialSequenceController();
+  final _gridKey = GlobalKey();
+  final _boosterBarKey = GlobalKey();
+  final _levelSelectKey = GlobalKey();
   int _resultStars = 0;
   final _resultCardKey = GlobalKey();
   bool _rewarded = false;
@@ -95,6 +102,18 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
           permanent: true,
         );
     unawaited(grantStarterBoosters(_inventory));
+    _onboarding =
+        OnboardingCoordinatorService.maybe ??
+        Get.put(OnboardingCoordinatorService(), permanent: true);
+    _onboarding.registerFlow(_tutorialFlowId);
+    // Put through Get so GameSessionController.onInit() registers its
+    // lifecycle hook (background auto-pause); deleted again in dispose().
+    _session = Get.put<GameSessionController>(
+      GameSessionController.withHookName(
+        lifecycle: RoyLifecycleCoordinator.maybe,
+        hookName: 'match3-session',
+      ),
+    )..markReady();
     _quests =
         DailyQuestService.maybe ??
         Get.put(DailyQuestService(), permanent: true);
@@ -229,6 +248,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
         saved?['runActive'] == true &&
         !_game.isTerminal &&
         !_rewarded;
+    _syncSession();
   }
 
   Map<String, Object?> _saveData() => {
@@ -248,6 +268,30 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
 
   Future<void> _persist() => _save.save(_saveData());
 
+  /// One place that moves the kit's session to match the screen: a run in
+  /// progress is `playing` (or stays `paused`), a finished one is won/lost,
+  /// and anything else is a fresh `ready` session. Never forces a transition
+  /// the state machine rejects (rejected results are ignored by design).
+  void _syncSession() {
+    final phase = _session.snapshot.value.phase;
+    if (_game.isTerminal) {
+      if (!_session.snapshot.value.isTerminal) {
+        _game.status == Match3Status.won ? _session.win() : _session.lose();
+      }
+      return;
+    }
+    if (_running) {
+      if (phase == GameSessionPhase.ready) _session.start();
+      return;
+    }
+    if (phase != GameSessionPhase.ready && phase != GameSessionPhase.loading) {
+      _session.restart();
+    }
+    if (_session.snapshot.value.phase == GameSessionPhase.loading) {
+      _session.markReady();
+    }
+  }
+
   Future<void> _startRun() async {
     if (_running || _game.isTerminal) return;
     if (_game.status == Match3Status.ready) {
@@ -260,11 +304,13 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
       _running = true;
       _status = null;
     });
+    _syncSession();
+    unawaited(_maybeShowTutorial());
     await _persist();
   }
 
   Future<void> _swap(int index) async {
-    if (!_running || _game.isTerminal || _animating) return;
+    if (!_running || _game.isTerminal || _animating || _paused) return;
     final armed = _armedBooster;
     if (armed != null) {
       await _applyBooster(armed, index);
@@ -301,7 +347,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
   }
 
   void _onBoosterSlotTap(String id) {
-    if (!_running || _game.isTerminal || _animating) return;
+    if (!_running || _game.isTerminal || _animating || _paused) return;
     final booster = _boosterForSlot(id);
     if (booster == null) return;
     setState(() {
@@ -320,7 +366,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
 
   Future<void> _onBoosterSlotEmptyTap(String id) async {
     final booster = _boosterForSlot(id);
-    if (booster == null || _animating) return;
+    if (booster == null || _animating || _paused) return;
     final result = await buyBooster(
       wallet: _wallet,
       inventory: _inventory,
@@ -400,7 +446,10 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     Match3Booster.bomb => 'match3_booster_bomb'.tr,
   };
 
-  Widget _buildBoosterBar() => Obx(() {
+  Widget _buildBoosterBar() =>
+      KeyedSubtree(key: _boosterBarKey, child: _boosterBarContent());
+
+  Widget _boosterBarContent() => Obx(() {
     final snapshot = _inventory.snapshot.value;
     return BoosterSlotBar(
       key: const ValueKey('match3_booster_bar'),
@@ -417,13 +466,78 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
               Match3Booster.bomb => Icons.local_fire_department_rounded,
             },
             count: snapshot.quantityOf(entry.value),
-            isLocked: !_running || _game.isTerminal,
+            isLocked: !_running || _game.isTerminal || _paused,
           ),
       ],
       onSlotTap: _onBoosterSlotTap,
       onEmptySlotTap: _onBoosterSlotEmptyTap,
     );
   });
+
+  bool get _paused => _session.snapshot.value.phase == GameSessionPhase.paused;
+
+  void _pause() {
+    if (!_running || _game.isTerminal || _animating) return;
+    setState(() {
+      _selected = null;
+      _armedBooster = null;
+    });
+    _session.pause(GamePauseReason.user);
+  }
+
+  void _quit() => Get.back();
+
+  /// Restart from the pause menu: leave `paused` first, then run the normal
+  /// restart path (which spends energy exactly like the New Run button).
+  Future<void> _restartFromPause() async {
+    final reasons = {..._session.snapshot.value.pauseReasons};
+    for (final reason in reasons) {
+      _session.resume(reason);
+    }
+    _running = false;
+    await _restart();
+  }
+
+  /// Shows the three-step tutorial once per install (and survives restarts
+  /// via OnboardingCoordinatorService). A target that is not laid out yet is
+  /// scrolled into view first so the spotlight can measure it.
+  Future<void> _maybeShowTutorial() async {
+    if (_onboarding.isFlowSeen(_tutorialFlowId) || _tutorial.isActive) return;
+    _onboarding.markFlowSeen(_tutorialFlowId);
+    await WidgetsBinding.instance.endOfFrame;
+    if (!mounted) return;
+    for (final key in [_gridKey, _boosterBarKey, _levelSelectKey]) {
+      if (!mounted) return;
+      final targetContext = key.currentContext;
+      if (targetContext == null) continue;
+      // ignore: use_build_context_synchronously
+      await Scrollable.ensureVisible(targetContext, duration: Duration.zero);
+    }
+    if (!mounted) return;
+    _tutorial.start([
+      TutorialStep(
+        id: 'match3_swap',
+        targetKey: _gridKey,
+        title: 'match3_tutorial_swap_title'.tr,
+        message: 'match3_tutorial_swap'.tr,
+        buttonLabel: 'match3_tutorial_next'.tr,
+      ),
+      TutorialStep(
+        id: 'match3_boosters',
+        targetKey: _boosterBarKey,
+        title: 'match3_tutorial_boosters_title'.tr,
+        message: 'match3_tutorial_boosters'.tr,
+        buttonLabel: 'match3_tutorial_next'.tr,
+      ),
+      TutorialStep(
+        id: 'match3_levels',
+        targetKey: _levelSelectKey,
+        title: 'match3_tutorial_levels_title'.tr,
+        message: 'match3_tutorial_levels'.tr,
+        buttonLabel: 'match3_tutorial_done'.tr,
+      ),
+    ]);
+  }
 
   bool get _animationValid => mounted && !_disposed;
 
@@ -527,6 +641,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     if (_rewarded) return;
     _running = false;
     _rewarded = true;
+    _syncSession();
     await _recordPlaytestRun();
     _scoreboard.submitScore('Player', _game.score);
     if (_game.status == Match3Status.won) {
@@ -610,6 +725,7 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     _running = true;
     _runId = DateTime.now().microsecondsSinceEpoch;
     setState(() => _status = null);
+    _syncSession();
     await _persist();
   }
 
@@ -671,93 +787,105 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
 
   @override
   Widget build(BuildContext context) => Scaffold(
-    body: Stack(
-      children: [
-        NeonBg(
-          child: SafeArea(
-            child: Column(
-              children: [
-                NeonAppBar(title: 'match3_title'.tr, onBack: Get.back),
-                Expanded(
-                  child: LayoutBuilder(
-                    builder: (context, constraints) {
-                      final side = math.min(
-                        constraints.maxWidth - 24,
-                        constraints.maxHeight * 0.64,
-                      );
-                      return SingleChildScrollView(
-                        padding: const EdgeInsets.all(12),
-                        child: Center(
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(maxWidth: 420),
-                            child: Column(
-                              children: [
-                                _buildHud(),
-                                const SizedBox(height: 12),
-                                SizedBox.square(
-                                  dimension: side,
-                                  child: AbsorbPointer(
-                                    absorbing: _animating,
-                                    child: GridView.builder(
-                                      physics:
-                                          const NeverScrollableScrollPhysics(),
-                                      itemCount: Match3Config.classic.cellCount,
-                                      gridDelegate:
-                                          SliverGridDelegateWithFixedCrossAxisCount(
-                                            crossAxisCount:
-                                                Match3Config.classic.width,
-                                            crossAxisSpacing: 3,
-                                            mainAxisSpacing: 3,
-                                          ),
-                                      itemBuilder: (context, index) =>
-                                          _tile(index),
+    body: TutorialSequence(
+      controller: _tutorial,
+      child: Stack(
+        children: [
+          NeonBg(
+            child: SafeArea(
+              child: Column(
+                children: [
+                  NeonAppBar(title: 'match3_title'.tr, onBack: Get.back),
+                  Expanded(
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final side = math.min(
+                          constraints.maxWidth - 24,
+                          constraints.maxHeight * 0.64,
+                        );
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.all(12),
+                          child: Center(
+                            child: ConstrainedBox(
+                              constraints: BoxConstraints(maxWidth: 420),
+                              child: Column(
+                                children: [
+                                  _buildHud(),
+                                  const SizedBox(height: 12),
+                                  SizedBox.square(
+                                    key: _gridKey,
+                                    dimension: side,
+                                    child: AbsorbPointer(
+                                      absorbing: _animating,
+                                      child: GridView.builder(
+                                        physics:
+                                            const NeverScrollableScrollPhysics(),
+                                        itemCount:
+                                            Match3Config.classic.cellCount,
+                                        gridDelegate:
+                                            SliverGridDelegateWithFixedCrossAxisCount(
+                                              crossAxisCount:
+                                                  Match3Config.classic.width,
+                                              crossAxisSpacing: 3,
+                                              mainAxisSpacing: 3,
+                                            ),
+                                        itemBuilder: (context, index) =>
+                                            _tile(index),
+                                      ),
                                     ),
                                   ),
-                                ),
-                                const SizedBox(height: 12),
-                                _buildBoosterBar(),
-                                const SizedBox(height: 12),
-                                _buildActions(),
-                                const SizedBox(height: 12),
-                                _buildLevelSelect(),
-                                if (_status != null) ...[
+                                  const SizedBox(height: 12),
+                                  _buildBoosterBar(),
+                                  const SizedBox(height: 12),
+                                  _buildActions(),
+                                  const SizedBox(height: 12),
+                                  _buildLevelSelect(),
+                                  if (_status != null) ...[
+                                    const SizedBox(height: 8),
+                                    Semantics(
+                                      liveRegion: true,
+                                      child: Text(_status!.tr),
+                                    ),
+                                  ],
                                   const SizedBox(height: 8),
-                                  Semantics(
-                                    liveRegion: true,
-                                    child: Text(_status!.tr),
+                                  Text(
+                                    'match3_achievement_progress'.trParams({
+                                      'value':
+                                          '${_achievements.progressOf(_achievementId)}',
+                                    }),
+                                  ),
+                                  Text(
+                                    'match3_quest_progress'.trParams({
+                                      'value':
+                                          '${_quests.progressOf(_questId)}',
+                                    }),
+                                  ),
+                                  Text(
+                                    'match3_leaderboard_count'.trParams({
+                                      'count': '${_scoreboard.topN(20).length}',
+                                    }),
                                   ),
                                 ],
-                                const SizedBox(height: 8),
-                                Text(
-                                  'match3_achievement_progress'.trParams({
-                                    'value':
-                                        '${_achievements.progressOf(_achievementId)}',
-                                  }),
-                                ),
-                                Text(
-                                  'match3_quest_progress'.trParams({
-                                    'value': '${_quests.progressOf(_questId)}',
-                                  }),
-                                ),
-                                Text(
-                                  'match3_leaderboard_count'.trParams({
-                                    'count': '${_scoreboard.topN(20).length}',
-                                  }),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
-                        ),
-                      );
-                    },
+                        );
+                      },
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
-        ),
-        if (_showResultCard && _game.isTerminal) _buildResultOverlay(),
-      ],
+          if (_showResultCard && _game.isTerminal) _buildResultOverlay(),
+          PauseOverlay(
+            session: _session,
+            showForSystemPause: true,
+            onRestart: _restartFromPause,
+            onQuit: _quit,
+          ),
+        ],
+      ),
     ),
   );
 
@@ -947,7 +1075,10 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
     ];
   }
 
-  Widget _buildLevelSelect() => Column(
+  Widget _buildLevelSelect() =>
+      KeyedSubtree(key: _levelSelectKey, child: _levelSelectContent());
+
+  Widget _levelSelectContent() => Column(
     key: const ValueKey('match3_level_select'),
     children: [
       Text(
@@ -976,6 +1107,13 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
           label: 'match3_start'.tr,
           onTap: _startRun,
           color: NeonTheme.cyan,
+        ),
+      if (_running && !_game.isTerminal)
+        CommonButton(
+          key: const ValueKey('match3_pause'),
+          label: 'match3_pause'.tr,
+          variant: CommonButtonVariant.secondary,
+          onTap: _animating ? null : _pause,
         ),
       if (_game.status == Match3Status.won &&
           _level < _highestUnlockedLevel &&
@@ -1018,6 +1156,10 @@ class _Match3LiteScreenState extends State<Match3LiteScreen> {
   void dispose() {
     _disposed = true;
     _animationGeneration++;
+    _tutorial.dispose();
+    // GameSessionController was Get.put so its lifecycle hook registered;
+    // Get.delete runs its onClose() (hook removal), no direct call needed.
+    Get.delete<GameSessionController>();
     super.dispose();
   }
 }

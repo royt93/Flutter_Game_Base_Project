@@ -62,6 +62,18 @@ Một game mẫu đủ vòng chơi để đối tác thấy kit dựng được 
 - Device: Pixel 7 Pro (không phải S24U), Android 17, debug `E2E_TEST=true`: `Match-3 Lite opens and runs one valid swap on device` pass, log `doc/task/evidence/FEAT-214-slice3-pixel7pro-match3-result-card.log`. Chỉ chứng minh màn mở và 1 swap hợp lệ, KHÔNG phủ thẻ kết quả, sao hay nút Chia sẻ trên thiết bị.
 - Chưa chứng minh: nút Chia sẻ mới chỉ được test là không làm vỡ thẻ khi không có nền tảng; share sheet thật và ảnh thẻ chưa chạy trên thiết bị. Lát 4 chưa làm.
 
+### Lát 4: Tutorial + pause (xong, 2026-11-23)
+
+- Quyết định owner: nút Pause + khóa bàn + tự pause khi app xuống nền; tutorial 3 bước (đổi 2 ô, thanh booster, chọn level) hiện đúng một lần.
+- Thay đổi: `GameSessionController` (Get.put để hook lifecycle chạy, Get.delete khi dispose) đồng bộ theo vòng đời ván qua `_syncSession` (ready, playing, won/lost, restore từ save); nút Pause trong hàng hành động khi đang chạy; `PauseOverlay` (Tiếp tục, Chơi lại, Thoát) với `showForSystemPause: true`; khi pause khóa lưới và các slot booster; Chơi lại từ menu trừ năng lượng như nút New Run. Tutorial dùng `TutorialSequence` + `OnboardingCoordinatorService` (cờ `match3_tutorial_v1` được lưu, đánh dấu đã xem ngay khi hiện) với 3 `GlobalKey` đo mục tiêu sau khi cuộn vào tầm nhìn. 12 key i18n mới (en + vi), dùng lại key `pause_*` và `tutorial_skip` sẵn có của kit.
+- Tests: 12 test mới (session theo ván, tutorial hiện lần đầu và 3 bước tới hết, bỏ qua không quay lại, người đã xem không thấy, pause mở menu và khóa bàn, pause khóa booster/mua, resume mở khóa, restart từ menu, nền/tiền cảnh tự pause/resume, rời màn gỡ session, handler ô gọi khi đang pause không làm gì). `setUp` mặc định coi người chơi đã xem tutorial vì spotlight che màn. Mutation check 8 lỗi cố ý: khóa booster, tutorial không đánh dấu đã xem, không gỡ session, session không start, pause không làm gì, restart không thoát pause đều làm test đỏ; mutant bỏ guard pause trong `_swap` sống sót vì overlay nuốt tap nên đã thêm test gọi thẳng handler của ô; mutant guard pause trên chạm level là mã thừa (`_running` đã chặn) nên đã gỡ khỏi code thay vì giữ test giả. Example 472 pass, root core 2026 pass, analyze và API gate sạch.
+- Device: Pixel 7 Pro (không phải S24U), Android 17, debug `E2E_TEST=true`: `Match-3 Lite opens and runs one valid swap on device` ban đầu ĐỎ vì tutorial thật sự che bàn chơi lần đầu trên máy thật (xác nhận tutorial hoạt động); đã sửa test để bỏ qua tutorial nếu có, rồi pass; log `doc/task/evidence/FEAT-214-slice4-pixel7pro-match3-pause-tutorial.log`. Chỉ chứng minh màn mở và 1 swap hợp lệ, KHÔNG phủ nút Pause, tự pause khi xuống nền thật, hay đi hết 3 bước tutorial trên thiết bị.
+
+## Tổng kết FEAT-214 (4 lát)
+
+- Vòng chơi Match-3 trong Home đã đủ: bắt đầu (trừ năng lượng), chơi, booster (mua bằng coin), chọn level + sao lưu save v3, thẻ thắng/thua + chia sẻ, pause, tutorial. Chỉ dùng API công khai của kit; nếu thấy thiếu hụt thì ghi thành task riêng.
+- Điểm tự chấm ~9.0/10. Trừ điểm: chưa có integration test đi qua booster/thẻ kết quả/pause/tutorial trên thiết bị thật (chỉ smoke mở màn + 1 swap); chia sẻ chưa chạy share sheet thật; máy thật là Pixel 7 Pro chứ không phải S24U; tự pause khi xuống nền chỉ kiểm bằng lifecycle giả lập.
+- Chưa làm trong phạm vi: không có âm thanh/haptic riêng cho booster, không có animation riêng khi mua.
+
 ### Còn lại
-- Audit / điểm tổng:
-- Commit/push:
+- Commit/push: `901536de`, `e9e4eb96`, `88af66c0` và lát 4.

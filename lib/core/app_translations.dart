@@ -63,6 +63,18 @@ class AppTranslations extends Translations {
       'match3_result_share': 'Share',
       'match3_result_share_text':
           'Cleared level @level with @stars stars, score @score!',
+      'match3_pause': 'Pause',
+      'match3_tutorial_next': 'Next',
+      'match3_tutorial_done': 'Got it',
+      'match3_tutorial_swap_title': 'Swap two tiles',
+      'match3_tutorial_swap':
+          'Tap a tile, then a neighbor to line up three or more of a kind.',
+      'match3_tutorial_boosters_title': 'Boosters',
+      'match3_tutorial_boosters':
+          'Tap a booster, then a tile. It costs no move. Out of boosters? Tap an empty slot to buy one with coins.',
+      'match3_tutorial_levels_title': 'Levels and stars',
+      'match3_tutorial_levels':
+          'Finish with moves to spare for more stars, then replay any unlocked level here.',
       'match3_booster_row': 'Row',
       'match3_booster_column': 'Column',
       'match3_booster_bomb': 'Bomb',
@@ -290,6 +302,18 @@ class AppTranslations extends Translations {
       'match3_result_close': 'Đóng',
       'match3_result_share': 'Chia sẻ',
       'match3_result_share_text': 'Qua màn @level với @stars sao, @score điểm!',
+      'match3_pause': 'Tạm dừng',
+      'match3_tutorial_next': 'Tiếp',
+      'match3_tutorial_done': 'Đã hiểu',
+      'match3_tutorial_swap_title': 'Đổi hai ô',
+      'match3_tutorial_swap':
+          'Chạm một ô rồi chạm ô bên cạnh để xếp từ ba ô giống nhau trở lên.',
+      'match3_tutorial_boosters_title': 'Booster',
+      'match3_tutorial_boosters':
+          'Chạm booster rồi chạm một ô, không tốn lượt. Hết booster? Chạm ô trống để mua bằng xu.',
+      'match3_tutorial_levels_title': 'Màn chơi và sao',
+      'match3_tutorial_levels':
+          'Qua màn còn nhiều lượt để được thêm sao, rồi chơi lại màn đã mở ở đây.',
       'match3_booster_row': 'Hàng',
       'match3_booster_column': 'Cột',
       'match3_booster_bomb': 'Bom',
