@@ -31,6 +31,36 @@ Future<void> _boot() async {
 void main() {
   tearDown(Get.reset);
 
+  for (final rtl in [false, true]) {
+    testWidgets(
+        'no layout overflow at 2.0 text scale on a 360dp phone (rtl=$rtl)',
+        (tester) async {
+      tester.view.physicalSize = const Size(360, 780);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.reset);
+      await _boot();
+
+      await tester.pumpWidget(GetMaterialApp(
+        translations: AppTranslations(),
+        locale: AppTranslations.fallback,
+        fallbackLocale: AppTranslations.fallback,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: const TextScaler.linear(2.0),
+          ),
+          child: Directionality(
+            textDirection: rtl ? TextDirection.rtl : TextDirection.ltr,
+            child: child!,
+          ),
+        ),
+        home: const SeasonLeaderboardScreen(),
+      ));
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(tester.takeException(), isNull);
+    });
+  }
+
   testWidgets('renders SeasonLeaderboardScreen with countdown and empty leaderboard',
       (tester) async {
     await _boot();

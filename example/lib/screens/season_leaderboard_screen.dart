@@ -97,12 +97,14 @@ class _SeasonLeaderboardScreenState extends State<SeasonLeaderboardScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Season 1: Neon Dawn',
-                                style: TextStyle(
-                                  color: NeonTheme.ink,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                              Flexible(
+                                child: Text(
+                                  'Season 1: Neon Dawn',
+                                  style: TextStyle(
+                                    color: NeonTheme.ink,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
                                 ),
                               ),
                               CountdownChip(
@@ -125,12 +127,14 @@ class _SeasonLeaderboardScreenState extends State<SeasonLeaderboardScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Season Points: $_seasonPoints',
-                                style: TextStyle(
-                                  color: NeonTheme.cyan,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
+                              Flexible(
+                                child: Text(
+                                  'Season Points: $_seasonPoints',
+                                  style: TextStyle(
+                                    color: NeonTheme.cyan,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 15,
+                                  ),
                                 ),
                               ),
                               Text(
@@ -159,12 +163,14 @@ class _SeasonLeaderboardScreenState extends State<SeasonLeaderboardScreen> {
                           Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Text(
-                                'Local Leaderboard',
-                                style: TextStyle(
-                                  color: NeonTheme.ink,
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                              Flexible(
+                                child: Text(
+                                  'Local Leaderboard',
+                                  style: TextStyle(
+                                    color: NeonTheme.ink,
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 16,
+                                  ),
                                 ),
                               ),
                               CommonButton(
