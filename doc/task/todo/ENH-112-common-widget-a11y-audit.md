@@ -60,13 +60,31 @@ Một số probe đầu tiên của tôi dùng `find.bySemanticsLabel` trên dia
 - Mutation check: bỏ `BlockSemantics` hoặc đặt `blocking: false` ở từng overlay đều làm test đỏ; `overlaySlot` luôn chặn hoặc không bao giờ chặn đều đỏ (cả hai chiều được khoá).
 - Thiết bị thật: Samsung Galaxy S24 Ultra `SM-S928B`, Android 17, debug `E2E_TEST=true`: `match3_game_flow_test.dart` (tutorial dùng SpotlightOverlay, pause menu dùng overlaySlot) pass, và test sẵn có `BUG-91/BUG-92: GameDemoScreen pause FAB` pass. Log: `doc/task/evidence/ENH-112-s24u-match3-flow-blocksemantics.log`, `ENH-112-s24u-gamedemo-pause-blocksemantics.log`. Chỉ chứng minh luồng vẫn chạy, KHÔNG chứng minh TalkBack thật đọc đúng (test semantics là trên cây widget, chưa bật TalkBack trên máy).
 
-### Còn lại (chưa làm)
+### Đo 21 widget bằng quét semantics tự động (2026-11-23)
 
-- Audit các widget tương tác còn lại trong danh sách 21 (nhớ heuristic báo thừa; ví dụ `CandyTextField` đã đo là ổn).
-- Quyết định có chặn semantics cho `LoadingOverlay` hay không.
-- Dialog/sheet dạng ROUTE (`NeonDialog.show`, `showModalBottomSheet`, `showDialog`): KHÔNG phải lỗi. Đã kiểm bằng mô phỏng thứ tự đọc của screen reader (`simulatedAccessibilityTraversal`), có đối chứng: route dialog ẩn trang bên dưới (BEHIND không còn trong thứ tự đọc), giống `showDialog` gốc của Flutter. Lý do: `ModalBarrier` của route tự bọc `BlockSemantics`. Chỉ overlay dựng thẳng trong cây (`Stack`) mới cần tự chặn.
-- Đã đo thêm bằng thứ tự đọc của screen reader (cùng công cụ đã đối chứng): `LevelUpOverlay` khi đang chạy chỉ còn "Level 5!" (BEHIND ẩn; khi idle BEHIND hiện) vì nó tự bọc `ExcludeSemantics(excluding: active)` cho nội dung phía sau; `MilestoneCelebrationDialog.show` ẩn BEHIND (đi qua `NeonDialog.show`, dạng route). Cả hai KHÔNG có lỗi.
-- Chưa đo `RewardPopup` (chỉ là panel, tuỳ nơi gọi bọc) và `ConfirmDialog`; không có bằng chứng lỗi ở hai widget này.
+- Phương pháp: tạm gắn một bộ quét vào `runViewportSweep` (đã gỡ sau khi đo, không commit), chạy qua toàn bộ 339 test sweep ở viewport 360x640, text 1x. Mỗi node có hành động chạm (tap, long press, tăng/giảm) phải có nhãn hoặc giá trị và vùng chạm >= 44dp. Đối chứng: nút 20x20 không nhãn bị báo cả hai lỗi; nút có nhãn 48x48 sạch.
+- Kết quả: **17/21 widget sạch**. Bốn phát hiện, đã phân loại sau khi đọc source và đo trực tiếp:
 
-- Audit / điểm: ~9.0/10 cho phần overlay (có đo, sửa gọn, hai chiều được khoá bằng test, có chạy thiết bị thật); phần audit 21 widget chưa chấm.
+| Widget | Phát hiện của máy quét | Kết luận | Xử lý |
+| --- | --- | --- | --- |
+| `ExpandablePanel` | header là nút không nhãn (khi không truyền `semanticLabel`) | **Lỗi thật.** Screen reader nghe một nút rỗng rồi một nút khác chứa chữ; `Semantics` ngoài và `GestureDetector` trong `PressableScale` đều khai báo hành động tap. | Sửa: bỏ `onTap` thừa trên `Semantics` ngoài (1 dòng). Header nay là một nút tên "Gameplay settings"; có `semanticLabel` thì nhãn gộp thành một nút duy nhất. 4 test mới (tên, một nút duy nhất, tap qua screen reader, trạng thái expanded và button), mutation-check 3 lỗi đều đỏ. |
+| `EventCalendarCard` | nút mở sự kiện 40x40 | **Lỗi thật** (dưới 44dp; nhãn thì ổn qua tooltip). | Sửa: bỏ `visualDensity: compact`, nút thành 48x48, card cao hơn 3px (135 -> 138). 1 test mới, mutation-check đỏ khi khôi phục compact. **Golden `eventcalendarcard_week_*` (7 ảnh) sẽ đổi**; xem mục golden bên dưới. |
+| `CommunityLeaderboardCard` | nút refresh 48x48 "không nhãn" | **Báo thừa.** Máy quét chỉ nhìn `label`; Flutter ghi `IconButton.tooltip` được dùng cho accessibility, và `refreshLabel` bắt buộc không rỗng. | Không sửa. |
+| `CollectionAlbumPanel` | chip lọc nhỏ hơn 44 | **Lỗi thật**: ba chip cao 33px (rộng 63, 87, 112), `GestureDetector` không có vùng chạm tối thiểu. | CHƯA sửa: đổi kích thước sẽ đổi 28 golden (`collectionalbumpanel_*`) cần workflow Linux. |
+
+### Hai lần thử sửa thất bại (để người sau không lặp lại)
+
+- Với `ExpandablePanel`, bọc header bằng `MergeSemantics` (ngoài và trong `Semantics`) làm XẤU hơn: mất luôn nhãn `semanticLabel` tường minh. Đã hoàn nguyên. Nguyên nhân gốc thật sự là hai nơi cùng khai báo hành động tap, không phải thiếu merge. Bỏ `container: true` cũng không đổi gì.
+- Với `EventCalendarCard`, đặt `constraints: BoxConstraints(minWidth: 44, minHeight: 44)` không có tác dụng (nút vẫn 40) vì `visualDensity: compact` trừ đi; phải bỏ density.
+
+### Golden (chưa làm, theo quy ước repo)
+
+Golden chỉ được sinh bằng workflow `regenerate-goldens.yml` trên Linux, không từ máy macOS. Thay đổi hiện tại đổi `eventcalendarcard_week_*` (7 ảnh, bố cục card cao hơn). Test golden của widget này đã đỏ sẵn trên macOS ở cả HEAD lẫn bản sửa (2 đỏ ở cả hai), nên không thể so sánh cục bộ; baseline Linux chỉ phản ánh được sau khi chạy workflow. Owner đang hoãn CI nên PNG chưa được tạo lại: **main sẽ đỏ ở golden `EventCalendarCard` cho đến khi chạy workflow và copy đúng 7 PNG `eventcalendarcard_week_*`** (không copy cả artifact).
+
+### Chưa làm
+- Sửa chip lọc `CollectionAlbumPanel` (cần regenerate 28 golden).
+- Quyết định có chặn semantics cho `LoadingOverlay` hay không (xem trên).
+- Chưa bật TalkBack/VoiceOver thật; mọi kết luận là từ cây semantics trong test.
+
+- Audit / điểm: ~8.8/10. Trừ điểm: golden `EventCalendarCard` chưa được tạo lại nên main sẽ đỏ ở một test golden cho đến khi chạy workflow; `CollectionAlbumPanel` chưa sửa; không có TalkBack thật.
 - Commit/push:

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/expandable_panel.dart';
 
@@ -125,5 +126,91 @@ void main() {
       ),
     );
     expect(tester.takeException(), isA<ArgumentError>());
+  });
+
+  group('screen reader', () {
+    Future<List<SemanticsNode>> pumpPanel(
+      WidgetTester tester, {
+      String? semanticLabel,
+      ValueChanged<bool>? onChanged,
+      bool expanded = false,
+    }) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: ExpandablePanel(
+              header: const Text('Gameplay settings'),
+              content: const Text('Advanced options'),
+              isExpanded: expanded,
+              semanticLabel: semanticLabel,
+              onExpansionChanged: onChanged,
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 400));
+      return tester.semantics.simulatedAccessibilityTraversal().toList();
+    }
+
+    SemanticsNode tappable(List<SemanticsNode> nodes) => nodes.firstWhere(
+      (n) => n.getSemanticsData().hasAction(SemanticsAction.tap),
+    );
+
+    testWidgets('header without semanticLabel is announced by its text', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final nodes = await pumpPanel(tester);
+      expect(tappable(nodes).label, 'Gameplay settings');
+      expect(
+        nodes.where(
+          (n) =>
+              n.label.trim().isEmpty &&
+              n.getSemanticsData().hasAction(SemanticsAction.tap),
+        ),
+        isEmpty,
+        reason: 'no unnamed button for the reader',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('an explicit semanticLabel names the same button', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      final nodes = await pumpPanel(tester, semanticLabel: 'FAQ: settings');
+      expect(tappable(nodes).label, contains('FAQ: settings'));
+      expect(
+        nodes.where((n) => n.getSemanticsData().hasAction(SemanticsAction.tap)),
+        hasLength(1),
+        reason: 'one button, not a duplicate tappable label',
+      );
+      handle.dispose();
+    });
+
+    testWidgets('the reader tap action toggles the panel', (tester) async {
+      final handle = tester.ensureSemantics();
+      final changes = <bool>[];
+      final nodes = await pumpPanel(tester, onChanged: changes.add);
+      tester.semantics.tap(find.semantics.byAction(SemanticsAction.tap).first);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(changes, [true]);
+      expect(nodes, isNotEmpty);
+      handle.dispose();
+    });
+
+    testWidgets('expanded state is exposed on the button', (tester) async {
+      final handle = tester.ensureSemantics();
+      await pumpPanel(tester, expanded: true);
+      final node = tester.getSemantics(
+        find.byKey(const ValueKey('expandablePanelHeader')),
+      );
+      expect(
+        node.getSemanticsData().flagsCollection.isExpanded.toBoolOrNull(),
+        isTrue,
+      );
+      expect(node.getSemanticsData().flagsCollection.isButton, isTrue);
+      handle.dispose();
+    });
   });
 }

@@ -135,6 +135,25 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('open buttons are at least 44dp and named by their tooltip', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
+      await tester.pumpWidget(_subject());
+      await tester.pump(const Duration(milliseconds: 400));
+      for (final id in ['boss', 'tournament']) {
+        final button = find.byKey(ValueKey('eventCalendarOpen_$id'));
+        final size = tester.getSize(button);
+        expect(size.width, greaterThanOrEqualTo(44), reason: '$id width');
+        expect(size.height, greaterThanOrEqualTo(44), reason: '$id height');
+        expect(
+          tester.getSemantics(button).getSemanticsData().tooltip,
+          startsWith('Open '),
+        );
+      }
+      handle.dispose();
+    });
+
     testWidgets('shows empty state and semantics count', (tester) async {
       await tester.pumpWidget(_subject(events: const []));
       expect(find.text('No events scheduled.'), findsOneWidget);

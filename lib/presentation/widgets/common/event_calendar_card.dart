@@ -239,7 +239,8 @@ class _EventRow extends StatelessWidget {
                 IconButton(
                   key: ValueKey('eventCalendarOpen_${event.id}'),
                   tooltip: 'Open ${event.title}',
-                  visualDensity: VisualDensity.compact,
+                  // Default density keeps the 48dp touch target; compact
+                  // density used to shrink it to 40x40.
                   icon: Icon(
                     Icons.arrow_forward_rounded,
                     size: 18,

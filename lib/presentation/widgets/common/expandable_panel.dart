@@ -131,7 +131,6 @@ class ExpandablePanelState extends State<ExpandablePanel>
             enabled: true,
             expanded: expanded,
             label: widget.semanticLabel,
-            onTap: toggle,
             child: PressableScale(
               onTap: toggle,
               child: Padding(
