@@ -59,6 +59,10 @@ class _QuestRecord {
 /// Reset is driven entirely by [todayEpochDayClamped] (see
 /// `utils/clamped_clock.dart`) so winding the device clock back can't be
 /// used to re-claim an already-claimed quest early.
+///
+/// Periods follow the UTC calendar day (and the 7-day block `day ~/ 7`), not
+/// the player's local day, so a "daily" quest resets at 00:00 UTC: 07:00 local
+/// in UTC+7, 16:00 in UTC-8.
 class DailyQuestService extends GetxService with StorageReplaceWatch {
   DailyQuestService({String? storageKey})
     : _storageKey = storageKey ?? StorageKeys.dailyQuestProgressV1;

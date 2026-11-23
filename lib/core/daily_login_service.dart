@@ -78,6 +78,11 @@ class _DailyLoginState {
 /// (`utils/clamped_clock.dart`) — this service never calls `DateTime.now()`
 /// directly, so winding the device clock back can't be used to claim the
 /// same day twice or dodge the streak-reset penalty for a skipped day.
+///
+/// That "day" is the UTC calendar day, not the player's local day: the streak
+/// rolls over at 00:00 UTC, which is 07:00 local in UTC+7 and 16:00 local in
+/// UTC-8. A player's own midnight is not the reset moment. If a game needs a
+/// local-midnight reset it must decide that itself; this service does not.
 class DailyLoginService extends GetxService with StorageReplaceWatch {
   DailyLoginService({String? storageKey})
     : _storageKey = storageKey ?? StorageKeys.dailyLoginStateV1;

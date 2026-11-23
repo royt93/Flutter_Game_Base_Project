@@ -61,6 +61,9 @@ class SeededChallengeService {
   /// reopen a period that has already advanced past (same anti-cheat
   /// clamp every other time-gated system in this package relies on); it
   /// only ever "loses" real future time, never replays a past one.
+  ///
+  /// The day (and the weekly block `day ~/ 7`) is the UTC day, so a daily
+  /// challenge changes at 00:00 UTC, not at the player's local midnight.
   String get periodKey {
     final day = todayEpochDayClamped();
     return switch (period) {

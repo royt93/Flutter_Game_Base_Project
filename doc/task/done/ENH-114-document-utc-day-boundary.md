@@ -13,7 +13,7 @@ source: "Khảo sát số học/thời gian 2026-11-23; owner chọn chỉ ghi n
 - `todayEpochDayClamped()` = `(UTC ms + debug offset) ~/ 86400000` (`lib/core/utils/clamped_clock.dart:90`), tức ngày UTC. Dùng bởi `DailyLoginService` (claim và streak), `DailyQuestService` (khoá kỳ ngày và tuần `day ~/ 7`), `SeededChallengeService` (`d$day`, `w${day ~/ 7}`), `smart_reminder_scheduling` (`streakExpiringReminderDelay`).
 - Hệ quả trên đồng hồ địa phương: ngày kit đổi lúc **07:00 ở UTC+7**, 19:00 ở UTC-5, 16:00 ở UTC-8, 13:00 ở UTC+13. 23:59 và 00:00 giờ Việt Nam thuộc cùng một ngày kit (không reset lúc nửa đêm).
 - Hệ quả nhắc nhở: `streakExpiringReminderDelay` báo trước 4 giờ so với nửa đêm UTC, nên ở UTC+7 nhắc lúc **03:00 sáng** (streak hết lúc 07:00), ở UTC-8 nhắc lúc 12:00 trưa. Đo bằng số học chính xác (`datetime`), không phải suy luận.
-- Đây có vẻ là thiết kế chống gian lận giờ (ngày UTC không đổi khi người chơi đổi múi giờ), nhưng không tài liệu nào nói vậy. README chỉ liệt kê `DailyLoginService` và `DailyQuestService`; docstring của `todayEpochDayClamped` chỉ ghi "Days since epoch (UTC)".
+- Đây có vẻ là thiết kế chống gian lận giờ (ngày UTC không đổi khi người chơi đổi múi giờ). Mức tài liệu hiện tại: `streakExpiringReminderDelay` ĐÃ ghi rõ "expires at the next UTC day boundary ... not local midnight" (`smart_reminder_scheduling.dart:38`), và `todayEpochDayClamped` ghi "Days since epoch (UTC)". Còn thiếu: README (chỉ có ví dụ code, không nhắc UTC), và `DailyLoginService`/`DailyQuestService`/`SeededChallengeService` (nơi consumer thật sự gặp hệ quả) không nói gì về múi giờ; không ở đâu nêu hệ quả theo múi giờ cụ thể.
 - `durationToLocalMidnight` (`lib/core/utils/format.dart`) tính nửa đêm địa phương nhưng không nơi nào trong `lib/` gọi (chỉ README nhắc). Doc của nó nói rõ dùng cho đếm ngược mùa giải; không nối với phần còn lại của kit.
 - `SeasonEventService` và `EnergyService` dùng mili giây (`nowMsClamped`), không dùng ranh giới ngày, nên không bị ảnh hưởng.
 
@@ -37,6 +37,9 @@ source: "Khảo sát số học/thời gian 2026-11-23; owner chọn chỉ ghi n
 
 ## Kết quả thực hiện
 
-- Audit / điểm:
-- Tests:
+- Tài liệu (không đổi logic, diff thật: 6 + 5 + 4 + 3 + 8 dòng thêm): README (mục DailyLoginService), doc comment của `todayEpochDayClamped`, `DailyLoginService`, `DailyQuestService`, `SeededChallengeService.periodKey`. Nêu: ngày là ngày UTC, thời điểm đổi theo múi giờ (07:00 ở UTC+7, 16:00 ở UTC-8, 13:00 ở UTC+13), lý do (đổi múi giờ không cho claim lần hai), và game cần reset nửa đêm địa phương thì tự làm. `streakExpiringReminderDelay` đã có ghi chú UTC từ trước (đính chính nhận định ban đầu trong mục Bằng chứng).
+- Test khoá hành vi: `test/core/utc_day_boundary_test.dart`, 5 test (ngày đổi đúng 00:00 UTC; nửa đêm địa phương UTC+7 không phải ranh giới; `DailyLoginService` claim/streak qua ranh giới UTC; quest ngày reset qua 00:00 UTC; khối tuần là `day ~/ 7`). Điều khiển đồng hồ bằng `setDebugTimeOffsetMs`, không phụ thuộc giờ máy.
+- Kiểm chứng: mutation (dịch ranh giới sang UTC+7, dịch 1 giờ, dùng `DateTime` địa phương) đều làm test đỏ; chạy lại dưới `TZ=UTC`, `America/Los_Angeles`, `Pacific/Auckland`, `Asia/Kolkata` đều pass 5/5 (máy chạy ở +0700, nên các múi giờ khác nhau cùng cho kết quả giống nhau). Root 4132 pass, example 472 pass, analyze và API gate sạch.
+- Chưa làm (đúng phạm vi): tuỳ chọn múi giờ reset; DST ở mùa giải (`SeasonEventService` dùng mili giây UTC nên không có ranh giới ngày, chưa đo DST riêng).
+- Audit / điểm: ~9.2/10. Trừ điểm: test dùng `setDebugTimeOffsetMs` nên chỉ chạy trong debug/profile (đúng với test); chưa có test cho `SeededChallengeService.periodKey` và `streakExpiringReminderDelay` ở ranh giới.
 - Commit/push:

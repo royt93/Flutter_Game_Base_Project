@@ -87,6 +87,14 @@ int nowMsClamped([StorageService? storage]) {
 }
 
 /// Days since epoch (UTC), clamped to never go below the largest value seen so far.
+///
+/// The "day" is the UTC calendar day, NOT the player's local day, so it does
+/// not move when the player changes time zone (a cheat that would otherwise
+/// allow a second claim). The cost is that the day flips at a different local
+/// time per region: 07:00 in UTC+7, 19:00 the previous day in UTC-5, 16:00 in
+/// UTC-8, 13:00 in UTC+13, and 00:00 only in UTC+0. Every daily/weekly system
+/// built on this (`DailyLoginService`, `DailyQuestService`,
+/// `SeededChallengeService`, `streakExpiringReminderDelay`) inherits that.
 int todayEpochDayClamped() {
   final current =
       (DateTime.now().toUtc().millisecondsSinceEpoch + _debugTimeOffsetMs) ~/

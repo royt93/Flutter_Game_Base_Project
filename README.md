@@ -308,6 +308,12 @@ worth), and a fresh install never hands out a free payout on its very first
 read — the baseline is seeded to "now", not epoch zero.
 
 #### DailyLoginService
+Days are **UTC calendar days**, not the player's local day: the streak and the
+daily/weekly quests roll over at 00:00 UTC (07:00 local in UTC+7, 16:00 in UTC-8,
+13:00 in UTC+13). This keeps a time-zone change from granting a second claim,
+and `streakExpiringReminderDelay` is measured from the same UTC boundary. A game
+that wants a local-midnight reset has to implement it itself.
+
 ```dart
 final login = DailyLoginService();
 Get.put(login, permanent: true);
