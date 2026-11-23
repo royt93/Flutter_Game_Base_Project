@@ -159,6 +159,50 @@ void main() {
     });
   });
 
+  group('BUG-141 restoring the backup', () {
+    const future = '{"schemaVersion":99,"name":"Future","level":7}';
+
+    test('no backup: hasBackup false, loadBackup null, restore false', () async {
+      final s = makeStore();
+      expect(s.hasBackup, isFalse);
+      expect(s.loadBackup(), isNull);
+      expect(await s.restoreBackup(), isFalse);
+    });
+
+    test('downgrade round trip: old app backs up, newer app restores', () async {
+      await store.setString('profile', future);
+      final oldApp = makeStore(schemaVersion: 1);
+      await oldApp.save(const _Profile(name: 'Old', level: 1));
+      expect(oldApp.hasBackup, isTrue);
+      expect(oldApp.loadBackup(), isNull, reason: 'still from the future');
+
+      final newApp = makeStore(schemaVersion: 99);
+      expect(newApp.loadBackup()!.name, 'Future');
+      expect(await newApp.restoreBackup(), isTrue);
+      expect(newApp.load()!.name, 'Future');
+      expect(newApp.load()!.level, 7);
+      expect(newApp.hasBackup, isFalse);
+    });
+
+    test('an old-schema backup is migrated on restore', () async {
+      await store.setString('profile.bak', '{"schemaVersion":1,"name":"Old"}');
+      final s = makeStore(
+        migrate: (from, json) => {...json, 'level': 5},
+      );
+      expect(await s.restoreBackup(), isTrue);
+      expect(s.load()!.level, 5);
+    });
+
+    test('a corrupt backup is not restored and is left in place', () async {
+      await store.setString('profile.bak', '{broken');
+      await store.setString('profile', '{"schemaVersion":2,"name":"Live","level":1}');
+      final s = makeStore();
+      expect(await s.restoreBackup(), isFalse);
+      expect(s.load()!.name, 'Live');
+      expect(store.getString('profile.bak'), '{broken');
+    });
+  });
+
   group('BUG-142 cloud syncedAtMs far in the future does not win', () {
     Map<String, Object?> cloudAt(int ms) => {
       'schemaVersion': 2,

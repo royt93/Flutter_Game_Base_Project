@@ -179,6 +179,44 @@ class VersionedJsonStore<T> {
     return storage.setString(backupKey, raw);
   }
 
+  Map<String, Object?>? _readBackupJson() {
+    final raw = storage.getString(backupKey);
+    if (raw == null || raw.isEmpty) return null;
+    try {
+      return _validate(jsonDecode(raw));
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// `true` if [save] has set aside an unusable value (see [backupKey]).
+  bool get hasBackup => storage.getString(backupKey)?.isNotEmpty ?? false;
+
+  /// Reads the backup through the same schema policy as [load] (older
+  /// `schemaVersion` migrated, newer or corrupt rejected). `null` when there is
+  /// no backup or it is still not usable, e.g. a save from a newer app version
+  /// read by the older app that backed it up: try again after updating.
+  T? loadBackup() {
+    final json = _readBackupJson();
+    if (json == null) return null;
+    try {
+      return fromJson(json);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  /// Makes the backup the live save and clears the backup. Returns `false`,
+  /// changing nothing, when [loadBackup] would return `null`. This REPLACES the
+  /// current save, so ask the player first when one exists.
+  Future<bool> restoreBackup() async {
+    final value = loadBackup();
+    if (value == null) return false;
+    await save(value);
+    await storage.remove(backupKey);
+    return true;
+  }
+
   /// Returns `null` if nothing has been saved yet, or if what's saved
   /// isn't safely usable (see the class doc's trust-boundary policy). Does not
   /// catch a throwing [fromJson]; use [loadResult] when that is possible.
