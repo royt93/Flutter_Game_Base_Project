@@ -16,6 +16,8 @@ import 'package:roy_casual_kit/presentation/widgets/common/live_frame_graph.dart
 import 'package:roy_casual_kit/presentation/widgets/debug_qa_overlay.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../support/owned_storage.dart';
+
 void main() {
   tearDown(() async {
     Get.reset();
@@ -91,8 +93,7 @@ void main() {
   testWidgets(
     'long-press corner trigger opens the panel showing a StorageService key',
     (tester) async {
-      SharedPreferences.setMockInitialValues({'demo_key': 42});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
+      Get.put(await ownedStorage({'demo_key': 42}));
 
       await tester.pumpWidget(
         const MaterialApp(
@@ -119,8 +120,7 @@ void main() {
   testWidgets(
     'IDEA-40: panel hiện đúng TrustedClock now + judgement khi StorageService đã đăng ký',
     (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
+      Get.put(await ownedStorage());
 
       await tester.pumpWidget(
         const MaterialApp(
@@ -166,8 +166,7 @@ void main() {
 
   group('IDEA-39: Playground tab', () {
     Future<void> openPanel(WidgetTester tester) async {
-      SharedPreferences.setMockInitialValues({});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
+      Get.put(await ownedStorage());
 
       await tester.pumpWidget(
         const MaterialApp(
@@ -304,8 +303,7 @@ void main() {
 
   group('IDEA-42: Replay tab', () {
     Future<void> openReplayTab(WidgetTester tester) async {
-      SharedPreferences.setMockInitialValues({});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
+      Get.put(await ownedStorage());
       Get.put(ReplayRecorder(), permanent: true);
 
       await tester.pumpWidget(
@@ -322,8 +320,7 @@ void main() {
     testWidgets(
       'ReplayRecorder chưa Get.put: tab Replay báo rõ thay vì crash',
       (tester) async {
-        SharedPreferences.setMockInitialValues({});
-        Get.put(StorageService(await SharedPreferences.getInstance()));
+        Get.put(await ownedStorage());
         // Cố ý KHÔNG Get.put ReplayRecorder.
 
         await tester.pumpWidget(
@@ -437,8 +434,7 @@ void main() {
     tearDown(() => setDebugTimeOffsetMs(0));
 
     Future<void> openPanel(WidgetTester tester) async {
-      SharedPreferences.setMockInitialValues({});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
+      Get.put(await ownedStorage());
 
       await tester.pumpWidget(
         const MaterialApp(
@@ -617,8 +613,7 @@ void main() {
 
   group('FEAT-93: Variant Switcher tab', () {
     Future<ExperimentBucketingService> openPanel(WidgetTester tester) async {
-      SharedPreferences.setMockInitialValues({});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
+      Get.put(await ownedStorage());
       final service = ExperimentBucketingService();
       Get.put(service, permanent: true);
 
@@ -739,8 +734,7 @@ void main() {
       WidgetTester tester, {
       Map<String, bool> assetDefaults = const {},
     }) async {
-      SharedPreferences.setMockInitialValues({});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
+      Get.put(await ownedStorage());
       final controller = RemoteKillSwitchController(
         remoteConfig: RemoteConfigService(
           assetPath: 'assets/no_such_file.json',
@@ -930,6 +924,7 @@ void main() {
           preferences: prefs,
         ),
       );
+      addTearDown(Get.find<StorageService>().onClose);
 
       await openBootTab(tester);
 

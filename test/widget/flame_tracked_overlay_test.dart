@@ -3,12 +3,19 @@ import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/game/roy_game.dart';
+import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 import 'package:roy_casual_kit/presentation/widgets/flame_tracked_overlay.dart';
+
+import '../support/leak_ignores.dart';
 
 /// See CLAUDE.md's NeonBg testing gotcha: Flame's game loop runs a permanent
 /// Ticker, same as RoyGame's own test (test/presentation/game/roy_game_test.dart)
 /// — bounded `pump(duration)`, never `pumpAndSettle()`.
 void main() {
+  // Flame's Transform2D/NotifyingVector2 cannot be disposed by callers.
+  final originalLeakSettings = LeakTesting.settings;
+  LeakTesting.settings = ignoringFlameInternals;
+  tearDownAll(() => LeakTesting.settings = originalLeakSettings);
   group('worldToScreenOffset', () {
     testWidgets('identity: topLeft-anchored, unzoomed, unpanned camera at zero '
         'gameWidgetTopLeft maps world position straight to screen position', (

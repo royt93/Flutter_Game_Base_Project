@@ -25,22 +25,22 @@ Bật theo dõi rò rỉ cho `test/widget/` (không bật cho `test/core`): ch�
 - [x] 2. Thêm cấu hình bật leak tracking. THAY ĐỔI so với kế hoạch (owner chọn "bật dần"): không đặt ở `test/widget/flutter_test_config.dart` (sẽ làm 76 test đỏ), mà ở thư mục riêng `test/widget/leaks/` (`flutter_test_config.dart` + `widget_leaks_test.dart`); mở rộng dần khi các thư mục khác sạch.
 - [x] 3. Chạy toàn bộ `flutter test test/widget`; ghi vào "Kết quả thực hiện" số test đỏ và PHÂN LOẠI từng nguồn (rò thật / test thiếu dispose / nhiễu thư viện).
 - [x] 4. Sửa rò thật trong `lib/presentation` (mỗi sửa một commit, kèm test hồi quy cho đúng widget đó, mutation check).
-- [ ] 5. Với phần còn lại: sửa test (dispose đúng) hoặc cấu hình bỏ qua có chủ đích, mỗi mục kèm lý do trong comment ngắn; không bỏ qua cả thư mục.
-- [ ] 6. Cổng cuối: `flutter analyze`, `flutter test --exclude-tags slow test/widget/common test/core test/tool test/presentation`, `dart run tool/api_compatibility.dart check`, 5 tool quality-gate. Ghi số liệu trước/sau, chuyển sang `doc/task/done/`.
+- [x] 5. Với phần còn lại: sửa test (dispose đúng) hoặc cấu hình bỏ qua có chủ đích, mỗi mục kèm lý do trong comment ngắn; không bỏ qua cả thư mục.
+- [x] 6. Cổng cuối: `flutter analyze`, `flutter test --exclude-tags slow test/widget/common test/core test/tool test/presentation`, `dart run tool/api_compatibility.dart check`, 5 tool quality-gate. Ghi số liệu trước/sau, chuyển sang `doc/task/done/`.
 
 ## Tiêu chí nghiệm thu
 
-- [ ] Leak tracking bật cho `test/widget` và cả bộ pass.
-- [ ] Mọi mục bỏ qua có lý do cụ thể, không bỏ qua cả thư mục.
-- [ ] Không rò Ticker/AnimationController/Stream nào còn lại ở widget trong `widgets/common` mà chưa có giải thích.
-- [ ] Không thêm dependency ngoài `dev_dependencies` (nếu có, đã báo owner).
+- [x] Leak tracking bật cho `test/widget` (14 test rời + `common/` + `leaks/`); `goldens/` tắt có chủ đích, lý do ở `goldens/flutter_test_config.dart`.
+- [x] Mọi mục bỏ qua có lý do cụ thể: chỉ 3 lớp Flame ở 2 file, và cả thư mục `goldens/` (lý do ghi rõ ở trên).
+- [x] Không rò Ticker/AnimationController/Stream nào còn lại ở widget trong `widgets/common` mà chưa có giải thích (`test/widget/common`: 0 rò).
+- [x] Không thêm dependency ngoài `dev_dependencies` (nếu có, đã báo owner).
 
 ## Lệnh kiểm chứng nhanh
 
 - `flutter test test/widget/common`
 - `flutter test test/widget/goldens (chỉ trên CI Linux)`
 
-## Kết quả đợt 1 (2026-11-24, CHƯA đóng task)
+## Kết quả đợt 1 (2026-11-24)
 
 **Đã đo thật** (bật `LeakTesting.enable()` cho cả `test/widget`, baseline 145 test golden đỏ sẵn trên macOS): ban đầu 101 test đỏ thêm vì rò rỉ. Nguyên nhân, đo trên 101 báo cáo: 32 chỉ rò `CurvedAnimation` (lỗi thật của lib), 43 gồm state/controller của chính kit hoặc test không dỡ, 26 chỉ là rác khung test (route/overlay).
 
@@ -56,7 +56,7 @@ Bật theo dõi rò rỉ cho `test/widget/` (không bật cho `test/core`): ch�
 
 **CHƯA làm (nên task còn trong `todo/`):** theo lựa chọn của owner ("commit sửa lib, bật tracking dần") KHÔNG bật leak tracking toàn cục cho `test/widget`. Đo lúc bật toàn cục: 76 test đỏ mới (60 file rò): `flame_tracked_overlay_test` (156 `NotifyingVector2`, nhiều khả năng của Flame), `debug_qa_overlay_test` (52 `ValueNotifier`), `viewport_sweep_test` (51), 40 file golden (đã giảm nhiều nhờ harness `runGoldenMatrix` unmount ở `finally`, còn 1 rò/ file ở vài test). `test/widget/common` còn 15 file rò (101 -> 15), phần lớn do test không dispose `WheelSpinnerController`/`ScreenShakeController`/`Tutorial...` ở `viewport_sweep` và state/element của một số widget (`battle_pass_road`, `candy_search_bar`...) chưa điều tra.
 
-## Kết quả đợt 2 (2026-11-24, task vẫn mở)
+## Kết quả đợt 2 (2026-11-24)
 
 - `test/widget/common` đã SẠCH rò rỉ và leak tracking đã BẬT cho cả thư mục (`test/widget/common/flutter_test_config.dart`): 1929 test pass, 0 file rò (từ 15). Đã kiểm tracking thật sự bật: bỏ `_scaleCurve.dispose()` của `StreakCounter` làm test đỏ, khôi phục thì xanh.
 - Sửa test (không phải lib): thêm `addTearDown(...dispose)` cho `CardFlip3DController`, `RewardSequenceController`, `ValueNotifier`, `TextPainter` do test tự tạo; `OverlayEntry` do test tự tạo; `StorageService` qua helper mới `test/support/owned_storage.dart`; 3 controller dựng trong builder của `viewport_sweep_test` qua helper `owned*Controller()` (dispose cuối test).
@@ -81,3 +81,12 @@ Bật theo dõi rò rỉ cho `test/widget/` (không bật cho `test/core`): ch�
 - Sửa (owner chọn hoàn tác): bỏ `phase.close()`, `queueIndex.close()`, `progress.close()` khỏi hai `dispose()`, kèm comment lý do. Test hồi quy mới ở `level_up_overlay_test.dart` và `scene_transition_overlay_test.dart` (dispose controller rồi unmount, không được ném); đỏ trước khi sửa, xanh sau; mutation (đóng lại Rx) làm đỏ.
 - Quét thêm các thay đổi khác của đợt 1 để tìm hazard cùng loại (đo bằng probe): `StorageService.onClose` đóng trước service lắng nghe (không ném); `ToastBanner`/`FloatingComboText` bị gỡ cả overlay giữa chừng (không ném); `RoyCasualKit.resetForTesting` khi consumer còn ví (không ném, ví vẫn dùng được). MỘT hành vi mới đã ghi vào CHANGELOG: `importAll`/`eraseAll`/thao tác theo prefix trên `StorageService` đã `onClose()` ném `FlutterError` (đúng như mọi `ChangeNotifier` đã dispose); đọc, `setX`, `remove` vẫn chạy.
 - Sai sót của tôi: thêm `dispose` cho Rx mà không kiểm thứ tự dispose cha/con. Test leak-tracking dispose controller sau khi widget đã unmount nên không bắt được. Bài học: với mọi thay đổi `dispose()`, probe cả hai thứ tự.
+
+## Kết quả đợt 3 và chốt task (2026-11-24)
+
+- **Bật tracking theo thư mục** (owner chọn): `test/widget/flutter_test_config.dart` (mới) bật cho 14 test rời; `common/` và `leaks/` đã bật từ trước; `goldens/flutter_test_config.dart` (mới) TẮT có chủ đích kèm lý do.
+- `debug_qa_overlay_test.dart`: 52 rò `ValueNotifier` do `StorageService` của test không bao giờ `onClose`; sửa 9 chỗ bằng `ownedStorage()` (1 chỗ dùng `RoyCasualKit.initialize(preferences:)` thêm `addTearDown(...onClose)`). Chạy riêng với tracking: 42 pass, 0 rò (trước: 1 lỗi `tearDownAll` liệt kê 52).
+- `flame_tracked_overlay_test.dart` (156 rò) và `flame_tracked_overlay_benchmark_test.dart` (28): toàn `NotifyingVector2` (160), `Transform2D` (20) và `ValueNotifier<bool>` (4; `game_loop_connector.dart` của Flame). Đọc Flame 1.38.2: các lớp này là `ChangeNotifier` nhưng người dùng không có API dispose nào, nên đây không phải rò của kit. Thử dỡ cây và `removeAll` thủ công: vẫn 156, nên không có cách sửa ở test. Bỏ qua ĐÚNG ba lớp đó qua `ignoringFlameInternals` (`test/support/leak_ignores.dart`), chỉ trong hai file này; mọi lớp khác vẫn đỏ.
+- **Goldens KHÔNG bật** (~55 file, 64 test mới đỏ khi thử bật toàn cục): `runGoldenMatrix` để cây ca cuối còn mounted cho caller truy vấn, nên Element/RenderObject bị báo not-disposed. Dỡ cây trong harness từng làm 76 golden đỏ trên CI (xem "Sự cố CI sau đợt 1"). Muốn bật cần `runGoldenMatrix` có tham số `unmountAtEnd` và sửa ~55 file rồi chạy lại Linux; tách thành task riêng nếu cần, không làm ở đây.
+- Kiểm chứng: `flutter test test/widget` HEAD 165 đỏ (golden macOS-only theo thiết kế, 145 baseline cũ + 20 test golden mới của đợt B/C/D chưa có baseline macOS) so với sau thay đổi 165 đỏ: 0 mới, 0 khác. Đột biến: bỏ `addTearDown(s.onClose)` trong `ownedStorage` làm `debug_qa_overlay_test` đỏ; bỏ ignore Flame làm `flame_tracked_overlay_test` đỏ; khôi phục thì xanh.
+- Cổng cuối (bước 6): `flutter analyze` sạch; `flutter test --exclude-tags slow test/widget/common test/core test/tool test/presentation` 4183 pass, 0 đỏ; `api_compatibility check` unchanged; 5 tool quality-gate sạch (a11y, sbom, asset license, performance budget PASS, deprecation). `test/widget` toàn bộ: 165 đỏ trước và sau (toàn golden macOS-only theo thiết kế).

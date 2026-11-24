@@ -4,7 +4,10 @@ import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/game/roy_game.dart';
+import 'package:leak_tracker_flutter_testing/leak_tracker_flutter_testing.dart';
 import 'package:roy_casual_kit/presentation/widgets/flame_tracked_overlay.dart';
+
+import '../support/leak_ignores.dart';
 
 /// FEAT-92 prototype benchmark. Real GPU frame timing isn't available (or
 /// deterministic/CI-safe) inside a headless `flutter test` VM, so this
@@ -122,6 +125,10 @@ class _OldStyleTrackedOverlayState extends State<_OldStyleTrackedOverlay>
 }
 
 void main() {
+  // Flame's Transform2D/NotifyingVector2 cannot be disposed by callers.
+  final originalLeakSettings = LeakTesting.settings;
+  LeakTesting.settings = ignoringFlameInternals;
+  tearDownAll(() => LeakTesting.settings = originalLeakSettings);
   testWidgets(
     'MỚI (Transform.translate, paint-only): N overlay qua M frame vị trí '
     'đổi liên tục -> Stack chỉ relayout ĐÚNG 1 LẦN (lúc resolve lần đầu), '

@@ -15,3 +15,11 @@ LeakTesting ignoringFailedInitState(String stateClass) =>
         stateClass,
       ],
     );
+
+/// Flame (1.38) gives `Transform2D`/`NotifyingVector2` (and the game's lifecycle
+/// notifier) ChangeNotifier bases but no way for a caller to dispose them, so a
+/// `FlameGame` built in a test always "leaks" them. That is Flame's, not the
+/// kit's: ignore exactly those classes, nothing else.
+LeakTesting get ignoringFlameInternals => LeakTesting.settings.withIgnored(
+  classes: ['NotifyingVector2', 'Transform2D', 'ValueNotifier<bool>'],
+);
