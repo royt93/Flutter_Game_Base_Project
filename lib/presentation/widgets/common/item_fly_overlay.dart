@@ -268,8 +268,11 @@ class _ItemFlyOverlayState extends State<ItemFlyOverlay>
         child: Stack(
           children: [
             for (var i = 0; i < widget.itemCount; i++)
-              PositionedDirectional(
-                start: 0,
+              // `from`/`to` are absolute screen coordinates measured from the
+              // LEFT edge, so anchor at `left` (not `start`): at RTL `start`
+              // is the right edge and every item flew off-screen (BUG-144).
+              Positioned(
+                left: 0,
                 top: 0,
                 child: AnimatedBuilder(
                   animation: _controller,

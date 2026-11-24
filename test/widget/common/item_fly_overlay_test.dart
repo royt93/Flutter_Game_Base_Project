@@ -89,6 +89,55 @@ void main() {
     });
 
     testWidgets(
+      'BUG-144: right-to-left flies along the same screen path as left-to-right',
+      (tester) async {
+        tester.view.physicalSize = const Size(390, 600);
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.reset);
+
+        Future<List<Offset>> centersAt(TextDirection dir) async {
+          await tester.pumpWidget(
+            Directionality(
+              textDirection: dir,
+              child: MaterialApp(
+                // MaterialApp installs its own Directionality from the locale;
+                // wrap its child so the test direction is the one that applies.
+                builder: (context, child) =>
+                    Directionality(textDirection: dir, child: child!),
+                home: Material(
+                  child: ItemFlyOverlay(
+                    from: const Offset(60, 500),
+                    to: const Offset(330, 60),
+                    icon: Icons.star,
+                    itemCount: 2,
+                  ),
+                ),
+              ),
+            ),
+          );
+          for (var i = 0; i < 6; i++) {
+            await tester.pump(const Duration(milliseconds: 50));
+          }
+          final centers = [
+            for (final e in find.byIcon(Icons.star).evaluate())
+              tester.getCenter(find.byWidget(e.widget)),
+          ];
+          await tester.pumpWidget(const SizedBox.shrink());
+          return centers;
+        }
+
+        final ltr = await centersAt(TextDirection.ltr);
+        final rtl = await centersAt(TextDirection.rtl);
+
+        expect(ltr, isNotEmpty);
+        expect(rtl, ltr, reason: 'screen coordinates do not mirror with text direction');
+        for (final c in rtl) {
+          expect(c.dx, inInclusiveRange(0, 390), reason: 'must stay on screen');
+        }
+      },
+    );
+
+    testWidgets(
       'ItemFlyOverlay.show inserts into Overlay and self-removes on completion',
       (tester) async {
         final targetKey = GlobalKey();

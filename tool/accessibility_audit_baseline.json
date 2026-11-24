@@ -50,6 +50,11 @@
     "reason": "Toạ độ world-space cho animation đồng xu bay tới vị trí tuyệt đối trên màn hình (vật lý, không phải layout theo hướng chữ) — cùng nhóm ngoại lệ 'physics-driven motion' đã ghi trong doc comment NeonTheme.reducedMotion."
   },
   {
+    "file": "lib/presentation/widgets/common/item_fly_overlay.dart",
+    "rule": "rtlDirectionalSafety",
+    "reason": "Toạ độ `from`/`to` là vị trí tuyệt đối trên màn hình tính từ mép TRÁI (cùng nhóm 'physics-driven motion' như coin_fly_overlay). Neo bằng PositionedDirectional(start:) làm vật bay lệch cả bề rộng màn hình ở RTL (BUG-144); Positioned(left:) là đúng và có test hồi quy ở item_fly_overlay_test.dart."
+  },
+  {
     "file": "lib/presentation/widgets/flame_tracked_overlay.dart",
     "rule": "rtlDirectionalSafety",
     "reason": "Định vị 1 overlay Flutter tại điểm world-space của Flame GameWidget (toạ độ tuyệt đối theo camera, không phải layout theo hướng chữ)."
