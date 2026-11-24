@@ -86,6 +86,9 @@ Hai golden ban đầu sinh ra ảnh MỘT màu (hoàn toàn trống) nhưng test
 - `BackupRestorePanel`: chỉ chụp trạng thái rỗi (không chụp đang export/import).
 - `LevelPathMapTile` với `isCurrent: true` BẬT pulse lặp (`_shouldPulse = isCurrent && !isLocked`), nên ở 6 biến thể có chuyển động ảnh chụp là khung đầu của vòng pulse (`pump()` một lần, giờ chạy 0), còn biến thể `reducedMotion` chụp trạng thái tĩnh. Hai lần chạy Linux giống từng byte nên khung đó xác định, nhưng ảnh KHÔNG đại diện cho "giữa vòng pulse"; nếu pulse đổi thời lượng hoặc pha, golden này đổi theo.
 
-### Phát hiện ngoài đợt (chưa xử lý)
+### Rà soát golden cũ ít màu (2026-11-24, owner chọn rà): không có golden "đánh lừa"
 
-Phép đếm màu trên toàn bộ 1829 PNG đã commit cho thấy hai nhóm gần như rỗng từ trước: `wave24_battery_off_*` (7 ảnh, 1 màu: `BatterySaverIndicator(active: false)` có thể vẽ rỗng đúng thiết kế) và `avatar_frame_selector_empty_*` (7 ảnh, 5-7 màu: trạng thái "empty"). Chưa điều tra có phải golden "đánh lừa" hay đúng thiết kế.
+Phép đếm màu trên 1829 PNG đã commit báo hai nhóm ít màu từ trước. Đã xem từng nhóm: cả hai ĐÚNG thiết kế, không sửa gì.
+- `wave24_battery_off_*` (7 ảnh, 1 màu): `BatterySaverIndicator(active: false)` trả `SizedBox.shrink()`; `test/widget/common/wave24_widgets_test.dart:307` ("hidden while inactive") khẳng định cùng điều đó. Ảnh trống là kết quả đúng, và golden này canh việc "tắt thì không vẽ gì".
+- `avatar_frame_selector_empty_*` (7 ảnh, 5-7 màu): ảnh hiện dòng "No frames available" (chỉ chữ nên ít màu); `avatar_frame_selector_test.dart:131` khẳng định chữ đó.
+- Mọi golden khác có >= 12 màu trong phép đếm. Công cụ đếm màu là script tạm ngoài repo (`/tmp/uniq.py`), chưa thành test; nếu muốn chặn golden rỗng lâu dài thì tách thành task (giải mã PNG bằng `dart:ui` trong `test/`).
