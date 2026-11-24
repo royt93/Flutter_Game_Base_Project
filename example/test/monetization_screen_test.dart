@@ -7,6 +7,7 @@ import 'package:roy_casual_kit/core/app_translations.dart';
 import 'package:roy_casual_kit/core/economy_wallet.dart';
 import 'package:roy_casual_kit/core/purchase_ledger_service.dart';
 import 'package:roy_casual_kit/core/purchase_seam.dart';
+import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/utils/sdk_result.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_button.dart';
@@ -117,6 +118,26 @@ void main() {
     );
     expect(PurchaseLedgerService.maybe!.balanceOf('pack_gems_20'), 1);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('a consumable purchase is credited through the receipt-keyed pipeline', (
+    tester,
+  ) async {
+    await _boot();
+
+    await tester.pumpWidget(_wrap(const MonetizationScreen()));
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(_button(r'$0.99').first);
+    await tester.pump(const Duration(milliseconds: 500));
+    await tester.tap(_button(r'$0.99').first);
+    await tester.pump(const Duration(milliseconds: 500));
+
+    final trail = RewardTransactionPipeline.maybe!.auditTrail;
+    expect(trail, hasLength(2), reason: 'two purchases are two receipts');
+    expect(trail.every((r) => r.source == RewardSource.purchase), isTrue);
+    expect(trail.every((r) => r.transactionId.startsWith('purchase:')), isTrue);
+    expect(trail.first.transactionId, isNot(trail.last.transactionId));
+    expect(find.text('Coins: 200 | Gems: 0'), findsOneWidget);
   });
 
   testWidgets('buying VIP activates permanent VIP', (tester) async {

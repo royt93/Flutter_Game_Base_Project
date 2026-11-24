@@ -6,10 +6,18 @@ import 'package:roy_casual_kit/roy_casual_kit.dart';
 // ponytail: fake purchase seam for example app, replace with in_app_purchase in production.
 class _DefaultDemoPurchaseAdapter implements PurchaseSeam {
   final Set<String> _owned = {};
+  int _orders = 0;
+
+  /// The store's order id for the last successful [buy]. A real adapter must
+  /// surface the store's own receipt/order id like this: it is what makes a
+  /// redelivered purchase (restore, relaunch) credit once, not twice.
+  String? lastReceiptId;
 
   @override
   Future<bool> buy(String productId) async {
     _owned.add(productId);
+    lastReceiptId =
+        'demo_order_${DateTime.now().microsecondsSinceEpoch}_${_orders++}';
     return true;
   }
 
@@ -33,6 +41,7 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
   late final PurchaseSeam _purchases;
   late final PurchaseLedgerService _ledger;
   late final EconomyWallet _wallet;
+  late final RewardTransactionPipeline _rewards;
   final _haptics = HapticChoreographer();
 
   String _status = 'Browse store offers.';
@@ -68,6 +77,20 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
     _wallet =
         EconomyWallet.maybe ??
         Get.put(EconomyWallet(storage: StorageService.to), permanent: true);
+    _rewards =
+        RewardTransactionPipeline.maybe ??
+        Get.put(RewardTransactionPipeline(wallet: _wallet), permanent: true);
+  }
+
+  /// The store receipt for the purchase that just succeeded. An adapter that
+  /// exposes none falls back to a per-tap id: unique, but it cannot dedupe a
+  /// redelivery, so a production adapter must provide the real receipt.
+  String _receiptFor(String sku) {
+    final seam = _purchases;
+    final receipt = seam is _DefaultDemoPurchaseAdapter
+        ? seam.lastReceiptId
+        : null;
+    return receipt ?? 'demo_${sku}_${DateTime.now().microsecondsSinceEpoch}';
   }
 
   bool get _isVip => _ledger.owns(_vipSku);
@@ -86,12 +109,12 @@ class _MonetizationScreenState extends State<MonetizationScreen> {
       return;
     }
 
-    final earnResult = await _wallet.earn(
-      currency: currency,
-      amount: amount,
-      transactionId: 'iap_${sku}_${DateTime.now().microsecondsSinceEpoch}',
+    final grant = await _rewards.grantFromPurchase(
+      receiptId: _receiptFor(sku),
+      lines: [RewardLine(currency: currency, amount: amount)],
+      receiptMeta: {'sku': sku},
     );
-    if (!earnResult.isSuccess) {
+    if (!grant.isSuccess) {
       _haptics.play(HapticPattern.error);
       if (!mounted) return;
       setState(

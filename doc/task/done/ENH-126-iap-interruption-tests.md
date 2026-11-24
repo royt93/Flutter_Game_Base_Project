@@ -74,7 +74,7 @@ Owner chọn KHÔNG thêm check vào `PluginAdapterConformanceSuite.verifyPurcha
 
 ### Phát hiện (không đổi mã, báo owner)
 
-- `example/lib/screens/monetization_screen.dart:92` dùng `transactionId: 'iap_${sku}_${DateTime.now().microsecondsSinceEpoch}'` cho `wallet.earn`: id sinh theo giờ, KHÔNG theo receipt. Nếu consumer sao chép mẫu này, restore hoặc giao lại sẽ cộng đôi (đúng kịch bản test đã khoá ở `grantFromPurchase`). `_restorePurchases` của màn đó cũng chỉ khôi phục VIP, không khôi phục consumable. Đây là demo ("demo chỉ cần thô"), nhưng mẫu dạy sai điều mà kit đã giải bằng `grantFromPurchase`. Chưa tạo task BUG: chờ owner quyết.
+- `example/lib/screens/monetization_screen.dart` dùng `transactionId: 'iap_${sku}_${DateTime.now().microsecondsSinceEpoch}'` cho `wallet.earn`: id sinh theo giờ, KHÔNG theo receipt, nên restore hoặc giao lại sẽ cộng đôi (đúng kịch bản test đã khoá ở `grantFromPurchase`). **Đã sửa theo lựa chọn của owner (2026-11-24):** demo giờ ghi có qua `RewardTransactionPipeline.grantFromPurchase(receiptId: ...)`; adapter demo `_DefaultDemoPurchaseAdapter` phát một order id cho mỗi lần `buy` (`lastReceiptId`), kèm chú thích rằng adapter thật phải đưa ra receipt của cửa hàng. Test mới `a consumable purchase is credited through the receipt-keyed pipeline` (audit trail hai receipt khác nhau, tiền cộng đủ 200); mutation (đổi lại về `wallet.earn` theo giờ) làm đúng test đó đỏ. Phần nút Restore của demo vẫn chỉ khôi phục VIP, không khôi phục consumable (demo cố ý thô, không đổi).
 - Ví và pipeline chống trùng ở HAI lớp độc lập; lớp ví che lớp pipeline về số dư, nên chỉ thông báo/analytics lộ ra lớp pipeline.
 
 ### Hạn chế (ghi rõ chưa chứng minh)
