@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/utils/format.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/currency_counter.dart';
+import '../../support/leak_ignores.dart';
 
 void main() {
   testWidgets('CurrencyCounter số nhỏ hiển thị qua fmtNum (có dấu phân cách)', (
@@ -203,7 +204,9 @@ void main() {
         ),
       );
       expect(tester.takeException(), isA<ArgumentError>());
-    });
+    },
+    experimentalLeakTesting: ignoringFailedInitState('CurrencyCounterState'),
+    );
 
     testWidgets(
       'continuous rolling starts from current intermediate value on mid-animation update',

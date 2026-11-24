@@ -20,9 +20,9 @@ import 'package:roy_casual_kit/core/onboarding_coordinator_service.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/save_slot_manager.dart' show SaveSlotMeta;
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../../support/viewport_sweep.dart';
+import '../../support/owned_storage.dart';
 
 String _achievementViewportLabel(String id) => id;
 
@@ -48,6 +48,26 @@ Widget _defaultSweepInventoryItemBuilder(
 /// FEAT-200 pha 1: each entry is a widget that must survive every default
 /// viewport. Add new widgets here; unsupported ones need a reason in
 /// [_allowlist].
+// ENH-117: controllers built inside a sweep's widget builder (it runs once per
+// viewport) are disposed at the end of the current test.
+ScreenShakeController ownedScreenShakeController() {
+  final c = ScreenShakeController();
+  addTearDown(c.dispose);
+  return c;
+}
+
+WheelSpinnerController ownedWheelController() {
+  final c = WheelSpinnerController();
+  addTearDown(c.dispose);
+  return c;
+}
+
+TutorialSequenceController ownedTutorialController() {
+  final c = TutorialSequenceController();
+  addTearDown(c.dispose);
+  return c;
+}
+
 void main() {
   group('FEAT-200 phase 2e: general display widgets', () {
     final cases = <String, Widget Function()>{
@@ -193,7 +213,7 @@ void main() {
     ];
 
     Future<void> prepareEnergyFixture() async {
-      Get.put<StorageService>(StorageService(null));
+      Get.put<StorageService>(ownedMemoryStorage());
       Get.put<EnergyService>(EnergyService(maxEnergy: 5));
     }
 
@@ -564,7 +584,7 @@ void main() {
 
   group('FEAT-200 phase 2av: screen shake and level path', () {
     Widget screenShake() {
-      final controller = ScreenShakeController();
+      final controller = ownedScreenShakeController();
       controller.shake(
         intensity: 8,
         frequency: 20,
@@ -890,7 +910,7 @@ void main() {
         WheelSegment(label: '100 coins', color: Colors.green, value: 100),
         WheelSegment(label: 'Jackpot', color: Colors.amber, value: 1000),
       ],
-      controller: WheelSpinnerController(),
+      controller: ownedWheelController(),
       onSpinEnd: (_) {},
     );
 
@@ -1344,8 +1364,7 @@ void main() {
 
   group('FEAT-200 phase 2ap: review prompt and scene transition', () {
     testWidgets('ReviewPromptTrigger idle', (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
+      Get.put(await ownedStorage());
       addTearDown(Get.reset);
       await runViewportSweep(
         tester,
@@ -1360,8 +1379,7 @@ void main() {
     testWidgets('ReviewPromptTrigger at 2.0x text, 320dp and landscape', (
       tester,
     ) async {
-      SharedPreferences.setMockInitialValues({});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
+      Get.put(await ownedStorage());
       addTearDown(Get.reset);
       await runViewportSweep(
         tester,
@@ -1973,7 +1991,7 @@ void main() {
     });
 
     testWidgets('HoldToConfirmButton', (tester) async {
-      Get.put<StorageService>(StorageService(null));
+      Get.put<StorageService>(ownedMemoryStorage());
       addTearDown(Get.reset);
       await runViewportSweep(
         tester,
@@ -1988,7 +2006,7 @@ void main() {
     testWidgets('HoldToConfirmButton at 2.0x text, 320dp and landscape', (
       tester,
     ) async {
-      Get.put<StorageService>(StorageService(null));
+      Get.put<StorageService>(ownedMemoryStorage());
       addTearDown(Get.reset);
       await runViewportSweep(
         tester,
@@ -2385,8 +2403,7 @@ void main() {
     );
 
     testWidgets('AchievementUnlockListener', (tester) async {
-      SharedPreferences.setMockInitialValues({});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
+      Get.put(await ownedStorage());
       addTearDown(Get.reset);
       await runViewportSweep(tester, listener);
     });
@@ -2394,8 +2411,7 @@ void main() {
     testWidgets('AchievementUnlockListener at 2.0x text, 320dp and landscape', (
       tester,
     ) async {
-      SharedPreferences.setMockInitialValues({});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
+      Get.put(await ownedStorage());
       addTearDown(Get.reset);
       await runViewportSweep(
         tester,
@@ -3066,9 +3082,8 @@ void main() {
   group('FEAT-200 phase 2s: consent banner', () {
     for (final viewport in defaultViewports) {
       testWidgets('ConsentBanner at ${viewport.name}', (tester) async {
-        SharedPreferences.setMockInitialValues({});
         Get.put(
-          StorageService(await SharedPreferences.getInstance()),
+          await ownedStorage(),
           permanent: true,
         );
         Get.put(ConsentStateService(policyVersion: 1), permanent: true);
@@ -3101,9 +3116,8 @@ void main() {
       testWidgets('ConsentBanner at 2.0x text, ${viewport.name}', (
         tester,
       ) async {
-        SharedPreferences.setMockInitialValues({});
         Get.put(
-          StorageService(await SharedPreferences.getInstance()),
+          await ownedStorage(),
           permanent: true,
         );
         Get.put(ConsentStateService(policyVersion: 1), permanent: true);
@@ -4630,7 +4644,7 @@ void main() {
       );
 
       Widget tutorialSequence() => TutorialSequence(
-        controller: TutorialSequenceController(),
+        controller: ownedTutorialController(),
         child: const Material(child: Text('Game content')),
       );
 

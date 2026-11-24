@@ -372,6 +372,7 @@ void main() {
         // Đối chứng: gọi remove() trần (hành vi CŨ trước khi fix) thật sự
         // throw AssertionError — chứng minh guard là cần thiết, không thừa.
         expect(() => entry.remove(), throwsA(isA<AssertionError>()));
+        entry.dispose();
       },
     );
 

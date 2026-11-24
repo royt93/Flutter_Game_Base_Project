@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/candy_search_bar.dart';
+import '../../support/leak_ignores.dart';
 
 void main() {
   testWidgets('debounces latest text and clear sends empty value', (
@@ -87,5 +88,7 @@ void main() {
       throwsArgumentError,
     );
     controller.dispose();
-  });
+  },
+  experimentalLeakTesting: ignoringFailedInitState('_CandySearchBarState'),
+  );
 }

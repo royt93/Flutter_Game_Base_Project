@@ -80,20 +80,26 @@ class ToastBanner extends StatelessWidget {
     final overlay = Overlay.of(context, rootOverlay: true);
     final reduced = NeonTheme.reducedMotion(context);
     late OverlayEntry entry;
-    var disposed = false;
+    var released = false;
+    // Once only: OverlayEntry.remove() and dispose() each assert against a
+    // second call. remove() is called unconditionally (not guarded by
+    // entry.mounted): when the Overlay itself was torn down it returns early,
+    // and dispose() requires the entry to have been removed first.
+    void release() {
+      if (released) return;
+      released = true;
+      entry.remove();
+      entry.dispose();
+    }
+
     entry = OverlayEntry(
       builder: (context) => _ToastBannerOverlay(
         message: message,
         color: color ?? NeonTheme.purple,
         duration: duration,
         reducedMotion: reduced,
-        onDismissed: () {
-          // Once only: OverlayEntry.dispose() asserts against a second call.
-          if (disposed) return;
-          disposed = true;
-          if (entry.mounted) entry.remove();
-          entry.dispose();
-        },
+        onDismissed: release,
+        onDisposed: () => scheduleMicrotask(release),
       ),
     );
     overlay.insert(entry);
@@ -107,6 +113,7 @@ class _ToastBannerOverlay extends StatefulWidget {
     required this.duration,
     required this.reducedMotion,
     required this.onDismissed,
+    required this.onDisposed,
   });
 
   final String message;
@@ -114,6 +121,11 @@ class _ToastBannerOverlay extends StatefulWidget {
   final Duration duration;
   final bool reducedMotion;
   final VoidCallback onDismissed;
+
+  /// Called when this widget is torn down WITHOUT having been dismissed (the
+  /// whole Overlay went away while the toast was visible), so the owner can
+  /// still release the OverlayEntry.
+  final VoidCallback onDisposed;
 
   @override
   State<_ToastBannerOverlay> createState() => _ToastBannerOverlayState();
@@ -162,6 +174,7 @@ class _ToastBannerOverlayState extends State<_ToastBannerOverlay>
     _timer?.cancel();
     _curve.dispose();
     _controller.dispose();
+    widget.onDisposed();
     super.dispose();
   }
 

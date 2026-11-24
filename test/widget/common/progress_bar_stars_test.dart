@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/progress_bar_stars.dart';
+import '../../support/leak_ignores.dart';
 
 void main() {
   testWidgets(
@@ -496,7 +497,9 @@ void main() {
         ),
       );
       expect(tester.takeException(), isA<ArgumentError>());
-    });
+    },
+    experimentalLeakTesting: ignoringFailedInitState('_ProgressBarStarsState'),
+    );
   });
 
   testWidgets('ENH-32: Reduce Motion bật → không animate khi vượt ngưỡng', (

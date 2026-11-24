@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/golden_shimmer_text.dart';
+import '../../support/leak_ignores.dart';
 
 void main() {
   test('goldenShimmerOffsetAt maps progress 0..1 to -1..2', () {
@@ -133,5 +134,7 @@ void main() {
       ),
     );
     expect(tester.takeException(), isA<ArgumentError>());
-  });
+  },
+  experimentalLeakTesting: ignoringFailedInitState('_GoldenShimmerTextState'),
+  );
 }

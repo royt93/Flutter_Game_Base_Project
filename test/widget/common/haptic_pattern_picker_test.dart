@@ -8,6 +8,7 @@ import 'package:roy_casual_kit/core/haptic_choreographer.dart';
 import 'package:roy_casual_kit/core/haptics.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
+import '../../support/owned_storage.dart';
 
 final _options = [
   HapticPatternOption(
@@ -217,7 +218,7 @@ void main() {
   testWidgets('HapticChoreographer obeys disabled and soft-mode settings', (
     tester,
   ) async {
-    final storage = Get.put(StorageService(null));
+    final storage = Get.put(ownedMemoryStorage());
     final calls = <HapticLevel>[];
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       SystemChannels.platform,

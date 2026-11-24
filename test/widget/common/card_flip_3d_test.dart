@@ -123,6 +123,7 @@ void main() {
       tester,
     ) async {
       final controller = CardFlip3DController();
+      addTearDown(controller.dispose);
       final flips = <bool>[];
 
       await tester.pumpWidget(
@@ -159,6 +160,7 @@ void main() {
       'Reduced Motion flips instantly without animation and skips gleam',
       (tester) async {
         final controller = CardFlip3DController();
+        addTearDown(controller.dispose);
 
         await tester.pumpWidget(
           MediaQuery(

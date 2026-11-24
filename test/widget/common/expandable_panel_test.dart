@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/expandable_panel.dart';
+import '../../support/leak_ignores.dart';
 
 void main() {
   testWidgets('toggle updates target state and callback once per change', (
@@ -126,7 +127,9 @@ void main() {
       ),
     );
     expect(tester.takeException(), isA<ArgumentError>());
-  });
+  },
+  experimentalLeakTesting: ignoringFailedInitState('ExpandablePanelState'),
+  );
 
   group('screen reader', () {
     Future<List<SemanticsNode>> pumpPanel(

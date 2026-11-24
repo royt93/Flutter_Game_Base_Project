@@ -6,6 +6,7 @@ import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/neon_theme.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/candy_slider.dart';
+import '../../support/owned_storage.dart';
 
 Widget host(
   Widget child, {
@@ -222,7 +223,7 @@ void main() {
   testWidgets(
     'haptics only emit at divisions or endpoints and respect disabled preference',
     (tester) async {
-      final storage = StorageService(null);
+      final storage = ownedMemoryStorage();
       Get.put(storage);
       final calls = <String>[];
       tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
@@ -270,6 +271,8 @@ void main() {
             .thumbShape!;
         final box = tester.renderObject<RenderBox>(find.byType(Slider));
         final scale = reduced ? 1.0 : 1.15;
+        final labelPainter = TextPainter();
+        addTearDown(labelPainter.dispose);
         expect(
           (Canvas canvas) => shape.paint(
             TestRecordingPaintingContext(canvas),
@@ -277,7 +280,7 @@ void main() {
             activationAnimation: const AlwaysStoppedAnimation(1),
             enableAnimation: const AlwaysStoppedAnimation(1),
             isDiscrete: false,
-            labelPainter: TextPainter(),
+            labelPainter: labelPainter,
             parentBox: box,
             sliderTheme: SliderThemeData(
               thumbColor: Colors.white,

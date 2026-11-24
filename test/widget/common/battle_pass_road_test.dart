@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/battle_pass_road.dart';
+import '../../support/leak_ignores.dart';
 
 List<BattlePassMilestone> _milestones(int count) => [
   for (var i = 1; i <= count; i++)
@@ -248,5 +249,7 @@ void main() {
       ),
     );
     expect(tester.takeException(), isA<ArgumentError>());
-  });
+  },
+  experimentalLeakTesting: ignoringFailedInitState('BattlePassRoadState'),
+  );
 }

@@ -145,6 +145,7 @@ void main() {
     ) async {
       var hiddenTaps = 0;
       final controller = RewardSequenceController();
+      addTearDown(controller.dispose);
       await tester.pumpWidget(
         MaterialApp(
           home: Scaffold(

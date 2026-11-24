@@ -477,6 +477,7 @@ void main() {
       'ValueListenableBuilder trong 1 slot rebuild độc lập, AdaptiveGameHud.build không chạy lại',
       (tester) async {
         final notifier = ValueNotifier<int>(0);
+        addTearDown(notifier.dispose);
         var hudBuildCount = 0;
 
         Widget buildHud() => AdaptiveGameHud(

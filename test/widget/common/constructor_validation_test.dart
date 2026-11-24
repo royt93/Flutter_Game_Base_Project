@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
+import '../../support/leak_ignores.dart';
 
 // ENH-85: invariants must survive a release build (assert is stripped).
 // These widgets keep a const constructor, so the check runs when they build.
@@ -64,5 +65,7 @@ void main() {
         coinCount: 0,
       ),
     );
-  });
+  },
+  experimentalLeakTesting: ignoringFailedInitState('_CoinFlyOverlayState'),
+  );
 }
