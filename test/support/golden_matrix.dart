@@ -162,9 +162,5 @@ Future<void> runGoldenMatrix(
     }
   } finally {
     NeonTheme.dark = originalDark;
-    // Unmount the matrix widget even when a case threw or a golden mismatched
-    // (a mismatch ends the test with the widget still mounted), so leak
-    // tracking sees it disposed.
-    await tester.pumpWidget(const SizedBox.shrink());
   }
 }
