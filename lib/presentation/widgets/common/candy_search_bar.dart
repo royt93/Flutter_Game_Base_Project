@@ -107,23 +107,27 @@ class _CandySearchBarState extends State<CandySearchBar> {
       ),
       if (_hasText) ...[
         const SizedBox(width: NeonTheme.s8),
-        Semantics(
-          button: true,
-          label: widget.clearLabel,
-          onTap: _clear,
-          child: PressableScale(
-            key: const ValueKey('candySearchClear'),
+        // MergeSemantics: PressableScale adds its own focusable tap node, which
+        // used to sit under this labeled button as a second, unlabeled one.
+        MergeSemantics(
+          child: Semantics(
+            button: true,
+            label: widget.clearLabel,
             onTap: _clear,
-            child: Container(
-              width: 44,
-              height: 44,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: NeonTheme.card,
-                shape: BoxShape.circle,
-                border: Border.all(color: NeonTheme.cardAlt, width: 2),
+            child: PressableScale(
+              key: const ValueKey('candySearchClear'),
+              onTap: _clear,
+              child: Container(
+                width: 44,
+                height: 44,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: NeonTheme.card,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: NeonTheme.cardAlt, width: 2),
+                ),
+                child: Icon(Icons.close_rounded, color: NeonTheme.inkSoft),
               ),
-              child: Icon(Icons.close_rounded, color: NeonTheme.inkSoft),
             ),
           ),
         ),

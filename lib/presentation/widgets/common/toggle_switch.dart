@@ -23,7 +23,9 @@ class CandyToggleSwitch extends StatelessWidget {
 
   /// Describes what this switch controls (e.g. "Haptics", "Dark mode") —
   /// paired with the [Semantics.toggled] state so a screen reader announces
-  /// e.g. "Haptics, on" instead of just "on".
+  /// e.g. "Haptics, on" instead of just "on". Leave it `null` inside a
+  /// [CommonListTile] (the tile's title already names the switch); a switch used
+  /// on its own with no label is announced only as "on"/"off".
   final String? semanticLabel;
 
   @override

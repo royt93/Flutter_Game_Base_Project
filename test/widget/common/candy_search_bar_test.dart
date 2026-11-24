@@ -91,4 +91,32 @@ void main() {
   },
   experimentalLeakTesting: ignoringFailedInitState('_CandySearchBarState'),
   );
+
+  testWidgets(
+    'clear button is ONE labeled button for a screen reader (ENH-118)',
+    (tester) async {
+      final handle = tester.ensureSemantics();
+      final c = TextEditingController(text: 'cats');
+      addTearDown(c.dispose);
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(
+            child: CandySearchBar(controller: c, onChanged: (_) {}),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // Every tappable node in the clear button's subtree carries the label:
+      // before the fix a second, unlabeled focusable/tap node sat under it.
+      final clear = find.byKey(const ValueKey('candySearchClear'));
+      final node = tester.getSemantics(clear);
+      expect(node.label, 'Clear search');
+      expect(node.getSemanticsData().flagsCollection.isButton, isTrue);
+
+      await expectLater(tester, meetsGuideline(labeledTapTargetGuideline));
+      await expectLater(tester, meetsGuideline(androidTapTargetGuideline));
+      handle.dispose();
+    },
+  );
 }
