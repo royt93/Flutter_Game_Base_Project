@@ -215,37 +215,51 @@ void main() {
 
   testWidgets('SpotlightOverlay around a target', (tester) async {
     final targetKey = GlobalKey();
-    await golden(
+    tester.view.physicalSize = const Size(390, 600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await runGoldenMatrix(
       tester,
-      'spotlightoverlay_target',
-      () => host(
-        Stack(
-          children: [
-            Align(
-              alignment: Alignment.topLeft,
-              child: Padding(
-                padding: const EdgeInsets.only(top: 200, left: 40),
-                child: SizedBox(
-                  key: targetKey,
-                  width: 120,
-                  height: 48,
-                  child: ElevatedButton(
-                    onPressed: () {},
-                    child: const Text('Target'),
+      (_) => GetMaterialApp(
+        translations: AppTranslations(),
+        locale: AppTranslations.fallback,
+        home: Scaffold(
+          body: Stack(
+            children: [
+              Align(
+                alignment: Alignment.topLeft,
+                child: Padding(
+                  padding: const EdgeInsets.only(top: 200, left: 40),
+                  child: SizedBox(
+                    key: targetKey,
+                    width: 120,
+                    height: 48,
+                    child: ElevatedButton(
+                      onPressed: () {},
+                      child: const Text('Target'),
+                    ),
                   ),
                 ),
               ),
-            ),
-            SpotlightOverlay(
-              targetKey: targetKey,
-              title: 'Step 1',
-              message: 'Tap here to get started',
-              holePadding: 12,
-              onDismiss: () {},
-            ),
-          ],
+              SpotlightOverlay(
+                targetKey: targetKey,
+                title: 'Step 1',
+                message: 'Tap here to get started',
+                holePadding: 12,
+                onDismiss: () {},
+              ),
+            ],
+          ),
         ),
       ),
+      goldenBaseName: 'spotlightoverlay_target',
+      guidelines: const [],
+      // The hole and callout appear after a post-frame rebuild (the target's
+      // bounds are unknown on the first frame) plus a 250ms fade-in.
+      afterPump: (t) async {
+        await t.pump();
+        await t.pump(const Duration(milliseconds: 400));
+      },
     );
   });
 
@@ -418,19 +432,30 @@ void main() {
           child: const Scaffold(body: Center(child: Text('Game content'))),
         ),
       ),
-      goldenBaseName: 'levelupoverlay_idle',
+      goldenBaseName: 'levelupoverlay_levelpop',
       guidelines: const [],
+      afterPump: (t) async {
+        // Each matrix case runs show() again: end the previous case's sequence
+        // first so its Timer does not outlive the test.
+        controller.skip();
+        await t.pump();
+        unawaited(
+          controller.show([
+            LevelUpCelebration(
+              event: const LevelUpEvent(level: 5, rewardLines: []),
+            ),
+          ]),
+        );
+        await t.pump();
+        await t.pump(const Duration(milliseconds: 50));
+      },
     );
-    unawaited(
-      controller.show([
-        LevelUpCelebration(
-          event: const LevelUpEvent(level: 5, rewardLines: []),
-        ),
-      ]),
-    );
-    await tester.pump();
+    // The sequence waits on a Timer that must be cancelled from WITHIN the
+    // test body, with the overlay still mounted (see level_up_overlay_test's
+    // _finishOrSkip). The matrix has finished, so the widget is mounted still.
     controller.skip();
     await tester.pump();
+    await tester.pumpWidget(const SizedBox.shrink());
   });
 
   // ConsentBanner opens its dialog with NeonDialog.show (a route), and the
@@ -497,8 +522,21 @@ void main() {
           ),
         ),
       ),
-      goldenBaseName: 'tutorialsequence_idle',
+      goldenBaseName: 'tutorialsequence_step1',
       guidelines: const [],
+      afterPump: (t) async {
+        controller.start([
+          TutorialStep(
+            targetKey: targetKey,
+            title: 'Welcome',
+            message: 'This is your first step',
+          ),
+          TutorialStep(targetKey: targetKey, message: 'And a second one'),
+        ]);
+        await t.pump();
+        await t.pump();
+        await t.pump(const Duration(milliseconds: 400));
+      },
     );
   });
 }

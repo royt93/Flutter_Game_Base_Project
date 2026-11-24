@@ -89,6 +89,7 @@ Future<void> runGoldenMatrix(
     androidTapTargetGuideline,
     labeledTapTargetGuideline,
   ],
+  Future<void> Function(WidgetTester tester)? afterPump,
 }) async {
   final cases = matrix ?? defaultGoldenMatrix();
   final originalDark = NeonTheme.dark;
@@ -131,6 +132,10 @@ Future<void> runGoldenMatrix(
         ),
       );
       await tester.pump();
+      // Optional: drive the widget into the state worth comparing (finish an
+      // entrance animation, start a controller). Null leaves every existing
+      // caller exactly as before.
+      if (afterPump != null) await afterPump(tester);
 
       expect(
         tester.takeException(),
