@@ -132,13 +132,14 @@ void main() {
       tester,
       'floatingemojiburst_seeded',
       () => FloatingEmojiBurst(key: emojiKey, random: Random(7), origin: const Offset(0.5, 0.9)),
-      // Nothing is drawn until `burst()` is called: three emojis, then a fixed
-      // instant. Without this every case is an empty (one-colour) image.
+      // Nothing is drawn until `burst()` is called: three emojis from three
+      // different origins (same origin overlaps them into one blob), then a
+      // fixed instant. Without this every case is an empty (one-colour) image.
       afterPump: (t) async {
         final state = emojiKey.currentState!;
-        for (final e in ['🎉', '⭐', '🔥']) {
-          state.burst(e);
-        }
+        state.burst('🎉', origin: const Offset(0.2, 0.9));
+        state.burst('⭐', origin: const Offset(0.5, 0.9));
+        state.burst('🔥', origin: const Offset(0.8, 0.9));
         await pumpTo(t, const Duration(milliseconds: 600));
       },
     );
