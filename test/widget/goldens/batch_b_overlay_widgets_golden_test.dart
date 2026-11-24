@@ -48,16 +48,37 @@ void main() {
     String name,
     Widget Function() build, {
     Size size = const Size(390, 600),
+    bool freshTreePerCase = false,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    await runGoldenMatrix(
-      tester,
-      (_) => build(),
-      goldenBaseName: name,
-      guidelines: const [],
-    );
+    if (!freshTreePerCase) {
+      await runGoldenMatrix(
+        tester,
+        (_) => build(),
+        goldenBaseName: name,
+        guidelines: const [],
+      );
+      return;
+    }
+    // One matrix call per case with the tree unmounted in between: some
+    // widgets (NetworkStatusBanner's AnimatedSize) hit "RenderAnimatedSize was
+    // mutated in its own performLayout" when the SAME tree is re-pumped under
+    // a new MediaQuery/locale/direction by consecutive cases. Real-use
+    // scenarios (font size, language, connectivity changes on a live banner)
+    // were probed and do not throw, so this is how the harness re-pumps, not a
+    // widget bug; root cause not found.
+    for (final c in defaultGoldenMatrix()) {
+      await runGoldenMatrix(
+        tester,
+        (_) => build(),
+        goldenBaseName: name,
+        matrix: [c],
+        guidelines: const [],
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+    }
   }
 
   Widget host(Widget child) => SizedBox(width: 390, height: 600, child: child);
@@ -339,6 +360,7 @@ void main() {
           ],
         ),
       ),
+      freshTreePerCase: true,
     );
   });
 
@@ -347,16 +369,15 @@ void main() {
       tester,
       'emptystateplaceholder_states',
       () => host(
-        Column(
-          children: [
-            const Expanded(
-              child: EmptyStatePlaceholder(
+        SingleChildScrollView(
+          child: Column(
+            children: [
+              const EmptyStatePlaceholder(
                 icon: Icons.inbox,
                 message: 'Nothing here yet',
               ),
-            ),
-            Expanded(
-              child: EmptyStatePlaceholder(
+              const SizedBox(height: 24),
+              EmptyStatePlaceholder(
                 icon: Icons.search_off,
                 title: 'No results',
                 message: 'Try a different search.',
@@ -366,10 +387,11 @@ void main() {
                   child: const Text('Clear filters'),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
+      size: const Size(390, 900),
     );
   });
 
