@@ -367,4 +367,23 @@ void main() {
       expect(tester.takeException(), isNull);
     },
   );
+
+  testWidgets(
+    'disposing the controller BEFORE the overlay unmounts does not throw '
+    '(Rx fields stay open so Obx can dispose its own subscription)',
+    (tester) async {
+      final controller = SceneTransitionController();
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SceneTransitionOverlay(
+            controller: controller,
+            child: const Scaffold(body: Text('content')),
+          ),
+        ),
+      );
+      controller.dispose();
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

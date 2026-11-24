@@ -189,10 +189,10 @@ class LevelUpOverlayController {
     _activeToken = null;
     _onComplete = null;
     _wakeSuspendedWait();
-    // Writes to a closed Rx are ignored and reads keep the last value, so a
-    // widget still showing the controller stays safe.
-    phase.close();
-    queueIndex.close();
+    // `phase`/`queueIndex` are deliberately NOT closed here: LevelUpOverlay
+    // observes them with Obx, and when this controller is disposed before the
+    // overlay unmounts (a parent State disposing it in dispose()), Obx's own
+    // dispose would close an already-closed Rx and throw inside GetX.
   }
 
   bool _isCurrent(int token) => !_disposed && _activeToken == token;

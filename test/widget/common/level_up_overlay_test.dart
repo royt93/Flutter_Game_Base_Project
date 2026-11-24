@@ -404,4 +404,18 @@ void main() {
       },
     );
   });
+
+  testWidgets(
+    'disposing the controller BEFORE the overlay unmounts does not throw '
+    '(Rx fields stay open so Obx can dispose its own subscription)',
+    (tester) async {
+      final controller = LevelUpOverlayController();
+      await tester.pumpWidget(_host(controller, reducedMotion: true));
+      // The usual order: a parent State disposes its controller in dispose(),
+      // before the overlay widget below it is unmounted.
+      controller.dispose();
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

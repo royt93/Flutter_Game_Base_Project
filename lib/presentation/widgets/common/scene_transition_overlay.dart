@@ -180,10 +180,10 @@ class SceneTransitionController {
   /// [cancel] first if the barrier must come down.
   void dispose() {
     _disposed = true;
-    // Writes to a closed Rx are ignored and reads keep the last value, so the
-    // overlay widget stays safe if it outlives this controller.
-    phase.close();
-    progress.close();
+    // `phase`/`progress` are deliberately NOT closed here: the overlay observes
+    // them with Obx, and when this controller is disposed before the overlay
+    // unmounts, Obx's own dispose would close an already-closed Rx and throw
+    // inside GetX.
   }
 }
 
