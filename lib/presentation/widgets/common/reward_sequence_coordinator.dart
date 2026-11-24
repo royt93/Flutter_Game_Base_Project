@@ -299,8 +299,11 @@ class _RewardSequenceCoordinatorState extends State<RewardSequenceCoordinator> {
           transitionBuilder: (child, animation) => FadeTransition(
             opacity: animation,
             child: ScaleTransition(
+              // CurveTween (not CurvedAnimation): this builder runs on every
+              // rebuild and a CurvedAnimation here would add a status
+              // listener to `animation` each time and never remove it.
               scale: Tween<double>(begin: hiddenScale, end: 1).animate(
-                CurvedAnimation(parent: animation, curve: NeonTheme.curvePop),
+                CurveTween(curve: NeonTheme.curvePop).animate(animation),
               ),
               child: child,
             ),

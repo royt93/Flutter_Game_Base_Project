@@ -114,6 +114,7 @@ class _DaySlotState extends State<_DaySlot>
   // sẵn. Chỉ forward(from: 0.0) khi thực sự vừa chuyển sang claimed, cùng
   // convention đã dùng ở StreakCounter (ENH-31)/IconBadgeButton (IDEA-16).
   late final AnimationController _controller;
+  late final CurvedAnimation _curve;
   late final Animation<double> _scale;
 
   @override
@@ -124,10 +125,8 @@ class _DaySlotState extends State<_DaySlot>
       duration: const Duration(milliseconds: 300),
       value: 1.0,
     );
-    _scale = Tween<double>(
-      begin: 0.6,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+    _curve = CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
+    _scale = Tween<double>(begin: 0.6, end: 1.0).animate(_curve);
   }
 
   @override
@@ -140,6 +139,7 @@ class _DaySlotState extends State<_DaySlot>
 
   @override
   void dispose() {
+    _curve.dispose();
     _controller.dispose();
     super.dispose();
   }

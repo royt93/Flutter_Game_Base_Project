@@ -152,4 +152,88 @@ void main() {
     expect(find.byKey(const ValueKey('radialAction_0_One')), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
+
+  testWidgets('items open with a stagger: later items trail earlier ones', (
+    tester,
+  ) async {
+    final key = GlobalKey<RadialActionMenuState>();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox.expand(
+            child: RadialActionMenu(
+              key: key,
+              alignment: Alignment.bottomRight,
+              radius: 110,
+              startAngleDegrees: 180,
+              sweepAngleDegrees: 90,
+              items: [
+                for (final n in ['A', 'B', 'C'])
+                  RadialActionItem(label: n, icon: Icons.star, onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey('radialActionPrimary')));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 60));
+
+    double opacityOf(String label) {
+      final item = find.byKey(ValueKey('radialAction_${'ABC'.indexOf(label)}_$label'));
+      final op = find.ancestor(of: item, matching: find.byType(Opacity)).first;
+      return tester.widget<Opacity>(op).opacity;
+    }
+
+    final a = opacityOf('A');
+    final b = opacityOf('B');
+    final c = opacityOf('C');
+    expect(a, greaterThan(b), reason: 'first item leads');
+    expect(b, greaterThan(c), reason: 'last item trails');
+
+    await tester.pump(const Duration(seconds: 1));
+    expect(opacityOf('A'), 1.0);
+    expect(opacityOf('C'), 1.0, reason: 'every item ends fully open');
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('item scale overshoots 1.0 on the way open (easeOutBack)', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: SizedBox.expand(
+            child: RadialActionMenu(
+              alignment: Alignment.bottomRight,
+              radius: 110,
+              startAngleDegrees: 180,
+              sweepAngleDegrees: 90,
+              items: [
+                RadialActionItem(label: 'A', icon: Icons.star, onTap: () {}),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.byKey(const ValueKey('radialActionPrimary')));
+    await tester.pump();
+    final item = find.byKey(const ValueKey('radialAction_0_A'));
+    var peak = 0.0;
+    for (var i = 0; i < 40; i++) {
+      await tester.pump(const Duration(milliseconds: 10));
+      // Transform.scale(scale: 0.72 + progress * 0.28): progress > 1 shows as
+      // a scale above 1.0.
+      final scale = find.ancestor(of: item, matching: find.byType(Transform));
+      for (final w in tester.widgetList<Transform>(scale)) {
+        final sx = w.transform.storage[0];
+        if (sx > peak) peak = sx;
+      }
+    }
+    expect(peak, greaterThan(1.0), reason: 'easeOutBack overshoots');
+    await tester.pump(const Duration(seconds: 1));
+    expect(tester.takeException(), isNull);
+  });
 }

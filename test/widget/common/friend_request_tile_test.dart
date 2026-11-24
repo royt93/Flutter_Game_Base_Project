@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/common_widgets.dart';
+import '../../support/owned_storage.dart';
 
 Widget subject({
   FriendRequestAction? busy,
@@ -46,7 +47,7 @@ void main() {
   testWidgets('haptics respect preference and never fire while busy', (
     tester,
   ) async {
-    final storage = Get.put(StorageService(null));
+    final storage = Get.put(ownedMemoryStorage());
     final calls = <Object?>[];
     tester.binding.defaultBinaryMessenger.setMockMethodCallHandler(
       SystemChannels.platform,

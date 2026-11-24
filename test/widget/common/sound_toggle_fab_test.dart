@@ -2,9 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/audio_manager.dart';
-import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/sound_toggle_fab.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../support/owned_storage.dart';
 
 void main() {
   tearDown(Get.reset);
@@ -13,8 +12,7 @@ void main() {
     testWidgets('tap toggles muted and flips the icon', (tester) async {
       // toggleMute() persists via StorageService.to, so it must be
       // registered too (see audio_manager_test.dart's setUp).
-      SharedPreferences.setMockInitialValues({});
-      Get.put(StorageService(await SharedPreferences.getInstance()));
+      Get.put(await ownedStorage());
       final audio = Get.put(AudioManager(), permanent: true);
       expect(audio.muted.value, isFalse);
 
@@ -44,8 +42,7 @@ void main() {
     testWidgets(
       'ENH-17/IDEA-17: icon đổi qua AnimatedSwitcher crossfade, giữa chừng cả 2 icon cùng tồn tại',
       (tester) async {
-        SharedPreferences.setMockInitialValues({});
-        Get.put(StorageService(await SharedPreferences.getInstance()));
+        Get.put(await ownedStorage());
         final audio = Get.put(AudioManager(), permanent: true);
 
         await tester.pumpWidget(
@@ -70,8 +67,7 @@ void main() {
     testWidgets(
       'IDEA-17: Reduce Motion bật → đổi icon tức thời (duration = 0)',
       (tester) async {
-        SharedPreferences.setMockInitialValues({});
-        Get.put(StorageService(await SharedPreferences.getInstance()));
+        Get.put(await ownedStorage());
         final audio = Get.put(AudioManager(), permanent: true);
 
         await tester.pumpWidget(
@@ -97,8 +93,7 @@ void main() {
       'không truyền → giữ nguyên default cũ (Mute/Unmute tiếng Anh)',
       (tester) async {
         final handle = tester.ensureSemantics();
-        SharedPreferences.setMockInitialValues({});
-        Get.put(StorageService(await SharedPreferences.getInstance()));
+        Get.put(await ownedStorage());
         Get.put(AudioManager(), permanent: true);
 
         await tester.pumpWidget(
@@ -121,8 +116,7 @@ void main() {
       'truyền mutedLabel/unmutedLabel tuỳ chỉnh → dùng đúng chuỗi truyền vào ở mỗi trạng thái',
       (tester) async {
         final handle = tester.ensureSemantics();
-        SharedPreferences.setMockInitialValues({});
-        Get.put(StorageService(await SharedPreferences.getInstance()));
+        Get.put(await ownedStorage());
         Get.put(AudioManager(), permanent: true);
 
         await tester.pumpWidget(

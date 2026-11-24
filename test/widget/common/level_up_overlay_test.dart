@@ -11,6 +11,7 @@ import 'package:roy_casual_kit/core/reward_transaction_pipeline.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/confetti_overlay.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/level_up_overlay.dart';
+import '../../support/owned_storage.dart';
 
 LevelUpCelebration _celebration(
   int level, {
@@ -178,7 +179,7 @@ void main() {
   testWidgets('normal motion fires one level-pop haptic and renders reward confetti', (
     tester,
   ) async {
-    Get.put<StorageService>(StorageService(null));
+    Get.put<StorageService>(ownedMemoryStorage());
     final calls = <MethodCall>[];
     final messenger = TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger;
     messenger.setMockMethodCallHandler(SystemChannels.platform, (call) async {

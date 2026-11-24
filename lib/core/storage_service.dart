@@ -220,6 +220,16 @@ class StorageService extends GetxService {
 
   void _notifyReplaced() => replaceEpoch.value++;
 
+  /// Releases the two change notifiers (ENH-117: leak tracking found them
+  /// never disposed). Listeners may still call `removeListener` afterwards: it
+  /// is allowed on a disposed [ChangeNotifier].
+  @override
+  void onClose() {
+    replaceEpoch.dispose();
+    prefixReplace.dispose();
+    super.onClose();
+  }
+
   void _notifyPrefixReplaced(String prefix) {
     prefixReplace.value = PrefixReplace(prefix, ++_prefixReplaceSeq);
   }

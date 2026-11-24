@@ -164,6 +164,7 @@ class CurrencyCounterState extends State<CurrencyCounter>
 
   @override
   void dispose() {
+    _curvedAnimation.dispose();
     _controller.dispose();
     super.dispose();
   }

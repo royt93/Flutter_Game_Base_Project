@@ -13,7 +13,7 @@ source: "Owner yêu cầu 2026-11-23: bổ sung các loại test để chứng m
 - `lib/presentation` có **71 file** giữ `AnimationController`/`Ticker`/`Timer`/`StreamSubscription`; **68** có `dispose()` riêng. 3 file không có: `neon_aura_layer.dart` và `aurora_bg_layer.dart` kế thừa `ShaderTickerLayerState` (đã `dispose` ticker + shader ở base), `network_status_banner.dart` là `StatelessWidget` (không giữ gì). Quét tĩnh không thấy rò rõ ràng.
 - Chưa có `flutter_test_config.dart` ở `test/` hay `test/widget/`; chưa dùng `LeakTesting` ở đâu trong repo.
 - Flutter 3.41.9: `flutter_test` phụ thuộc `leak_tracker_flutter_testing: 3.0.10`; doc của `testWidgets` nói chỉnh `LeakTesting.settings` trong `flutter_test_config.dart`. Owner chấp nhận bật cấu hình này (không thêm package ngoài `flutter_test`).
-- Đã kiểm trong SDK: `flutter_test` chỉ `import` nội bộ `leak_tracker_flutter_testing` (`test_compat.dart` dòng 11, `widget_tester.dart` dòng 18) và dùng `LeakTesting.enabled`; grep `leak` trong `flutter_test.dart` (file export công khai) không ra gì, nên rất có thể phải `import 'package:leak_tracker_flutter_testing/...'` trực tiếp và thêm nó vào `dev_dependencies` (gói 3.0.10 đã có trong `~/.pub-cache`). Đây vẫn là gói chỉ-dev; theo điều kiện owner đã đồng ý. **Chưa chạy thử** việc bật leak tracking, nên chưa biết số test đỏ.
+- (Đã kiểm, xem "Kết quả" bên dưới) `flutter_test` chỉ `import` nội bộ `leak_tracker_flutter_testing` (`test_compat.dart` dòng 11, `widget_tester.dart` dòng 18) và dùng `LeakTesting.enabled`; grep `leak` trong `flutter_test.dart` (file export công khai) không ra gì, nên rất có thể phải `import 'package:leak_tracker_flutter_testing/...'` trực tiếp và thêm nó vào `dev_dependencies` (gói 3.0.10 đã có trong `~/.pub-cache`). Đây vẫn là gói chỉ-dev; theo điều kiện owner đã đồng ý. **Chưa chạy thử** việc bật leak tracking, nên chưa biết số test đỏ.
 
 ## Phạm vi
 
@@ -21,10 +21,10 @@ Bật theo dõi rò rỉ cho `test/widget/` (không bật cho `test/core`): ch�
 
 ## Các bước (mỗi bước một commit, tick khi xong)
 
-- [ ] 1. Xác nhận API: trong `flutter_test` bản 3.41.9 tìm `LeakTesting`, `LeakTesting.enable()`, `LeakTesting.settings`, `LeakTrackingForTests.ignore()` có thể import bằng `package:flutter_test/flutter_test.dart` hay phải import gói `leak_tracker_flutter_testing`. Nếu cần import trực tiếp gói đó: thêm vào `dev_dependencies` và báo owner (đây là điều kiện owner đã đồng ý: chỉ dev).
-- [ ] 2. Thêm `test/widget/flutter_test_config.dart` bật leak tracking (chỉ thư mục `test/widget`), chưa sửa lib.
-- [ ] 3. Chạy toàn bộ `flutter test test/widget`; ghi vào "Kết quả thực hiện" số test đỏ và PHÂN LOẠI từng nguồn (rò thật / test thiếu dispose / nhiễu thư viện).
-- [ ] 4. Sửa rò thật trong `lib/presentation` (mỗi sửa một commit, kèm test hồi quy cho đúng widget đó, mutation check).
+- [x] 1. Xác nhận API: trong `flutter_test` bản 3.41.9 tìm `LeakTesting`, `LeakTesting.enable()`, `LeakTesting.settings`, `LeakTrackingForTests.ignore()` có thể import bằng `package:flutter_test/flutter_test.dart` hay phải import gói `leak_tracker_flutter_testing`. Nếu cần import trực tiếp gói đó: thêm vào `dev_dependencies` và báo owner (đây là điều kiện owner đã đồng ý: chỉ dev).
+- [x] 2. Thêm cấu hình bật leak tracking. THAY ĐỔI so với kế hoạch (owner chọn "bật dần"): không đặt ở `test/widget/flutter_test_config.dart` (sẽ làm 76 test đỏ), mà ở thư mục riêng `test/widget/leaks/` (`flutter_test_config.dart` + `widget_leaks_test.dart`); mở rộng dần khi các thư mục khác sạch.
+- [x] 3. Chạy toàn bộ `flutter test test/widget`; ghi vào "Kết quả thực hiện" số test đỏ và PHÂN LOẠI từng nguồn (rò thật / test thiếu dispose / nhiễu thư viện).
+- [x] 4. Sửa rò thật trong `lib/presentation` (mỗi sửa một commit, kèm test hồi quy cho đúng widget đó, mutation check).
 - [ ] 5. Với phần còn lại: sửa test (dispose đúng) hoặc cấu hình bỏ qua có chủ đích, mỗi mục kèm lý do trong comment ngắn; không bỏ qua cả thư mục.
 - [ ] 6. Cổng cuối: `flutter analyze`, `flutter test --exclude-tags slow test/widget/common test/core test/tool test/presentation`, `dart run tool/api_compatibility.dart check`, 5 tool quality-gate. Ghi số liệu trước/sau, chuyển sang `doc/task/done/`.
 
@@ -39,3 +39,19 @@ Bật theo dõi rò rỉ cho `test/widget/` (không bật cho `test/core`): ch�
 
 - `flutter test test/widget/common`
 - `flutter test test/widget/goldens (chỉ trên CI Linux)`
+
+## Kết quả đợt 1 (2026-11-24, CHƯA đóng task)
+
+**Đã đo thật** (bật `LeakTesting.enable()` cho cả `test/widget`, baseline 145 test golden đỏ sẵn trên macOS): ban đầu 101 test đỏ thêm vì rò rỉ. Nguyên nhân, đo trên 101 báo cáo: 32 chỉ rò `CurvedAnimation` (lỗi thật của lib), 43 gồm state/controller của chính kit hoặc test không dỡ, 26 chỉ là rác khung test (route/overlay).
+
+**Sửa trong lib (28 file, +159/-70):**
+- `CurvedAnimation` không dispose: 25 chỗ ở 21 file. 14 chỗ nằm trong `build()` (mỗi lần dựng lại thêm một status listener vào controller mà không bao giờ gỡ): đổi sang `CurveTween(...).animate(parent)` (không thêm listener, trả đúng giá trị; đã chứng minh bằng test số học tạm 4 curve x 101 điểm, bằng nhau tuyệt đối) hoặc giữ làm field có `dispose()`. `NeonDialog` có animation tuỳ chỉnh `_DialogScaleAnimation` giữ easeOutBack khi vào, easeIn khi ra.
+- `TextPainter` không dispose: `wheel_spinner`, `coin_multiplier_wheel`, `share_helper`, `label_fit` (nhánh đo thật).
+- `OverlayEntry` không dispose sau `remove()`: `toast_banner`, `floating_combo_text`, `coin_fly_overlay`, có chặn gọi hai lần.
+- Rx/ValueNotifier không đóng: `StorageService` (thêm `onClose()` dispose hai notifier; **API snapshot +1 dòng**), `LevelUpOverlayController`, `SceneTransitionController`.
+
+**Kiểm chứng:** analyze sạch, root 4200 test pass (không golden), example 475 pass, 5 quality-gate xanh. `test/widget/leaks/` (thư mục MỚI có `flutter_test_config.dart` bật leak tracking, 8 test): mutation cho 7 widget (bỏ dispose / đưa lại `CurvedAnimation` trong build) đều làm đúng 1 test đỏ. Thêm test hồi quy cho `NeonDialog` (2 test, mutation 2/3 đỏ) và `radial_action_menu` (stagger + overshoot, mutation đỏ).
+
+**Sai sót đã sửa trong lúc làm (ghi để khỏi lặp):** task ghi "flutter_test đã export LeakTesting": SAI, phải `import 'package:leak_tracker_flutter_testing/...'` và thêm nó vào `dev_dependencies` (đã có trong lock cùng phiên bản 3.0.10, chỉ đổi 1 dòng lock; owner đã đồng ý). Script sửa hàng loạt test (`WheelSpinnerController` inline) làm hỏng 4 chỗ và thêm trùng `addTearDown` (gây "used after being disposed"): đã hoàn tác và làm tay.
+
+**CHƯA làm (nên task còn trong `todo/`):** theo lựa chọn của owner ("commit sửa lib, bật tracking dần") KHÔNG bật leak tracking toàn cục cho `test/widget`. Đo lúc bật toàn cục: 76 test đỏ mới (60 file rò): `flame_tracked_overlay_test` (156 `NotifyingVector2`, nhiều khả năng của Flame), `debug_qa_overlay_test` (52 `ValueNotifier`), `viewport_sweep_test` (51), 40 file golden (đã giảm nhiều nhờ harness `runGoldenMatrix` unmount ở `finally`, còn 1 rò/ file ở vài test). `test/widget/common` còn 15 file rò (101 -> 15), phần lớn do test không dispose `WheelSpinnerController`/`ScreenShakeController`/`Tutorial...` ở `viewport_sweep` và state/element của một số widget (`battle_pass_road`, `candy_search_bar`...) chưa điều tra.

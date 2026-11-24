@@ -1391,6 +1391,7 @@
     "core/storage_service.dart:StorageService.importAll(Map<String, Object?> data): Future<void>",
     "core/storage_service.dart:StorageService.importWithPrefix(String prefix, Map<String, Object?> data): Future<void>",
     "core/storage_service.dart:StorageService.new(this._prefs)",
+    "core/storage_service.dart:StorageService.onClose(): void",
     "core/storage_service.dart:StorageService.remove(String key): Future<void>",
     "core/storage_service.dart:StorageService.removeAllWithPrefix(String prefix): Future<void>",
     "core/storage_service.dart:StorageService.setBool(String key, bool value): Future<void>",

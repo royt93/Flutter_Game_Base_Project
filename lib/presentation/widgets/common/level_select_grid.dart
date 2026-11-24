@@ -73,10 +73,14 @@ class _LevelNodeButtonState extends State<LevelNodeButton>
     vsync: this,
     duration: const Duration(milliseconds: 900),
   );
+  late final CurvedAnimation _glowCurve = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeInOut,
+  );
   late final Animation<double> _glowIntensity = Tween<double>(
     begin: 0.35,
     end: 1.0,
-  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+  ).animate(_glowCurve);
 
   bool get _shouldPulse => widget.pulse && widget.state == LevelState.unlocked;
 
@@ -109,6 +113,7 @@ class _LevelNodeButtonState extends State<LevelNodeButton>
 
   @override
   void dispose() {
+    _glowCurve.dispose();
     _controller.dispose();
     super.dispose();
   }

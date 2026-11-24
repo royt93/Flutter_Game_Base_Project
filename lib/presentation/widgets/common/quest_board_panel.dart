@@ -131,16 +131,19 @@ class _QuestRow extends StatefulWidget {
 class _QuestRowState extends State<_QuestRow>
     with SingleTickerProviderStateMixin {
   AnimationController? _pop;
+  CurvedAnimation? _popCurve;
 
   @override
   void didUpdateWidget(covariant _QuestRow oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (widget.quest.isClaimable && !oldWidget.quest.isClaimable) {
       if (NeonTheme.reducedMotion(context)) return;
-      (_pop ??= AnimationController(
-          vsync: this,
-          duration: const Duration(milliseconds: 300),
-        ))
+      final pop = _pop ??= AnimationController(
+        vsync: this,
+        duration: const Duration(milliseconds: 300),
+      );
+      _popCurve ??= CurvedAnimation(parent: pop, curve: Curves.easeOutBack);
+      pop
         ..value = 0.0
         ..forward();
     }
@@ -148,6 +151,7 @@ class _QuestRowState extends State<_QuestRow>
 
   @override
   void dispose() {
+    _popCurve?.dispose();
     _pop?.dispose();
     super.dispose();
   }
@@ -165,12 +169,9 @@ class _QuestRowState extends State<_QuestRow>
       onTap: quest.isClaimable ? widget.onClaim : null,
       color: quest.isClaimable ? NeonTheme.gold : null,
     );
-    final pop = _pop;
-    if (pop != null) {
-      claimButton = ScaleTransition(
-        scale: CurvedAnimation(parent: pop, curve: Curves.easeOutBack),
-        child: claimButton,
-      );
+    final popCurve = _popCurve;
+    if (popCurve != null) {
+      claimButton = ScaleTransition(scale: popCurve, child: claimButton);
     }
 
     return Container(

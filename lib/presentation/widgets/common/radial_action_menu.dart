@@ -301,16 +301,15 @@ class RadialActionMenuState extends State<RadialActionMenu>
       size.height / 2 +
           widget.alignment.y * (size.height - widget.buttonSize) / 2,
     );
-    final t = CurvedAnimation(
-      parent: _controller,
-      curve: Interval(
-        intervalStart.clamp(0.0, 0.9),
-        (intervalStart + 0.8).clamp(0.1, 1.0),
-        curve: Curves.easeOutBack,
-      ),
+    // A plain Curve evaluated per frame: a CurvedAnimation created here would
+    // add a status listener to _controller on every build and never remove it.
+    final curve = Interval(
+      intervalStart.clamp(0.0, 0.9),
+      (intervalStart + 0.8).clamp(0.1, 1.0),
+      curve: Curves.easeOutBack,
     );
     return AnimatedBuilder(
-      animation: t,
+      animation: _controller,
       child: Semantics(
         button: true,
         label: item.semanticLabel ?? item.label,
@@ -328,7 +327,7 @@ class RadialActionMenuState extends State<RadialActionMenu>
         ),
       ),
       builder: (context, child) {
-        final progress = t.value;
+        final progress = curve.transform(_controller.value);
         final physicalLeft =
             anchor.dx + offset.dx * progress - widget.buttonSize / 2;
         final start = textDirection == TextDirection.ltr

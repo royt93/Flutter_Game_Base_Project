@@ -51,6 +51,7 @@ class FloatingComboText extends StatefulWidget {
   }) {
     final overlay = Overlay.of(context, rootOverlay: true);
     late OverlayEntry entry;
+    var disposed = false;
     entry = OverlayEntry(
       builder: (context) => Positioned.fill(
         child: IgnorePointer(
@@ -62,7 +63,11 @@ class FloatingComboText extends StatefulWidget {
               fontSize: fontSize,
               duration: duration,
               onDone: () {
+                // Once only: OverlayEntry.dispose() asserts against a second call.
+                if (disposed) return;
+                disposed = true;
                 if (entry.mounted) entry.remove();
+                entry.dispose();
               },
             ),
           ),
@@ -76,6 +81,9 @@ class FloatingComboText extends StatefulWidget {
 class _FloatingComboTextState extends State<FloatingComboText>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  late final CurvedAnimation _riseCurve;
+  late final CurvedAnimation _opacityCurve;
+  late final CurvedAnimation _scaleCurve;
   late final Animation<double> _rise;
   late final Animation<double> _opacity;
   late final Animation<double> _scale;
@@ -96,28 +104,35 @@ class _FloatingComboTextState extends State<FloatingComboText>
         if (status == AnimationStatus.completed) widget.onDone?.call();
       })
       ..forward();
+    _riseCurve = CurvedAnimation(parent: _controller, curve: Curves.easeOut);
     _rise = Tween<double>(
       begin: 0,
       end: -widget.riseDistance,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOut));
-    _opacity = Tween<double>(begin: 1, end: 0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.4, 1.0, curve: Curves.easeIn),
-      ),
+    ).animate(_riseCurve);
+    _opacityCurve = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.4, 1.0, curve: Curves.easeIn),
     );
+    _opacity = Tween<double>(begin: 1, end: 0).animate(_opacityCurve);
     // Pop-in trong 30% đầu animation, cùng "juice" convention với
     // RewardPopup/NeonDialog's entrance (scale từ nhỏ hơn 1, overshoot nhẹ).
-    _scale = Tween<double>(begin: 0.6, end: 1.0).animate(
-      CurvedAnimation(
-        parent: _controller,
-        curve: const Interval(0.0, 0.3, curve: Curves.easeOutBack),
-      ),
+    _scaleCurve = CurvedAnimation(
+      parent: _controller,
+      curve: const Interval(0.0, 0.3, curve: Curves.easeOutBack),
     );
+    _scale = Tween<double>(begin: 0.6, end: 1.0).animate(_scaleCurve);
   }
 
   @override
   void dispose() {
+    // The animations are created in didChangeDependencies (needs MediaQuery),
+    // which always runs before dispose for a mounted State; _startedOnce
+    // guards the late fields all the same.
+    if (_startedOnce) {
+      _riseCurve.dispose();
+      _opacityCurve.dispose();
+      _scaleCurve.dispose();
+    }
     _controller.dispose();
     super.dispose();
   }

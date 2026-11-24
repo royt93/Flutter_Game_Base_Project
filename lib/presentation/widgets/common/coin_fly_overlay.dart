@@ -141,6 +141,7 @@ class CoinFlyOverlay extends StatefulWidget {
         // FloatingComboText.show already uses.
         onDone: () {
           if (entry.mounted) entry.remove();
+          entry.dispose();
         },
       ),
     );

@@ -312,4 +312,86 @@ void main() {
       handle.dispose();
     });
   });
+
+  group('NeonDialog.show transition scale (ENH-117)', () {
+    Future<void> openDialog(WidgetTester tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => Material(
+              child: TextButton(
+                onPressed: () => NeonDialog.show<void>(
+                  context: context,
+                  title: 'T',
+                  color: NeonTheme.cyan,
+                  actions: [
+                    NeonDialogAction(
+                      label: 'OK',
+                      color: NeonTheme.cyan,
+                      onTap: () {},
+                    ),
+                  ],
+                  dismissible: true,
+                ),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('open'));
+    }
+
+    double scaleNow(WidgetTester tester) {
+      final t = tester
+          .widgetList<ScaleTransition>(find.byType(ScaleTransition))
+          .where((w) => w.scale.runtimeType.toString() == '_DialogScaleAnimation')
+          .single;
+      return t.scale.value;
+    }
+
+    testWidgets('opens by easeOutBack and ends at exactly 1.0', (tester) async {
+      await openDialog(tester);
+      await tester.pump();
+      final t0 = scaleNow(tester);
+      expect(t0, inInclusiveRange(0.0, 0.2), reason: 'starts near zero');
+      // easeOutBack overshoots 1.0 on the way in.
+      var peak = t0;
+      for (var i = 0; i < 40; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+        final v = scaleNow(tester);
+        if (v > peak) peak = v;
+      }
+      expect(peak, greaterThan(1.0), reason: 'easeOutBack overshoots');
+      await tester.pump(const Duration(seconds: 1));
+      expect(scaleNow(tester), 1.0);
+    });
+
+    testWidgets('closes by easeIn: never overshoots, shrinks to zero', (
+      tester,
+    ) async {
+      await openDialog(tester);
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      expect(scaleNow(tester), 1.0);
+      Navigator.of(tester.element(find.text('OK')), rootNavigator: true).pop();
+      var prev = 1.0;
+      var maxSeen = 0.0;
+      for (var i = 0; i < 40; i++) {
+        await tester.pump(const Duration(milliseconds: 10));
+        if (find.byType(ScaleTransition).evaluate().isEmpty) break;
+        final candidates = tester
+            .widgetList<ScaleTransition>(find.byType(ScaleTransition))
+            .where(
+              (w) => w.scale.runtimeType.toString() == '_DialogScaleAnimation',
+            );
+        if (candidates.isEmpty) break;
+        final v = candidates.single.scale.value;
+        expect(v, lessThanOrEqualTo(prev + 1e-9), reason: 'monotonic going out');
+        maxSeen = v > maxSeen ? v : maxSeen;
+        prev = v;
+      }
+      expect(maxSeen, lessThanOrEqualTo(1.0), reason: 'easeIn never overshoots');
+    });
+  });
 }

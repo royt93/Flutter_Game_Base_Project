@@ -14,6 +14,13 @@ Widget _wrap(Widget child, {bool reducedMotion = false}) => MediaQuery(
   ),
 );
 
+/// A controller disposed at the end of the current test (leak tracking).
+WheelSpinnerController _ownedController() {
+  final c = WheelSpinnerController();
+  addTearDown(c.dispose);
+  return c;
+}
+
 void main() {
   group('wheel label contrast', () {
     test(
@@ -288,6 +295,7 @@ void main() {
       'controller rejects negative resultIndex before notifying listeners',
       () {
         final controller = WheelSpinnerController();
+        addTearDown(controller.dispose);
         var notified = false;
         controller.addListener(() => notified = true);
 
@@ -339,6 +347,7 @@ void main() {
       tester,
     ) async {
       final controller = WheelSpinnerController();
+      addTearDown(controller.dispose);
       await tester.pumpWidget(
         _wrap(
           WheelSpinner(
@@ -358,6 +367,7 @@ void main() {
 
     testWidgets('renders exactly the segments passed in', (tester) async {
       final controller = WheelSpinnerController();
+      addTearDown(controller.dispose);
       await tester.pumpWidget(
         _wrap(
           WheelSpinner(
@@ -385,6 +395,7 @@ void main() {
       (tester) async {
         WheelSegment? result;
         final controller = WheelSpinnerController();
+        addTearDown(controller.dispose);
         await tester.pumpWidget(
           _wrap(
             WheelSpinner(
@@ -411,6 +422,7 @@ void main() {
       tester,
     ) async {
       final controller = WheelSpinnerController();
+      addTearDown(controller.dispose);
       final ticks = <int>[];
       WheelSegment? landed;
       await tester.pumpWidget(
@@ -450,6 +462,7 @@ void main() {
       tester,
     ) async {
       final controller = WheelSpinnerController();
+      addTearDown(controller.dispose);
       var ticks = 0;
       await tester.pumpWidget(
         _wrap(
@@ -479,6 +492,7 @@ void main() {
       (tester) async {
         WheelSegment? result;
         final controller = WheelSpinnerController();
+        addTearDown(controller.dispose);
         await tester.pumpWidget(
           _wrap(
             WheelSpinner(
@@ -522,6 +536,7 @@ void main() {
       (tester) async {
         WheelSegment? result;
         final controller = WheelSpinnerController();
+        addTearDown(controller.dispose);
         await tester.pumpWidget(
           _wrap(
             WheelSpinner(
@@ -548,6 +563,7 @@ void main() {
     ) async {
       final results = <WheelSegment>[];
       final controller = WheelSpinnerController();
+      addTearDown(controller.dispose);
       await tester.pumpWidget(
         _wrap(
           WheelSpinner(
@@ -574,7 +590,7 @@ void main() {
         () => WheelSpinner(
           backgroundColor: NeonTheme.card,
           segments: const [WheelSegment(label: 'Only', color: Colors.red)],
-          controller: WheelSpinnerController(),
+          controller: _ownedController(),
           onSpinEnd: (_) {},
         ),
         throwsArgumentError,
@@ -589,7 +605,7 @@ void main() {
           WheelSpinner(
             backgroundColor: NeonTheme.card,
             segments: segments,
-            controller: WheelSpinnerController(),
+            controller: _ownedController(),
             onSpinEnd: (_) {},
           ),
         ),
@@ -616,7 +632,7 @@ void main() {
           WheelSpinner(
             backgroundColor: NeonTheme.card,
             segments: segments,
-            controller: WheelSpinnerController(),
+            controller: _ownedController(),
             onSpinEnd: (_) {},
           ),
         ),
@@ -650,7 +666,7 @@ void main() {
             WheelSpinner(
               backgroundColor: NeonTheme.card,
               segments: segments,
-              controller: WheelSpinnerController(),
+              controller: _ownedController(),
               onSpinEnd: (_) {},
             ),
           ),
@@ -672,7 +688,7 @@ void main() {
                     child: WheelSpinner(
                       backgroundColor: NeonTheme.card,
                       segments: segments,
-                      controller: WheelSpinnerController(),
+                      controller: _ownedController(),
                       onSpinEnd: (_) {},
                     ),
                   ),
@@ -696,7 +712,7 @@ void main() {
               WheelSpinner(
                 backgroundColor: NeonTheme.card,
                 segments: segments,
-                controller: WheelSpinnerController(),
+                controller: _ownedController(),
                 onSpinEnd: (_) {},
               ),
             ),
@@ -710,6 +726,7 @@ void main() {
 
       testWidgets('đang quay: Semantics báo "Spinning"', (tester) async {
         final controller = WheelSpinnerController();
+        addTearDown(controller.dispose);
         await tester.pumpWidget(
           _wrap(
             WheelSpinner(
@@ -738,6 +755,7 @@ void main() {
           'spin($target) rồi settle → Semantics báo đúng "Stopped on ${segments[target].label}"',
           (tester) async {
             final controller = WheelSpinnerController();
+            addTearDown(controller.dispose);
             WheelSegment? landed;
             await tester.pumpWidget(
               _wrap(
@@ -766,6 +784,7 @@ void main() {
         'Reduce Motion bật: settle ngay, Semantics vẫn đúng segment đã landed',
         (tester) async {
           final controller = WheelSpinnerController();
+          addTearDown(controller.dispose);
           await tester.pumpWidget(
             _wrap(
               WheelSpinner(

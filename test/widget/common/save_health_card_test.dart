@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get/get.dart';
 import 'package:roy_casual_kit/core/storage_service.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/save_health_card.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+import '../../support/owned_storage.dart';
 
 Widget _wrap(Widget child) => MaterialApp(home: Material(child: child));
 
@@ -22,8 +22,7 @@ void main() {
   late StorageService storage;
 
   setUp(() async {
-    SharedPreferences.setMockInitialValues({});
-    storage = StorageService(await SharedPreferences.getInstance());
+    storage = await ownedStorage();
   });
 
   testWidgets(
@@ -45,6 +44,7 @@ void main() {
     tester,
   ) async {
     final broken = _CorruptSaveStorage();
+    addTearDown(broken.onClose);
     await tester.pumpWidget(_wrap(SaveHealthCard(
       storage: broken,
       secret: 'secret',

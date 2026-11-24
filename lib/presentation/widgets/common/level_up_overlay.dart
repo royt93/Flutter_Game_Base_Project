@@ -189,6 +189,10 @@ class LevelUpOverlayController {
     _activeToken = null;
     _onComplete = null;
     _wakeSuspendedWait();
+    // Writes to a closed Rx are ignored and reads keep the last value, so a
+    // widget still showing the controller stays safe.
+    phase.close();
+    queueIndex.close();
   }
 
   bool _isCurrent(int token) => !_disposed && _activeToken == token;

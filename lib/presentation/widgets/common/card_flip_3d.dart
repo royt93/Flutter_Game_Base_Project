@@ -207,6 +207,7 @@ class _CardFlip3DState extends State<CardFlip3D>
   @override
   void dispose() {
     widget.controller?.removeListener(_onControllerChange);
+    _curvedFlip.dispose();
     _flipController.dispose();
     _gleamController.dispose();
     super.dispose();

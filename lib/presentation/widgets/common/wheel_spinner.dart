@@ -426,6 +426,7 @@ class _WheelSpinnerState extends State<WheelSpinner>
   @override
   void dispose() {
     widget.controller.removeListener(_onSpinRequested);
+    _curved.dispose();
     _controller.dispose();
     super.dispose();
   }
@@ -549,6 +550,7 @@ class WheelSpinnerPainter extends CustomPainter {
         canvas,
         Offset(radius * 0.5 - label.width / 2, -label.height / 2),
       );
+      label.dispose();
       canvas.restore();
     }
 

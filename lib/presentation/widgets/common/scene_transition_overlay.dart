@@ -180,6 +180,10 @@ class SceneTransitionController {
   /// [cancel] first if the barrier must come down.
   void dispose() {
     _disposed = true;
+    // Writes to a closed Rx are ignored and reads keep the last value, so the
+    // overlay widget stays safe if it outlives this controller.
+    phase.close();
+    progress.close();
   }
 }
 

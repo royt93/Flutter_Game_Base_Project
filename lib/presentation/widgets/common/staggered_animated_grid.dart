@@ -141,7 +141,7 @@ class _StaggeredGridItemState extends State<_StaggeredGridItem>
     vsync: this,
     duration: widget.duration,
   );
-  late final Animation<double> _progress = CurvedAnimation(
+  late final CurvedAnimation _progress = CurvedAnimation(
     parent: _controller,
     curve: Curves.easeOutBack,
   );
@@ -177,6 +177,7 @@ class _StaggeredGridItemState extends State<_StaggeredGridItem>
   @override
   void dispose() {
     _delayTimer?.cancel();
+    _progress.dispose();
     _controller.dispose();
     super.dispose();
   }

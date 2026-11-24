@@ -165,11 +165,7 @@ class NeonDialog {
           FadeTransition(
             opacity: animation,
             child: ScaleTransition(
-              scale: CurvedAnimation(
-                parent: animation,
-                curve: _kDialogCurve,
-                reverseCurve: Curves.easeIn,
-              ),
+              scale: _DialogScaleAnimation(animation),
               child: child,
             ),
           ),
@@ -341,5 +337,28 @@ class NeonDialogButton extends StatelessWidget {
         ),
       ),
     );
+  }
+}
+
+/// The dialog's scale: [_kDialogCurve] going in, [Curves.easeIn] going out.
+///
+/// Same result as `CurvedAnimation(parent:, curve:, reverseCurve:)` but it adds
+/// no status listener to the route animation, so building the transition again
+/// leaves nothing behind that would need a `dispose()`.
+class _DialogScaleAnimation extends Animation<double>
+    with AnimationWithParentMixin<double> {
+  _DialogScaleAnimation(this.parent);
+
+  @override
+  final Animation<double> parent;
+
+  @override
+  double get value {
+    final t = parent.value;
+    if (t == 0.0 || t == 1.0) return t;
+    final curve = parent.status == AnimationStatus.reverse
+        ? Curves.easeIn
+        : _kDialogCurve;
+    return curve.transform(t);
   }
 }

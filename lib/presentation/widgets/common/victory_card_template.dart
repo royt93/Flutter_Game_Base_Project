@@ -269,14 +269,15 @@ class _VictoryStarsRowState extends State<_VictoryStarsRow>
                 final startRatio = (startUs / totalUs).clamp(0.0, 1.0);
                 final endRatio = (endUs / totalUs).clamp(0.0, 1.0);
 
-                final anim = CurvedAnimation(
-                  parent: _controller,
+                // CurveTween (not CurvedAnimation): created inside build(),
+                // a CurvedAnimation would leak a status listener per rebuild.
+                final anim = CurveTween(
                   curve: Interval(
                     startRatio,
                     endRatio,
                     curve: Curves.easeOutBack,
                   ),
-                );
+                ).animate(_controller);
 
                 return ScaleTransition(scale: anim, child: icon);
               },

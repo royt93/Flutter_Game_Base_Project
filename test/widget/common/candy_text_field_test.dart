@@ -16,6 +16,7 @@ BoxDecoration _boxDecorationOf(WidgetTester tester) =>
 void main() {
   testWidgets('nhập text cập nhật đúng controller', (tester) async {
     final controller = TextEditingController();
+    addTearDown(controller.dispose);
     await tester.pumpWidget(_wrap(CandyTextField(controller: controller)));
 
     await tester.enterText(find.byType(TextFormField), 'Roy');
@@ -24,6 +25,7 @@ void main() {
 
   testWidgets('hintText hiển thị đúng khi controller rỗng', (tester) async {
     final controller = TextEditingController();
+    addTearDown(controller.dispose);
     await tester.pumpWidget(
       _wrap(CandyTextField(controller: controller, hintText: 'Player name')),
     );
@@ -33,6 +35,7 @@ void main() {
 
   testWidgets('prefixIcon hiển thị đúng khi truyền vào', (tester) async {
     final controller = TextEditingController();
+    addTearDown(controller.dispose);
     await tester.pumpWidget(
       _wrap(CandyTextField(controller: controller, prefixIcon: Icons.person)),
     );
@@ -44,6 +47,7 @@ void main() {
     tester,
   ) async {
     final controller = TextEditingController();
+    addTearDown(controller.dispose);
     await tester.pumpWidget(
       _wrap(CandyTextField(controller: controller, obscureText: true)),
     );
@@ -54,6 +58,7 @@ void main() {
 
   testWidgets('keyboardType forward đúng xuống TextFormField', (tester) async {
     final controller = TextEditingController();
+    addTearDown(controller.dispose);
     await tester.pumpWidget(
       _wrap(
         CandyTextField(
@@ -69,6 +74,7 @@ void main() {
 
   testWidgets('onChanged gọi đúng mỗi khi text đổi', (tester) async {
     final controller = TextEditingController();
+    addTearDown(controller.dispose);
     final values = <String>[];
     await tester.pumpWidget(
       _wrap(CandyTextField(controller: controller, onChanged: values.add)),
@@ -83,6 +89,7 @@ void main() {
       tester,
     ) async {
       final controller = TextEditingController();
+      addTearDown(controller.dispose);
       await tester.pumpWidget(
         _wrap(
           CandyTextField(
@@ -105,6 +112,7 @@ void main() {
       tester,
     ) async {
       final controller = TextEditingController();
+      addTearDown(controller.dispose);
       await tester.pumpWidget(_wrap(CandyTextField(controller: controller)));
 
       await tester.enterText(find.byType(TextFormField), '');
@@ -117,6 +125,7 @@ void main() {
   group('focus/blur đổi border + glow', () {
     testWidgets('focus → border đổi màu color, có glow shadow', (tester) async {
       final controller = TextEditingController();
+      addTearDown(controller.dispose);
       await tester.pumpWidget(
         _wrap(
           Column(
@@ -148,6 +157,7 @@ void main() {
       tester,
     ) async {
       final controller = TextEditingController();
+      addTearDown(controller.dispose);
       await tester.pumpWidget(
         _wrap(
           Column(
@@ -182,6 +192,7 @@ void main() {
     tester,
   ) async {
     final controller = TextEditingController();
+    addTearDown(controller.dispose);
     await tester.pumpWidget(
       MediaQuery(
         data: const MediaQueryData(disableAnimations: true),
@@ -197,6 +208,7 @@ void main() {
 
   testWidgets('dispose sạch, không leak FocusNode khi unmount', (tester) async {
     final controller = TextEditingController();
+    addTearDown(controller.dispose);
     await tester.pumpWidget(_wrap(CandyTextField(controller: controller)));
 
     await tester.pumpWidget(const SizedBox());

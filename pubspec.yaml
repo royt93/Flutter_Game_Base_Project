@@ -58,6 +58,9 @@ dev_dependencies:
   # BUG-59: test-only seam to fake SharePlatform (verify sharePositionOrigin
   # threading through share_helper.dart) without a real platform channel.
   share_plus_platform_interface: ^7.2.0
+  # ENH-117: test-only. flutter_test imports it internally but does not
+  # re-export LeakTesting, so test/widget/flutter_test_config.dart needs it.
+  leak_tracker_flutter_testing: ^3.0.10
 
 flutter:
   uses-material-design: true

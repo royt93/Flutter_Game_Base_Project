@@ -53,7 +53,9 @@ double fitFontSizeForLongestWord(
       ),
       textDirection: TextDirection.ltr,
     )..layout();
-    return painter.width;
+    final width = painter.width;
+    painter.dispose();
+    return width;
   }
 
   double widestWord(double size) {

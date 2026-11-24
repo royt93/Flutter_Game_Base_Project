@@ -63,7 +63,7 @@ class _IconBadgeButtonState extends State<IconBadgeButton>
   // nó lazy-init thì lần đọc đầu tiên lại xảy ra trong dispose(), lúc
   // element đã deactivate — gây lỗi.
   late final AnimationController _controller;
-  late final Animation<double> _scale;
+  late final CurvedAnimation _scale;
 
   @override
   void initState() {
@@ -89,6 +89,7 @@ class _IconBadgeButtonState extends State<IconBadgeButton>
 
   @override
   void dispose() {
+    _scale.dispose();
     _controller.dispose();
     super.dispose();
   }

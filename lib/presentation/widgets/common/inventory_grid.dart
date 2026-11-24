@@ -411,6 +411,7 @@ class _AnimatedItemCellWrapperState extends State<_AnimatedItemCellWrapper>
 
   @override
   void dispose() {
+    _curved.dispose();
     _controller.dispose();
     super.dispose();
   }

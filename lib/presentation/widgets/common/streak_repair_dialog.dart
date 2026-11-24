@@ -101,6 +101,7 @@ class _StreakRepairDialogState extends State<StreakRepairDialog>
 
   @override
   void dispose() {
+    _pulse.dispose();
     _pulseController.dispose();
     super.dispose();
   }

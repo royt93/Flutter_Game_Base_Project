@@ -32,8 +32,8 @@ class ExpandablePanel extends StatefulWidget {
 class ExpandablePanelState extends State<ExpandablePanel>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
-  late final Animation<double> _height;
-  late final Animation<double> _chevron;
+  late final CurvedAnimation _height;
+  late final CurvedAnimation _chevron;
   bool _hasExpanded = false;
   late bool _expanded;
 
@@ -104,6 +104,8 @@ class ExpandablePanelState extends State<ExpandablePanel>
 
   @override
   void dispose() {
+    _height.dispose();
+    _chevron.dispose();
     _controller.dispose();
     super.dispose();
   }

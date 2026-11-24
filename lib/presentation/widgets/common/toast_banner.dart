@@ -80,6 +80,7 @@ class ToastBanner extends StatelessWidget {
     final overlay = Overlay.of(context, rootOverlay: true);
     final reduced = NeonTheme.reducedMotion(context);
     late OverlayEntry entry;
+    var disposed = false;
     entry = OverlayEntry(
       builder: (context) => _ToastBannerOverlay(
         message: message,
@@ -87,7 +88,11 @@ class ToastBanner extends StatelessWidget {
         duration: duration,
         reducedMotion: reduced,
         onDismissed: () {
+          // Once only: OverlayEntry.dispose() asserts against a second call.
+          if (disposed) return;
+          disposed = true;
           if (entry.mounted) entry.remove();
+          entry.dispose();
         },
       ),
     );
@@ -117,6 +122,7 @@ class _ToastBannerOverlay extends StatefulWidget {
 class _ToastBannerOverlayState extends State<_ToastBannerOverlay>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  late final CurvedAnimation _curve;
   late final Animation<Offset> _slide;
   Timer? _timer;
 
@@ -132,14 +138,15 @@ class _ToastBannerOverlayState extends State<_ToastBannerOverlay>
           ? Duration.zero
           : const Duration(milliseconds: 180),
     );
-    _slide = Tween<Offset>(begin: const Offset(0, -0.3), end: Offset.zero)
-        .animate(
-          CurvedAnimation(
-            parent: _controller,
-            curve: Curves.easeOutBack,
-            reverseCurve: Curves.easeIn,
-          ),
-        );
+    _curve = CurvedAnimation(
+      parent: _controller,
+      curve: Curves.easeOutBack,
+      reverseCurve: Curves.easeIn,
+    );
+    _slide = Tween<Offset>(
+      begin: const Offset(0, -0.3),
+      end: Offset.zero,
+    ).animate(_curve);
     _controller.forward();
     _timer = Timer(widget.duration, _dismiss);
   }
@@ -153,6 +160,7 @@ class _ToastBannerOverlayState extends State<_ToastBannerOverlay>
   @override
   void dispose() {
     _timer?.cancel();
+    _curve.dispose();
     _controller.dispose();
     super.dispose();
   }

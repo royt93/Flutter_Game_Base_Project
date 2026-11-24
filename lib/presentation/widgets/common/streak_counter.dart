@@ -42,10 +42,14 @@ class _StreakCounterState extends State<StreakCounter>
     duration: const Duration(milliseconds: 300),
     value: 1.0,
   );
+  late final CurvedAnimation _scaleCurve = CurvedAnimation(
+    parent: _controller,
+    curve: Curves.easeOutBack,
+  );
   late final Animation<double> _scale = Tween<double>(
     begin: 0.7,
     end: 1.0,
-  ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+  ).animate(_scaleCurve);
 
   @override
   void didUpdateWidget(covariant StreakCounter old) {
@@ -57,6 +61,7 @@ class _StreakCounterState extends State<StreakCounter>
 
   @override
   void dispose() {
+    _scaleCurve.dispose();
     _controller.dispose();
     super.dispose();
   }

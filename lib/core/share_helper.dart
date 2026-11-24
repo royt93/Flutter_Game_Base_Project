@@ -108,6 +108,7 @@ Future<ui.Image> _withTextOverlay(
     canvas,
     Offset(12 * pixelRatio, h - barHeight + 8 * pixelRatio),
   );
+  painter.dispose();
   final picture = recorder.endRecording();
   // BUG-59: the native Skia `ui.Picture` itself was never disposed — only
   // the `ui.Image`s it produces were (BUG-29's fix above). `toImage()`

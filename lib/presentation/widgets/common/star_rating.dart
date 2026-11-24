@@ -93,18 +93,17 @@ class _StarRatingState extends State<StarRating> with TickerProviderStateMixin {
       );
       final perStar = _perStar[i];
       if (perStar != null) {
-        final anim = CurvedAnimation(
-          parent: perStar,
-          curve: Curves.easeOutBack,
-        );
+        // CurveTween (not CurvedAnimation): build() runs often and a
+        // CurvedAnimation here would add a status listener to `perStar` each
+        // time and never remove it.
+        final anim = CurveTween(curve: Curves.easeOutBack).animate(perStar);
         return ScaleTransition(scale: anim, child: star);
       }
       if (_c == null) return star;
       final start = i / widget.total;
-      final anim = CurvedAnimation(
-        parent: _c!,
+      final anim = CurveTween(
         curve: Interval(start, 1.0, curve: Curves.easeOutBack),
-      );
+      ).animate(_c!);
       return ScaleTransition(scale: anim, child: star);
     });
     return Semantics(

@@ -124,7 +124,7 @@ class OfflineEarningsPopup extends StatefulWidget {
 class _OfflineEarningsPopupState extends State<OfflineEarningsPopup>
     with SingleTickerProviderStateMixin {
   late final AnimationController _counterController;
-  late final Animation<double> _counterAnimation;
+  late final CurvedAnimation _counterAnimation;
   late int _displayedCoins;
   bool _reducedMotion = false;
 
@@ -194,6 +194,7 @@ class _OfflineEarningsPopupState extends State<OfflineEarningsPopup>
   @override
   void dispose() {
     _counterController.removeListener(_handleTick);
+    _counterAnimation.dispose();
     _counterController.dispose();
     super.dispose();
   }

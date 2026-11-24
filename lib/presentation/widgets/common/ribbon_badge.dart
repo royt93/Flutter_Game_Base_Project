@@ -36,6 +36,7 @@ class RibbonBadge extends StatefulWidget {
 class _RibbonBadgeState extends State<RibbonBadge>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
+  late final CurvedAnimation _curve;
   late final Animation<double> _scale;
   bool _startedOnce = false;
 
@@ -46,10 +47,8 @@ class _RibbonBadgeState extends State<RibbonBadge>
       vsync: this,
       duration: const Duration(milliseconds: 200),
     );
-    _scale = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutBack));
+    _curve = CurvedAnimation(parent: _controller, curve: Curves.easeOutBack);
+    _scale = Tween<double>(begin: 0.8, end: 1.0).animate(_curve);
   }
 
   @override
@@ -69,6 +68,7 @@ class _RibbonBadgeState extends State<RibbonBadge>
 
   @override
   void dispose() {
+    _curve.dispose();
     _controller.dispose();
     super.dispose();
   }

@@ -26,6 +26,7 @@ void main() {
   group('TutorialSequenceController', () {
     test('start() với list rỗng thì không kích hoạt', () {
       final controller = TutorialSequenceController();
+      addTearDown(controller.dispose);
       controller.start(const []);
       expect(controller.isActive, false);
       expect(controller.currentStep, isNull);
@@ -54,6 +55,7 @@ void main() {
 
     test('skip() đóng ngay bất kể đang ở bước nào', () {
       final controller = TutorialSequenceController();
+      addTearDown(controller.dispose);
       controller.start([
         TutorialStep(targetKey: GlobalKey(), message: 'Step A'),
         TutorialStep(targetKey: GlobalKey(), message: 'Step B'),
@@ -65,6 +67,7 @@ void main() {
     group('ENH-48: currentIndex/stepCount', () {
       test('chưa start() → currentIndex âm, stepCount = 0', () {
         final controller = TutorialSequenceController();
+        addTearDown(controller.dispose);
         expect(controller.currentIndex, lessThan(0));
         expect(controller.stepCount, 0);
       });
@@ -90,6 +93,7 @@ void main() {
 
       test('skip() → stepCount về 0 (không active nữa)', () {
         final controller = TutorialSequenceController();
+        addTearDown(controller.dispose);
         controller.start([TutorialStep(targetKey: GlobalKey(), message: 'A')]);
         controller.skip();
         expect(controller.stepCount, 0);
@@ -103,6 +107,8 @@ void main() {
     ) async {
       final oldController = _CountingTutorialController();
       final newController = _CountingTutorialController();
+      addTearDown(oldController.dispose);
+      addTearDown(newController.dispose);
       final targetKey = GlobalKey();
 
       Widget build(TutorialSequenceController c) => GetMaterialApp(
@@ -135,6 +141,7 @@ void main() {
       'chưa start() thì chỉ render child, không có SpotlightOverlay',
       (tester) async {
         final controller = TutorialSequenceController();
+        addTearDown(controller.dispose);
         final targetKey = GlobalKey();
 
         await tester.pumpWidget(
@@ -158,6 +165,7 @@ void main() {
       'start() → hiện SpotlightOverlay cho bước hiện tại, dismiss (Got it) tự next()',
       (tester) async {
         final controller = TutorialSequenceController();
+        addTearDown(controller.dispose);
         final keyA = GlobalKey();
         final keyB = GlobalKey();
 
@@ -200,6 +208,7 @@ void main() {
 
     testWidgets('onComplete được gọi khi hết chuỗi bước', (tester) async {
       final controller = TutorialSequenceController();
+      addTearDown(controller.dispose);
       final key = GlobalKey();
       var completed = false;
 
@@ -232,6 +241,7 @@ void main() {
   group('ENH-48: step indicator + Skip button', () {
     testWidgets('hiển thị đúng "Step X/Y" ở từng bước', (tester) async {
       final controller = TutorialSequenceController();
+      addTearDown(controller.dispose);
       final keyA = GlobalKey();
       final keyB = GlobalKey();
 
@@ -274,6 +284,7 @@ void main() {
       'showSkip mặc định true → có nút Skip, tap Skip kết thúc ngay dù chưa hết bước',
       (tester) async {
         final controller = TutorialSequenceController();
+        addTearDown(controller.dispose);
         final keyA = GlobalKey();
         final keyB = GlobalKey();
         var completed = false;
@@ -318,6 +329,7 @@ void main() {
 
     testWidgets('showSkip: false → không có nút Skip nào', (tester) async {
       final controller = TutorialSequenceController();
+      addTearDown(controller.dispose);
       final key = GlobalKey();
 
       await tester.pumpWidget(
@@ -346,6 +358,7 @@ void main() {
       tester,
     ) async {
       final controller = TutorialSequenceController();
+      addTearDown(controller.dispose);
       final key = GlobalKey();
 
       await tester.pumpWidget(
@@ -374,6 +387,7 @@ void main() {
       'literal English',
       (tester) async {
         final controller = TutorialSequenceController();
+        addTearDown(controller.dispose);
         final key = GlobalKey();
 
         await tester.pumpWidget(
@@ -497,6 +511,7 @@ void main() {
 
     test('start() log đúng "tutorial_step_shown" cho step có id', () {
       final controller = TutorialSequenceController();
+      addTearDown(controller.dispose);
       final key = GlobalKey();
 
       controller.start([
@@ -508,6 +523,7 @@ void main() {
 
     test('next() log "dismissed" cho step cũ rồi "shown" cho step mới', () {
       final controller = TutorialSequenceController();
+      addTearDown(controller.dispose);
       final keyA = GlobalKey();
       final keyB = GlobalKey();
 
@@ -529,6 +545,7 @@ void main() {
       'next() ở bước cuối chỉ log "dismissed" đúng 1 lần, không log "shown" thừa',
       () {
         final controller = TutorialSequenceController();
+        addTearDown(controller.dispose);
         final key = GlobalKey();
 
         controller.start([
@@ -545,6 +562,7 @@ void main() {
 
     test('skip() log đúng "dismissed" cho step đang hiện tại', () {
       final controller = TutorialSequenceController();
+      addTearDown(controller.dispose);
       final keyA = GlobalKey();
       final keyB = GlobalKey();
 
@@ -563,6 +581,7 @@ void main() {
       'step KHÔNG có id (authored kiểu imperative cũ) không log gì cả — không phá hành vi cũ',
       () {
         final controller = TutorialSequenceController();
+        addTearDown(controller.dispose);
         final key = GlobalKey();
 
         controller.start([TutorialStep(targetKey: key, message: 'Msg')]);
@@ -575,6 +594,7 @@ void main() {
     test('không có AnalyticsProvider nào đăng ký: không throw', () {
       Get.reset();
       final controller = TutorialSequenceController();
+      addTearDown(controller.dispose);
       final key = GlobalKey();
 
       expect(

@@ -539,6 +539,7 @@ class _MultiplierArcPainter extends CustomPainter {
         canvas,
         Offset(-textPainter.width / 2, -textPainter.height / 2),
       );
+      textPainter.dispose();
       canvas.restore();
     }
 
