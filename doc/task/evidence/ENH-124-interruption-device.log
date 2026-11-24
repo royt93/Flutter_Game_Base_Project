@@ -1,0 +1,29 @@
+Command: cd example && flutter test integration_test/interruption_test.dart -d 115333744A005844 --dart-define=E2E_TEST=true
+Device: TECNO KJ7, Android 14 (physical, NOT the S24U standard device)
+Source: 5e2b0805 plus uncommitted example/integration_test/interruption_test.dart (this task)
+Date: 2026-11-24 19:40 +07
+Filtered: only interruption lines and the pass/fail summary kept from the full run log.
+---
+00:00 +0: Match-3: lifecycle interruptions and rotation keep the session coherent
+roy93~ app: ensureInitialized
+roy93~ app: loadAppVersion start
+roy93~ app: loadAppVersion done
+roy93~ app: bootstrap start
+roy93~ app: bootstrap done
+roy93~ app: runApp done
+interruption: lifecycle before forcing resumed = AppLifecycleState.inactive, coordinator=background
+interruption: bg #0 -> paused in 54ms, hook failures: []
+interruption: fg #0 -> playing in 1ms, hook failures: []
+interruption: bg #1 -> paused in 52ms, hook failures: []
+interruption: fg #1 -> playing in 0ms, hook failures: []
+interruption: bg #2 -> paused in 52ms, hook failures: []
+interruption: fg #2 -> playing in 0ms, hook failures: []
+interruption: bg #3 -> paused in 51ms, hook failures: []
+interruption: fg #3 -> playing in 0ms, hook failures: []
+interruption: bg #4 -> paused in 52ms, hook failures: []
+interruption: fg #4 -> playing in 0ms, hook failures: []
+interruption: inactive>hidden>paused -> paused in 0ms, hook failures: []
+interruption: resumed after system sheet -> playing in 0ms, hook failures: []
+interruption: player pause survives round trip -> paused in 0ms, hook failures: []
+00:14 +1: All tests passed!
+exit=0
