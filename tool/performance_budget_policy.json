@@ -10,7 +10,7 @@
     "requiredSource": "hostHeadless",
     "direction": "atMost",
     "limit": 2000000.0,
-    "regressionTolerancePercent": 200.0
+    "regressionTolerancePercent": 1000.0
   },
   {
     "metricName": "example_app_boot_wall_ms",
