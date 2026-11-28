@@ -1,6 +1,6 @@
 ## Unreleased
 
-## Unreleased
+- The consumer app generator now defaults to the published `roy_casual_kit: ^0.10.0`; `--kitVersion` and `--kitPath` overrides are unchanged.
 
 ## 0.10.0
 

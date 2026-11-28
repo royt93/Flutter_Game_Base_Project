@@ -72,7 +72,7 @@ void main() {
   );
 
   test(
-    'generate() mặc định ghi dependency hosted ^0.9.0 vào pubspec',
+    'generate() mặc định ghi dependency hosted ^0.10.0 vào pubspec',
     () async {
       final result = await generate(
         name: 'hosted_default',
@@ -80,11 +80,27 @@ void main() {
       );
 
       final pubspec = File('${result.path}/pubspec.yaml').readAsStringSync();
-      expect(pubspec, contains('roy_casual_kit: ^0.9.0'));
+      expect(pubspec, contains('roy_casual_kit: ^0.10.0'));
       expect(pubspec, isNot(contains('roy_casual_kit:\n    path:')));
       expect(readTemplateVersion(result.path), 4);
+      for (final args in [
+        ['pub', 'get'],
+        ['analyze'],
+        ['test'],
+      ]) {
+        final check = await Process.run(
+          'flutter',
+          args,
+          workingDirectory: result.path,
+        );
+        expect(
+          check.exitCode,
+          0,
+          reason: 'flutter ${args.join(' ')}:\n${check.stdout}\n${check.stderr}',
+        );
+      }
     },
-    timeout: const Timeout(Duration(minutes: 2)),
+    timeout: const Timeout(Duration(minutes: 5)),
   );
 
   test(
