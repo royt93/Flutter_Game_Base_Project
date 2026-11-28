@@ -1,0 +1,81 @@
+ENH-127 S24U jank/memory raw evidence
+Date: 2026-11-28 +07
+Device: Samsung SM-S928B, Android 17/API 37, physical, 1080x2340
+Source commit before test: b8e36080; example debug, E2E_TEST=true
+Command: cd example && flutter test integration_test/device_jank_memory_test.dart -d R5CX613VZBR --dart-define=E2E_TEST=true
+Frame test uses two scenes (Match-3 active play; Widget Showcase 3 down/up scroll cycles). FrameTiming captures build/raster/total-span p50/p90/p99 and >16.667ms count. Memory: adb shell dumpsys meminfo sampled every 3 seconds while test ran; relevant process com.galaxyjoy.roycasualkit.
+The first attempt (package-specific dumpsys before/after) did not find a live process and hung waiting on a route future; it is INVALID and excluded. Runs 1-3 below are the corrected test; all passed. Memory samples are the full dumpsys output, stored per run.
+--- RUN 1 ---
+DEVICE_FRAME_METRICS {"scene":"match3","frameCount":599,"buildMs":{"p50":1.826,"p90":2.528,"p99":3.892},"rasterMs":{"p50":4.424,"p90":6.364,"p99":9.389},"totalSpanMs":{"p50":6.761,"p90":9.293,"p99":12.353},"budgetMs":16.667,"framesOverBudget":1,"overBudgetPercent":0.1669449081803005}
+DEVICE_FRAME_METRICS {"scene":"widget_showcase","frameCount":177,"buildMs":{"p50":15.984,"p90":35.807,"p99":300.523},"rasterMs":{"p50":6.011,"p90":17.914,"p99":29.649},"totalSpanMs":{"p50":23.398,"p90":49.603,"p99":320.765},"budgetMs":16.667,"framesOverBudget":134,"overBudgetPercent":75.70621468926554}
+00:18 +1: All tests passed!
+test_exit=0
+
+Memory PSS/RSS samples (bytes shown in KB by Android):
+=== 14:45:40 ===
+=== 14:45:49 ===
+=== 14:45:58 ===
+=== 14:46:07 ===
+    542,212K: com.galaxyjoy.roycasualkit (pid 12822 / activities)
+        542,212K: com.galaxyjoy.roycasualkit (pid 12822 / activities)
+    405,224K: com.galaxyjoy.roycasualkit (pid 12822 / activities)
+        405,224K: com.galaxyjoy.roycasualkit (pid 12822 / activities)
+=== 14:46:15 ===
+    685,724K: com.galaxyjoy.roycasualkit (pid 12822 / activities)
+        685,724K: com.galaxyjoy.roycasualkit (pid 12822 / activities)
+    548,400K: com.galaxyjoy.roycasualkit (pid 12822 / activities)
+        548,400K: com.galaxyjoy.roycasualkit (pid 12822 / activities)
+=== 14:46:23 ===
+    764,972K: com.galaxyjoy.roycasualkit (pid 12822 / activities)
+        764,972K: com.galaxyjoy.roycasualkit (pid 12822 / activities)
+    619,946K: com.galaxyjoy.roycasualkit (pid 12822 / activities)
+        619,946K: com.galaxyjoy.roycasualkit (pid 12822 / activities)
+
+--- RUN 2 ---
+DEVICE_FRAME_METRICS {"scene":"match3","frameCount":591,"buildMs":{"p50":1.871,"p90":2.459,"p99":3.912},"rasterMs":{"p50":4.825,"p90":6.588,"p99":10.301},"totalSpanMs":{"p50":7.333,"p90":9.871,"p99":13.551},"budgetMs":16.667,"framesOverBudget":1,"overBudgetPercent":0.1692047377326565}
+DEVICE_FRAME_METRICS {"scene":"widget_showcase","frameCount":148,"buildMs":{"p50":20.577,"p90":52.703,"p99":363.625},"rasterMs":{"p50":8.193,"p90":25.869,"p99":41.605},"totalSpanMs":{"p50":31.231,"p90":68.401,"p99":383.285},"budgetMs":16.667,"framesOverBudget":128,"overBudgetPercent":86.48648648648648}
+00:18 +1: All tests passed!
+test_exit=0
+
+Memory PSS/RSS samples:
+=== 14:47:24 ===
+=== 14:47:31 ===
+=== 14:47:38 ===
+=== 14:47:45 ===
+=== 14:47:52 ===
+    541,308K: com.galaxyjoy.roycasualkit (pid 14401 / activities)
+        541,308K: com.galaxyjoy.roycasualkit (pid 14401 / activities)
+    404,094K: com.galaxyjoy.roycasualkit (pid 14401 / activities)
+        404,094K: com.galaxyjoy.roycasualkit (pid 14401 / activities)
+=== 14:48:01 ===
+    672,516K: com.galaxyjoy.roycasualkit (pid 14401 / activities)
+        672,516K: com.galaxyjoy.roycasualkit (pid 14401 / activities)
+    534,757K: com.galaxyjoy.roycasualkit (pid 14401 / activities)
+        534,757K: com.galaxyjoy.roycasualkit (pid 14401 / activities)
+
+--- RUN 3 ---
+DEVICE_FRAME_METRICS {"scene":"match3","frameCount":581,"buildMs":{"p50":2.516,"p90":3.377,"p99":6.159},"rasterMs":{"p50":4.884,"p90":7.318,"p99":10.011},"totalSpanMs":{"p50":8.001,"p90":11.366,"p99":14.433},"budgetMs":16.667,"framesOverBudget":3,"overBudgetPercent":0.5163511187607573}
+DEVICE_FRAME_METRICS {"scene":"widget_showcase","frameCount":21,"buildMs":{"p50":201.717,"p90":666.933,"p99":948.121},"rasterMs":{"p50":10.737,"p90":26.953,"p99":31.377},"totalSpanMs":{"p50":228.003,"p90":685.431,"p99":973.99},"budgetMs":16.667,"framesOverBudget":13,"overBudgetPercent":61.904761904761905}
+00:19 +1: All tests passed!
+test_exit=0
+
+Memory PSS/RSS samples:
+=== 14:48:31 ===
+=== 14:48:41 ===
+=== 14:48:49 ===
+=== 14:48:58 ===
+    545,364K: com.galaxyjoy.roycasualkit (pid 15498 / activities)
+        545,364K: com.galaxyjoy.roycasualkit (pid 15498 / activities)
+    408,368K: com.galaxyjoy.roycasualkit (pid 15498 / activities)
+        408,368K: com.galaxyjoy.roycasualkit (pid 15498 / activities)
+=== 14:49:07 ===
+    678,116K: com.galaxyjoy.roycasualkit (pid 15498 / activities)
+        678,116K: com.galaxyjoy.roycasualkit (pid 15498 / activities)
+    540,508K: com.galaxyjoy.roycasualkit (pid 15498 / activities)
+        540,508K: com.galaxyjoy.roycasualkit (pid 15498 / activities)
+
+Final focus/settings:
+  mCurrentFocus=Window{e842e9e u0 com.sec.android.app.launcher/com.sec.android.app.launcher.activities.LauncherActivity}
+1.08
+1
+0
