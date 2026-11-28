@@ -25,11 +25,13 @@ void main() {
 
       final player = game.player!;
       final start = player.position.clone();
+      expect(player.direction, GameJoystickDirection.idle);
 
       player.setMoveInput(
         GameJoystickDirection.upRight,
         GameJoystick.vectorFor(GameJoystickDirection.upRight),
       );
+      expect(player.direction, GameJoystickDirection.upRight);
       game.update(0.1);
       final delta = player.position - start;
       expect(delta.x, greaterThan(0));

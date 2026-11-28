@@ -56,6 +56,25 @@ void main() {
         ),
         throwsArgumentError,
       );
+      expect(
+        () => OfflineEarningsPopup(
+          coins: 10,
+          elapsed: Duration.zero,
+          collectLabel: ' ',
+          onCollect: () {},
+        ),
+        throwsArgumentError,
+      );
+      expect(
+        () => OfflineEarningsPopup(
+          coins: 10,
+          elapsed: Duration.zero,
+          onDoubleTap: () {},
+          doubleLabel: ' ',
+          onCollect: () {},
+        ),
+        throwsArgumentError,
+      );
     });
   });
 
@@ -141,6 +160,60 @@ void main() {
         expect(doubleButton, findsOneWidget);
         await tester.tap(doubleButton);
         expect(doubleCalls, 1);
+      },
+    );
+
+    testWidgets(
+      'updating coins animates normally and jumps to end with Reduced Motion',
+      (tester) async {
+        var coins = 100;
+        var reduced = false;
+        late StateSetter update;
+        await tester.pumpWidget(
+          MaterialApp(
+            home: Scaffold(
+              body: StatefulBuilder(
+                builder: (context, setState) {
+                  update = setState;
+                  return MediaQuery(
+                    data: MediaQueryData(disableAnimations: reduced),
+                    child: OfflineEarningsPopup(
+                      coins: coins,
+                      elapsed: const Duration(hours: 1),
+                      onCollect: () {},
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 400));
+
+        update(() => coins = 900);
+        await tester.pump();
+        expect(
+          find.text('0'),
+          findsWidgets,
+          reason: 'normal motion counts up from zero',
+        );
+        await tester.pump(const Duration(milliseconds: 250));
+        expect(
+          tester
+              .widget<Text>(
+                find.byKey(const ValueKey('offlineEarningsCoinCount')),
+              )
+              .data,
+          isNot('900'),
+        );
+
+        update(() {
+          reduced = true;
+          coins = 1200;
+        });
+        await tester.pump();
+        expect(find.text('1,200'), findsWidgets);
+        expect(tester.takeException(), isNull);
       },
     );
 

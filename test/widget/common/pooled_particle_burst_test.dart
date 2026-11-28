@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:roy_casual_kit/presentation/widgets/common/pooled_particle_burst.dart';
 
+import '../../support/leak_ignores.dart';
+
 void main() {
   group('particle math', () {
     test('radial offset starts at center and ends at travel distance', () {
@@ -64,6 +66,57 @@ void main() {
       expect(key.currentState!.totalCreated, 50);
     }
     expect(finished, 10);
+    expect(tester.takeException(), isNull);
+  });
+
+  for (final count in [0, 201]) {
+    testWidgets(
+      'rejects particle count $count',
+      (tester) async {
+        await tester.pumpWidget(
+          MaterialApp(home: PooledParticleBurst(particleCount: count)),
+        );
+        expect(tester.takeException(), isArgumentError);
+      },
+      experimentalLeakTesting: ignoringFailedInitState(
+        'PooledParticleBurstState',
+      ),
+    );
+  }
+
+  testWidgets(
+    'rejects zero duration',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(home: PooledParticleBurst(duration: Duration.zero)),
+      );
+      expect(tester.takeException(), isArgumentError);
+    },
+    experimentalLeakTesting: ignoringFailedInitState(
+      'PooledParticleBurstState',
+    ),
+  );
+
+  testWidgets('unmounted while reduced-motion completion is queued is safe', (
+    tester,
+  ) async {
+    final key = GlobalKey<PooledParticleBurstState>();
+    var finished = 0;
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(disableAnimations: true),
+        child: MaterialApp(
+          home: PooledParticleBurst(
+            key: key,
+            onBurstFinished: () => finished++,
+          ),
+        ),
+      ),
+    );
+    key.currentState!.burst();
+    await tester.pumpWidget(const SizedBox.shrink());
+    await tester.pump();
+    expect(finished, 0);
     expect(tester.takeException(), isNull);
   });
 

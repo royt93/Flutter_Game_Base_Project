@@ -1,3 +1,6 @@
+import 'dart:ui' as ui;
+
+import 'package:flame/components.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -25,6 +28,55 @@ Future<void> _settled(WidgetTester tester, RoyGame game) async {
 }
 
 void main() {
+  testWidgets(
+    'playable character loads both sprites through the injected loader',
+    (tester) async {
+      final names = <String>[];
+      final recorder = ui.PictureRecorder();
+      final canvas = Canvas(recorder);
+      canvas.drawRect(
+        const Rect.fromLTWH(0, 0, 2, 2),
+        Paint()..color = Colors.white,
+      );
+      final image = await recorder.endRecording().toImage(2, 2);
+      addTearDown(image.dispose);
+      final game = RoyGame(
+        enablePlayableCharacter: true,
+        showClassicDemo: false,
+        spriteLoader: (name) async {
+          names.add(name);
+          return Sprite(image);
+        },
+      );
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Material(child: GameWidget(game: game)),
+        ),
+      );
+      await _settled(tester, game);
+      await game.playerLoad;
+
+      expect(names, ['survivor1_gun.png', 'survivor1_machine.png']);
+      expect(game.player!.hasSprites, isTrue);
+      game.player!.attack();
+      await tester.pump();
+      expect(game.player!.isAttacking, isTrue);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('PlayableCharacter rejects non-positive or non-finite speed', (
+    tester,
+  ) async {
+    for (final speed in [0.0, -1.0, double.infinity, double.nan]) {
+      expect(
+        () => PlayableCharacter(speed: speed),
+        throwsArgumentError,
+        reason: 'speed=$speed',
+      );
+    }
+  });
+
   testWidgets('builds inside a GameWidget without throwing', (tester) async {
     final game = RoyGame();
 

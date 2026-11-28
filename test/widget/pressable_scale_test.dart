@@ -383,6 +383,29 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('pointer cancel releases pressed scale state', (tester) async {
+    final key = GlobalKey();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Material(
+          child: Center(
+            child: PressableScale(
+              onTap: () {},
+              child: SizedBox(key: key, width: 80, height: 50),
+            ),
+          ),
+        ),
+      ),
+    );
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.byKey(key)),
+    );
+    await tester.pump();
+    await gesture.cancel();
+    await tester.pump(const Duration(milliseconds: 400));
+    expect(tester.takeException(), isNull);
+  });
+
   group('FEAT-82: keyboard/gamepad activation', () {
     testWidgets('Enter kích hoạt onTap khi đang focus', (tester) async {
       var tapped = false;

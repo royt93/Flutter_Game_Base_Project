@@ -81,6 +81,33 @@ void main() {
     expect(barrierTapped, isTrue);
   });
 
+  testWidgets('overlay blocks background semantics while panel is visible', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Stack(
+          children: [
+            const Text('background control'),
+            NeonDialog.overlay(panel: const Text('blocking panel')),
+          ],
+        ),
+      ),
+    );
+    await tester.pump(const Duration(milliseconds: 250));
+
+    final root = tester.getSemantics(find.byType(MaterialApp));
+    expect(root.toStringDeep(), isNot(contains('background control')));
+    expect(root.toStringDeep(), contains('blocking panel'));
+    expect(
+      tester.getSemantics(find.text('blocking panel')).label,
+      'blocking panel',
+    );
+    expect(find.text('blocking panel'), findsOneWidget);
+    semantics.dispose();
+  });
+
   testWidgets('overlaySlot ẩn khi panel null, hiện khi panel có giá trị', (
     tester,
   ) async {
@@ -345,7 +372,9 @@ void main() {
     double scaleNow(WidgetTester tester) {
       final t = tester
           .widgetList<ScaleTransition>(find.byType(ScaleTransition))
-          .where((w) => w.scale.runtimeType.toString() == '_DialogScaleAnimation')
+          .where(
+            (w) => w.scale.runtimeType.toString() == '_DialogScaleAnimation',
+          )
           .single;
       return t.scale.value;
     }
@@ -387,11 +416,19 @@ void main() {
             );
         if (candidates.isEmpty) break;
         final v = candidates.single.scale.value;
-        expect(v, lessThanOrEqualTo(prev + 1e-9), reason: 'monotonic going out');
+        expect(
+          v,
+          lessThanOrEqualTo(prev + 1e-9),
+          reason: 'monotonic going out',
+        );
         maxSeen = v > maxSeen ? v : maxSeen;
         prev = v;
       }
-      expect(maxSeen, lessThanOrEqualTo(1.0), reason: 'easeIn never overshoots');
+      expect(
+        maxSeen,
+        lessThanOrEqualTo(1.0),
+        reason: 'easeIn never overshoots',
+      );
     });
   });
 }

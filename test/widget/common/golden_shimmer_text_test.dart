@@ -119,22 +119,48 @@ void main() {
     controller.dispose();
   });
 
-  testWidgets('invalid non-positive duration throws ArgumentError', (
-    tester,
-  ) async {
-    await tester.pumpWidget(
-      const MaterialApp(
-        home: Material(
-          child: GoldenShimmerText(
-            'BAD',
-            fontSize: 20,
-            duration: Duration.zero,
+  testWidgets(
+    'updates duration and text without restarting a completed controller',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(child: GoldenShimmerText('FIRST', fontSize: 20)),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 200));
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: GoldenShimmerText(
+              'SECOND',
+              fontSize: 24,
+              duration: Duration(milliseconds: 2200),
+            ),
           ),
         ),
-      ),
-    );
-    expect(tester.takeException(), isA<ArgumentError>());
-  },
-  experimentalLeakTesting: ignoringFailedInitState('_GoldenShimmerTextState'),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(find.text('SECOND'), findsWidgets);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'invalid non-positive duration throws ArgumentError',
+    (tester) async {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Material(
+            child: GoldenShimmerText(
+              'BAD',
+              fontSize: 20,
+              duration: Duration.zero,
+            ),
+          ),
+        ),
+      );
+      expect(tester.takeException(), isA<ArgumentError>());
+    },
+    experimentalLeakTesting: ignoringFailedInitState('_GoldenShimmerTextState'),
   );
 }

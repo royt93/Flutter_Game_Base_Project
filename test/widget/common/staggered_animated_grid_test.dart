@@ -145,14 +145,119 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('invalid grid configuration throws', (tester) async {
-    await tester.pumpWidget(
-      MaterialApp(
-        home: StaggeredAnimatedGrid(itemCount: -1, itemBuilder: _tile),
+  testWidgets('validates every grid layout parameter', (tester) async {
+    for (final build in [
+      () => StaggeredAnimatedGrid(itemCount: -1, itemBuilder: _tile),
+      () => StaggeredAnimatedGrid(
+        itemCount: 1,
+        crossAxisCount: 0,
+        itemBuilder: _tile,
+      ),
+      () =>
+          StaggeredAnimatedGrid(itemCount: 1, spacing: -1, itemBuilder: _tile),
+      () => StaggeredAnimatedGrid(
+        itemCount: 1,
+        stagger: const Duration(milliseconds: -1),
+        itemBuilder: _tile,
+      ),
+      () => StaggeredAnimatedGrid(
+        itemCount: 1,
+        animationDuration: Duration.zero,
+        itemBuilder: _tile,
+      ),
+      () => StaggeredAnimatedGrid(
+        itemCount: 1,
+        childAspectRatio: 0,
+        itemBuilder: _tile,
+      ),
+    ]) {
+      await tester.pumpWidget(MaterialApp(home: build()));
+      expect(tester.takeException(), isArgumentError);
+    }
+  });
+
+  testWidgets(
+    'changing duration and delay before first entrance replaces its timer',
+    (tester) async {
+      Widget grid(Duration delay, Duration duration) => MaterialApp(
+        home: SizedBox(
+          height: 240,
+          child: StaggeredAnimatedGrid(
+            itemCount: 1,
+            stagger: delay,
+            animationDuration: duration,
+            itemBuilder: _tile,
+          ),
+        ),
+      );
+
+      await tester.pumpWidget(
+        grid(const Duration(seconds: 1), const Duration(milliseconds: 400)),
+      );
+      await tester.pump(const Duration(milliseconds: 100));
+      await tester.pumpWidget(
+        grid(
+          const Duration(milliseconds: 200),
+          const Duration(milliseconds: 100),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 210));
+      expect(find.byType(Opacity), findsOneWidget);
+      await tester.pump(const Duration(milliseconds: 100));
+      expect(tester.widget<Opacity>(find.byType(Opacity)).opacity, 1);
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets('changing stagger before entrance replaces the delayed Timer', (
+    tester,
+  ) async {
+    Widget grid(Duration delay) => MaterialApp(
+      home: SizedBox(
+        height: 120,
+        child: StaggeredAnimatedGrid(
+          itemCount: 1,
+          stagger: delay,
+          animationDuration: const Duration(milliseconds: 100),
+          itemBuilder: _tile,
+        ),
       ),
     );
-    expect(tester.takeException(), isA<ArgumentError>());
+
+    await tester.pumpWidget(grid(const Duration(seconds: 2)));
+    await tester.pump(const Duration(milliseconds: 10));
+    await tester.pumpWidget(grid(const Duration(milliseconds: 50)));
+    await tester.pump(const Duration(milliseconds: 60));
+    final opacity = tester.widget<Opacity>(find.byType(Opacity));
+    expect(
+      opacity.opacity,
+      greaterThan(0),
+      reason: 'the replacement timer should start the entrance',
+    );
+    expect(tester.takeException(), isNull);
   });
+
+  testWidgets(
+    'unmount just after delayed Timer fires but before its next frame is safe',
+    (tester) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: SizedBox(
+            height: 120,
+            child: StaggeredAnimatedGrid(
+              itemCount: 1,
+              stagger: const Duration(milliseconds: 50),
+              itemBuilder: _tile,
+            ),
+          ),
+        ),
+      );
+      await tester.pump(const Duration(milliseconds: 50));
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump(const Duration(seconds: 1));
+      expect(tester.takeException(), isNull);
+    },
+  );
 }
 
 Widget _tile(BuildContext context, int index) => Text('Tile $index');
